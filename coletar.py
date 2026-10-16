@@ -215,7 +215,34 @@ def buscar_detalhe(ticker: str) -> dict:
                 }
     except Exception as e:                # resultado é opcional; não derruba a ação
         log.info("   %s sem DRE anual: %s", ticker, e)
-    return {"precos": precos, "proventos": proventos, "resultados": resultados}
+    extras = {}
+    for chave, attr, nomes in [
+        ("lucro_anual", "income_stmt", LINHAS_LUCRO),
+        ("lucro_tri", "quarterly_income_stmt", LINHAS_LUCRO),
+        ("pl_anual", "balance_sheet", LINHAS_PATRIMONIO),
+        ("pl_tri", "quarterly_balance_sheet", LINHAS_PATRIMONIO),
+    ]:
+        try:
+            extras[chave] = extrair_linha(getattr(tk, attr), nomes)
+        except Exception as e:            # opcional: sem isso, só o gráfico de P/L ou P/VP fica de fora
+            log.info("   %s sem %s: %s", ticker, attr, e)
+            extras[chave] = []
+    return {"precos": precos, "proventos": proventos, "resultados": resultados, **extras}
+
+
+LINHAS_LUCRO = ("Net Income Common Stockholders", "Net Income")
+LINHAS_PATRIMONIO = ("Common Stock Equity", "Stockholders Equity", "Total Equity Gross Minority Interest")
+
+
+def extrair_linha(df, nomes) -> list:
+    """[(data_fim_do_período, valor)] da primeira linha encontrada de uma tabela do yfinance."""
+    if df is None or df.empty:
+        return []
+    for n in nomes:
+        if n in df.index:
+            out = [(col.date(), num(df.at[n, col])) for col in df.columns]
+            return sorted((d, v) for d, v in out if v is not None)
+    return []
 
 
 def montar_detalhe(acao: dict, bruto: dict, hoje) -> dict | None:
@@ -278,6 +305,96 @@ def montar_detalhe(acao: dict, bruto: dict, hoje) -> dict | None:
     }
 
 
+PRAZO_ANUAL = 90        # dias após o fim do exercício até o balanço anual ser publicado (DFP)
+PRAZO_TRIMESTRAL = 45   # idem para o trimestral (ITR)
+
+
+def _disponivel(eventos):
+    """Ordena [(data_em_que_ficou_público, valor)] e devolve uma função data -> último valor conhecido."""
+    eventos = sorted(eventos)
+    datas = [d for d, _ in eventos]
+    import bisect
+    def valor_em(d):
+        i = bisect.bisect_right(datas, d) - 1
+        return eventos[i][1] if i >= 0 else None
+    return valor_em
+
+
+def serie_lucro_12m(anual, tri, fx):
+    """Lucro dos 12 meses conhecido em cada data: exercícios anuais e somas de 4 trimestres seguidos."""
+    conv = lambda d, v: v * fx[d.year] if fx else v
+    ev = [(d + timedelta(days=PRAZO_ANUAL), conv(d, v)) for d, v in anual]
+    tri = sorted(tri)
+    for i in range(3, len(tri)):
+        janela = tri[i - 3:i + 1]
+        if 250 <= (janela[-1][0] - janela[0][0]).days <= 300:     # 4 trimestres consecutivos
+            ev.append((janela[-1][0] + timedelta(days=PRAZO_TRIMESTRAL), sum(conv(d, v) for d, v in janela)))
+    return _disponivel(ev)
+
+
+def serie_patrimonio(anual, tri, fx):
+    conv = lambda d, v: v * fx[d.year] if fx else v
+    ev = [(d + timedelta(days=PRAZO_ANUAL), conv(d, v)) for d, v in anual]
+    ev += [(d + timedelta(days=PRAZO_TRIMESTRAL), conv(d, v)) for d, v in tri]
+    return _disponivel(ev)
+
+
+def montar_multiplos(acao: dict, bruto: dict, hoje, fx) -> dict | None:
+    """DY 12m, P/L e P/VP no fim de cada mês, reconstruídos com preços, proventos e balanços.
+
+    Valor de mercado em cada data = valor de mercado de hoje x (preço na data / preço de hoje).
+    O lucro e o patrimônio usados em cada data são os últimos já publicados naquela data.
+    """
+    precos = sorted((d, c) for d, c in bruto.get("precos", []) if c)
+    if not precos:
+        return None
+    if precos[-1][0] < hoje:
+        precos.append((hoje, acao["preco"]))
+    fim_mes = {}
+    for d, c in precos:
+        fim_mes[(d.year, d.month)] = (d, c)
+    pontos = [fim_mes[k] for k in sorted(fim_mes)]
+    if len(pontos) < 13:
+        return None
+
+    provs = sorted((d, v) for d, v in bruto.get("proventos", []) if v and v > 0)
+    lucro = serie_lucro_12m(bruto.get("lucro_anual", []), bruto.get("lucro_tri", []), fx) if fx is not None else (lambda d: None)
+    patr = serie_patrimonio(bruto.get("pl_anual", []), bruto.get("pl_tri", []), fx) if fx is not None else (lambda d: None)
+    mc0, p0 = acao.get("mc"), acao["preco"]
+
+    meses, dy, pl, pvp = [], [], [], []
+    inicio_prov = provs[0][0] if provs else None
+    for d, c in pontos:
+        um_ano = anos_atras(d, 1)
+        soma = sum(v for dd, v in provs if um_ano < dd <= d)
+        # sem proventos registrados antes da data, o DY daquele mês é desconhecido (não zero)
+        dy.append(round(soma / c, 4) if inicio_prov and inicio_prov <= d else None)
+        mc = mc0 * c / p0 if mc0 else None
+        L, PL = lucro(d), patr(d)
+        pl.append(round(mc / L, 2) if mc and L and L > 0 else None)
+        pvp.append(round(mc / PL, 3) if mc and PL and PL > 0 else None)
+        meses.append(f"{d.year}-{d.month:02d}")
+
+    # Ações em units (ex.: SANB11) podem ter o valor de mercado do Yahoo em outra base.
+    # Se o último ponto destoar muito do indicador atual, recalibra a série inteira.
+    obs = []
+    for serie, atual, nome in ((pl, acao.get("pl"), "P/L"), (pvp, acao.get("pvp"), "P/VP")):
+        ult = serie[-1]
+        if ult and atual and atual > 0:
+            k = atual / ult
+            if not 0.6 <= k <= 1.6:
+                for i, v in enumerate(serie):
+                    if v is not None:
+                        serie[i] = round(v * k, 3)
+                obs.append(f"{nome} recalibrado pelo valor atual do Yahoo (fator {k:.2f})")
+    if obs:
+        log.info("   %s: %s", acao["t"], "; ".join(obs))
+
+    if not any(v is not None for v in pl + pvp + dy):
+        return None
+    return {"m": meses, "dy": dy, "pl": pl, "pvp": pvp}
+
+
 _CAMBIO = {}
 
 
@@ -296,7 +413,7 @@ def cambio_medio_anual(moeda: str) -> dict:
     return _CAMBIO[moeda]
 
 
-def ajustar_moeda_resultados(det: dict, acao: dict, cambio=cambio_medio_anual) -> None:
+def ajustar_moeda_resultados(det: dict, acao: dict, cambio=cambio_medio_anual):
     """Algumas empresas (ex.: Petrobras) têm a DRE anual em dólar no Yahoo. Converte para reais.
 
     Sinais de que a DRE não está em reais:
@@ -304,9 +421,8 @@ def ajustar_moeda_resultados(det: dict, acao: dict, cambio=cambio_medio_anual) -
     - a receita de 12 meses (em reais, no resumo) é 3,5 a 8 vezes a receita do último ano da DRE,
       faixa compatível com o dólar entre R$ 3,50 e R$ 8,00.
     """
+    """Devolve {ano: taxa} quando converteu, {} quando já está em reais e None se não deu para converter."""
     res = det.get("resultados") or []
-    if not res:
-        return
     moeda = (acao.get("moeda_dre") or "BRL").upper()
     if moeda == "BRL":
         ult = next((r["receita"] for r in reversed(res) if r.get("receita")), None)
@@ -314,24 +430,25 @@ def ajustar_moeda_resultados(det: dict, acao: dict, cambio=cambio_medio_anual) -
         if ult and r12 and ult > 0 and 3.5 <= r12 / ult <= 8:
             moeda = "USD"
     if moeda == "BRL":
-        return
+        return {}
     try:
         fx = cambio(moeda)
     except Exception as e:
         log.warning("   %s: DRE em %s e câmbio indisponível (%s); mantendo valores originais", acao["t"], moeda, e)
         det["resultados_moeda"] = moeda
-        return
+        return None
     ultimo_fx = fx[max(fx)] if fx else None
     for r in res:
         taxa = fx.get(r["ano"], ultimo_fx)
         if taxa is None:
             det["resultados_moeda"] = moeda
-            return
+            return None
         for k in ("receita", "lucro"):
             if r.get(k) is not None:
                 r[k] = r[k] * taxa
     det["resultados_convertidos_de"] = moeda
     log.info("   %s: DRE convertida de %s para BRL pelo câmbio médio de cada ano", acao["t"], moeda)
+    return {a: fx.get(a, ultimo_fx) for a in range(2000, 2100) if fx.get(a, ultimo_fx)}
 
 
 def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA_ENTRE_ACOES):
@@ -344,11 +461,13 @@ def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA
         erro = None
         for tentativa in range(1, TENTATIVAS + 1):
             try:
-                det = montar_detalhe(acao, buscar(t), hoje)
+                bruto = buscar(t)
+                det = montar_detalhe(acao, bruto, hoje)
                 if det is None:
                     erro = "sem histórico de preços"
                     break
-                ajustar_moeda_resultados(det, acao)
+                fx = ajustar_moeda_resultados(det, acao)
+                det["multiplos"] = montar_multiplos(acao, bruto, hoje, fx)
                 (pasta / f"{t}.json").write_text(
                     json.dumps(det, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
                 erro = None

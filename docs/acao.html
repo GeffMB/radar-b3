@@ -81,6 +81,11 @@ th{position:sticky;top:0;background:var(--surface);text-align:right;font-size:11
 th:first-child,td:first-child{text-align:left}
 td{padding:7px 10px;border-bottom:1px solid var(--soft);font-family:var(--font-num);font-size:13px;text-align:right}
 .empty{color:var(--muted);padding:24px 8px;text-align:center}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px 20px}
+.stats>div{display:grid;gap:2px;align-content:start}
+.stats .v{font-family:var(--font-num);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.stats .cmp{font-size:12px;color:var(--muted)}
+.note.small{font-size:12px;color:var(--muted);margin:0}
 .msg{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:32px 16px;text-align:center;color:var(--muted)}
 footer{font-size:12px;color:var(--muted);max-width:90ch;display:grid;gap:6px}
 footer p{margin:0}
@@ -133,6 +138,15 @@ const IND = [
 
 let charts = {};
 let precoRange = "1A";
+let multK = "dy", multPer = "5A", ATUAL = null;
+const MULT = [
+  {k:"dy",  l:"DY 12m", fmt:v=>f1.format(v*100)+"%", eixo:v=>f1.format(v*100)+"%", melhor:+1,
+   nota:"DY de cada mês = proventos pagos nos 12 meses anteriores ÷ cotação no fim do mês."},
+  {k:"pl",  l:"P/L",    fmt:v=>f1.format(v),         eixo:v=>f1.format(v),          melhor:-1,
+   nota:"P/L de cada mês = valor de mercado no fim do mês ÷ lucro dos últimos 12 meses já publicado naquela data. Meses com prejuízo ficam em branco."},
+  {k:"pvp", l:"P/VP",   fmt:v=>f2.format(v),         eixo:v=>f2.format(v),          melhor:-1,
+   nota:"P/VP de cada mês = valor de mercado no fim do mês ÷ patrimônio líquido do último balanço já publicado naquela data."},
+];
 
 async function main(){
   let dados;
@@ -212,6 +226,18 @@ function render(a, det, pares, dados){
     <div class="chart"><canvas id="c-preco" aria-label="Gráfico de cotação de ${a.t}"></canvas></div>
   </section>`;
 
+  if (det.multiplos) html += `
+  <section class="panel">
+    <div class="ph">
+      <h2>Indicadores ao longo do tempo</h2>
+      <div class="ranges" id="mult-ind">${MULT.map(m=>`<button type="button" data-k="${m.k}">${m.l}</button>`).join("")}</div>
+      <div class="ranges" id="mult-per">${["3A","5A","10A"].map(r=>`<button type="button" data-r="${r}">${r}</button>`).join("")}</div>
+    </div>
+    <div class="stats" id="mult-stats"></div>
+    <div class="chart short"><canvas id="c-mult" aria-label="Evolução dos indicadores de ${a.t}"></canvas></div>
+    <p class="note small" id="mult-nota"></p>
+  </section>`;
+
   const anual = det.proventos_anual || [];
   const pagos = anual.filter(x=>x.total>0);
   const dyMedio = (()=>{ const c = anual.filter(x=>!x.parcial && x.dy!=null).slice(-5); return c.length? c.reduce((s,x)=>s+x.dy,0)/c.length : null; })();
@@ -243,7 +269,13 @@ function render(a, det, pares, dados){
 
   if (!window.Chart) { document.querySelectorAll(".chart").forEach(c=>c.innerHTML='<div class="empty">Os gráficos não carregaram. Verifique a conexão e recarregue a página.</div>'); return; }
   try { precoRange = localStorage.getItem("radar-range") || precoRange; } catch(e){}
+  ATUAL = a;
+  try { multK = localStorage.getItem("radar-mult") || multK; multPer = localStorage.getItem("radar-mult-per") || multPer; } catch(e){}
   desenharTudo(det);
+  if ($("mult-ind")) {
+    $("mult-ind").onclick = e => { const b=e.target.closest("button"); if(!b) return; multK=b.dataset.k; try{localStorage.setItem("radar-mult",multK);}catch(e){} desenharMultiplos(det); };
+    $("mult-per").onclick = e => { const b=e.target.closest("button"); if(!b) return; multPer=b.dataset.r; try{localStorage.setItem("radar-mult-per",multPer);}catch(e){} desenharMultiplos(det); };
+  }
   $("ranges").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoRange=b.dataset.r; try{localStorage.setItem("radar-range",precoRange);}catch(e){} desenharPreco(det); };
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>desenharTudo(det));
 }
@@ -262,7 +294,52 @@ function base(){
   };
 }
 
-function desenharTudo(det){ desenharPreco(det); desenharProventos(det); desenharResultados(det); }
+function desenharTudo(det){ desenharPreco(det); desenharMultiplos(det); desenharProventos(det); desenharResultados(det); }
+
+function desenharMultiplos(det){
+  const el=$("c-mult"); if(!el) return;
+  const M = det.multiplos, cfg = MULT.find(m=>m.k===multK) || MULT[0];
+  document.querySelectorAll("#mult-ind button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.k===cfg.k)));
+  document.querySelectorAll("#mult-per button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.r===multPer)));
+  const n = {"3A":36,"5A":60,"10A":120}[multPer];
+  const ini = Math.max(0, M.m.length - n - 1);
+  let L = M.m.slice(ini), V = M[cfg.k].slice(ini);
+  const primeiro = V.findIndex(v=>v!=null);
+  if (primeiro>0) { L = L.slice(primeiro); V = V.slice(primeiro); }   // começa onde há dado
+  const val = V.filter(v=>v!=null);
+  $("mult-nota").textContent = cfg.nota;
+  el.parentElement.hidden = !val.length;
+  if (!val.length) {
+    const motivo = cfg.k==="dy"? `O Yahoo não registra proventos de ${ATUAL.t} no período.` : `O Yahoo não traz balanços suficientes de ${ATUAL.t} para calcular o ${cfg.l} no período.`;
+    $("mult-stats").innerHTML = `<div class="empty" style="grid-column:1/-1">${motivo}</div>`;
+    charts.mult?.destroy(); charts.mult=null; return;
+  }
+  const media = val.reduce((s,v)=>s+v,0)/val.length;
+  const atual = [...V].reverse().find(v=>v!=null);
+  const desde = L[V.findIndex(v=>v!=null)];
+  const dif = media? atual/media-1 : null;
+  const bom = dif!=null && Math.abs(dif)>0.05 && (cfg.melhor>0 ? dif>0 : dif<0);
+  const ruim = dif!=null && Math.abs(dif)>0.05 && !bom;
+  const leitura = dif==null? "" : Math.abs(dif)<=0.05? "em linha com a média" : `${f1.format(Math.abs(dif)*100)}% ${dif>0?"acima":"abaixo"} da média`;
+  const mesBR = s => { const [y,m]=s.split("-"); return `${m}/${y}`; };
+  $("mult-stats").innerHTML = `
+    <div><span class="label">Atual</span><span class="v">${cfg.fmt(atual)}</span><span class="tag ${bom?"good":ruim?"bad":"neu"}">${leitura}</span></div>
+    <div><span class="label">Média do período</span><span class="v">${cfg.fmt(media)}</span><span class="cmp">desde ${mesBR(desde)}</span></div>
+    <div><span class="label">Mínima</span><span class="v">${cfg.fmt(Math.min(...val))}</span><span class="cmp">${mesBR(L[V.indexOf(Math.min(...val))])}</span></div>
+    <div><span class="label">Máxima</span><span class="v">${cfg.fmt(Math.max(...val))}</span><span class="cmp">${mesBR(L[V.indexOf(Math.max(...val))])}</span></div>`;
+  const acc = css("--accent"), mut = css("--muted");
+  const o = base();
+  const curto = L.length<=40;
+  o.scales.x.ticks.callback = function(v){ const s=this.getLabelForValue(v); const [y,m]=s.split("-"); return curto? `${m}/${y.slice(2)}` : (m==="01"? y : ""); };
+  o.scales.x.ticks.autoSkip = curto;
+  o.scales.y.ticks = {callback:cfg.eixo};
+  o.plugins.tooltip.callbacks = {title:it=>mesBR(it[0].label), label:it=> it.datasetIndex? `Média: ${cfg.fmt(media)}` : `${cfg.l}: ${cfg.fmt(it.parsed.y)}`};
+  charts.mult?.destroy();
+  charts.mult = new Chart(el,{type:"line",data:{labels:L,datasets:[
+    {data:V,borderColor:acc,backgroundColor:acc,borderWidth:2,pointRadius:V.map((v,i)=>i===V.length-1?4:0),pointHoverRadius:4,spanGaps:false,tension:0},
+    {data:L.map(()=>media),borderColor:mut,borderWidth:1.25,borderDash:[5,4],pointRadius:0,pointHoverRadius:0}
+  ]},options:o});
+}
 
 function desenharPreco(det){
   document.querySelectorAll("#ranges button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.r===precoRange)));
