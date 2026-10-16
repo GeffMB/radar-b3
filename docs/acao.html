@@ -234,7 +234,7 @@ function render(a, det, pares, dados){
   <section class="panel">
     <div class="ph">
       <h2>Receita e lucro por ano</h2>
-      <span class="note">Exercícios fiscais completos</span>
+      <span class="note">Exercícios fiscais completos${det.resultados_convertidos_de? ` · convertidos de ${det.resultados_convertidos_de} pelo câmbio médio de cada ano` : det.resultados_moeda? ` · valores em ${det.resultados_moeda}` : ""}</span>
     </div>
     ${res.length? `<div class="chart short"><canvas id="c-res" aria-label="Receita e lucro anuais de ${a.t}"></canvas></div>` : `<div class="empty">O Yahoo não traz o resultado anual de ${a.t}.</div>`}
   </section>`;
@@ -311,12 +311,13 @@ function desenharResultados(det){
   const R = det.resultados;
   const div = Math.max(...R.map(r=>Math.abs(r.receita||0)), ...R.map(r=>Math.abs(r.lucro||0))) >= 1e9 ? 1e9 : 1e6;
   const un = div===1e9? "bi" : "mi";
+  const cur = det.resultados_moeda && !det.resultados_convertidos_de ? det.resultados_moeda+" " : "R$ ";
   const o = base();
   o.plugins.legend = {display:true,position:"bottom",labels:{boxWidth:10,boxHeight:10,
     generateLabels:ch=>Chart.defaults.plugins.legend.labels.generateLabels(ch).map((l,i)=>({...l, fillStyle: i? css("--accent") : css("--muted")+"55", strokeStyle:"transparent"}))}};
-  o.scales.y.ticks = {callback:v=>"R$ "+f1.format(v)+" "+un};
+  o.scales.y.ticks = {callback:v=>cur+f1.format(v)+" "+un};
   o.plugins.tooltip.callbacks = {
-    label:it=>`${it.dataset.label}: R$ ${f2.format(it.parsed.y)} ${un}`,
+    label:it=>`${it.dataset.label}: ${cur}${f2.format(it.parsed.y)} ${un}`,
     afterBody:it=>{ const r=R[it[0].dataIndex]; return r.receita&&r.lucro!=null? `Margem líquida: ${f1.format(r.lucro/r.receita*100)}%` : ""; }
   };
   charts.res?.destroy();

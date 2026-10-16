@@ -139,6 +139,8 @@ def montar_acao(base: dict, info: dict) -> dict | None:
         "dl": div_liq,
         "dle": dle,
         "lpa": lpa,
+        "moeda_dre": info.get("financialCurrency"),
+        "receita12m": num(info.get("totalRevenue")),
         "banco": base.get("setor") == "Bancos",
         "fin": sem_alav,
     }
@@ -276,6 +278,62 @@ def montar_detalhe(acao: dict, bruto: dict, hoje) -> dict | None:
     }
 
 
+_CAMBIO = {}
+
+
+def cambio_medio_anual(moeda: str) -> dict:
+    """Média anual da cotação moeda→BRL (ex.: USD → {2024: 5.39, ...}). Busca uma vez por execução."""
+    if moeda not in _CAMBIO:
+        import yfinance as yf
+        h = yf.Ticker(f"{moeda}BRL=X").history(period="12y", interval="1d")
+        medias = {}
+        if len(h):
+            for ano, grupo in h["Close"].groupby(h.index.year):
+                v = num(grupo.mean())
+                if v:
+                    medias[int(ano)] = v
+        _CAMBIO[moeda] = medias
+    return _CAMBIO[moeda]
+
+
+def ajustar_moeda_resultados(det: dict, acao: dict, cambio=cambio_medio_anual) -> None:
+    """Algumas empresas (ex.: Petrobras) têm a DRE anual em dólar no Yahoo. Converte para reais.
+
+    Sinais de que a DRE não está em reais:
+    - o Yahoo informa financialCurrency diferente de BRL; ou
+    - a receita de 12 meses (em reais, no resumo) é 3,5 a 8 vezes a receita do último ano da DRE,
+      faixa compatível com o dólar entre R$ 3,50 e R$ 8,00.
+    """
+    res = det.get("resultados") or []
+    if not res:
+        return
+    moeda = (acao.get("moeda_dre") or "BRL").upper()
+    if moeda == "BRL":
+        ult = next((r["receita"] for r in reversed(res) if r.get("receita")), None)
+        r12 = acao.get("receita12m")
+        if ult and r12 and ult > 0 and 3.5 <= r12 / ult <= 8:
+            moeda = "USD"
+    if moeda == "BRL":
+        return
+    try:
+        fx = cambio(moeda)
+    except Exception as e:
+        log.warning("   %s: DRE em %s e câmbio indisponível (%s); mantendo valores originais", acao["t"], moeda, e)
+        det["resultados_moeda"] = moeda
+        return
+    ultimo_fx = fx[max(fx)] if fx else None
+    for r in res:
+        taxa = fx.get(r["ano"], ultimo_fx)
+        if taxa is None:
+            det["resultados_moeda"] = moeda
+            return
+        for k in ("receita", "lucro"):
+            if r.get(k) is not None:
+                r[k] = r[k] * taxa
+    det["resultados_convertidos_de"] = moeda
+    log.info("   %s: DRE convertida de %s para BRL pelo câmbio médio de cada ano", acao["t"], moeda)
+
+
 def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA_ENTRE_ACOES):
     """Gera docs/acoes/<TICKER>.json. Se uma ação falhar, mantém o arquivo anterior."""
     pasta = PASTA_DOCS / "acoes"
@@ -290,6 +348,7 @@ def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA
                 if det is None:
                     erro = "sem histórico de preços"
                     break
+                ajustar_moeda_resultados(det, acao)
                 (pasta / f"{t}.json").write_text(
                     json.dumps(det, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
                 erro = None
