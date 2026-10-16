@@ -375,20 +375,22 @@ def montar_multiplos(acao: dict, bruto: dict, hoje, fx) -> dict | None:
         pvp.append(round(mc / PL, 3) if mc and PL and PL > 0 else None)
         meses.append(f"{d.year}-{d.month:02d}")
 
-    # Ações em units (ex.: SANB11) podem ter o valor de mercado do Yahoo em outra base.
-    # Se o último ponto destoar muito do indicador atual, recalibra a série inteira.
-    obs = []
-    for serie, atual, nome in ((pl, acao.get("pl"), "P/L"), (pvp, acao.get("pvp"), "P/VP")):
-        ult = serie[-1]
-        if ult and atual and atual > 0:
-            k = atual / ult
-            if not 0.6 <= k <= 1.6:
-                for i, v in enumerate(serie):
-                    if v is not None:
-                        serie[i] = round(v * k, 3)
-                obs.append(f"{nome} recalibrado pelo valor atual do Yahoo (fator {k:.2f})")
-    if obs:
-        log.info("   %s: %s", acao["t"], "; ".join(obs))
+    # Ancora P/L e P/VP no valor atual do radar: o último ponto passa a ser igual ao card.
+    # Diferenças vêm de units (SANB11, TAEE11), holdings e da defasagem do último balanço;
+    # multiplicar a série por um fator constante preserva a comparação "atual vs. média".
+    # Fator absurdo (fora de 1/3 a 3) indica dado inconsistente: a série é descartada.
+    for nome, serie, atual in (("P/L", pl, acao.get("pl")), ("P/VP", pvp, acao.get("pvp"))):
+        ult = next((v for v in reversed(serie[-3:]) if v), None)
+        if not (ult and atual and atual > 0):
+            continue
+        k = atual / ult
+        if not 1 / 3 <= k <= 3:
+            log.info("   %s: série de %s descartada (fator %.2f)", acao["t"], nome, k)
+            serie[:] = [None] * len(serie)
+            continue
+        for i, v in enumerate(serie):
+            if v is not None:
+                serie[i] = round(v * k, 3)
 
     if not any(v is not None for v in pl + pvp + dy):
         return None
@@ -455,7 +457,7 @@ def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA
     """Gera docs/acoes/<TICKER>.json. Se uma ação falhar, mantém o arquivo anterior."""
     pasta = PASTA_DOCS / "acoes"
     pasta.mkdir(parents=True, exist_ok=True)
-    falhas = []
+    falhas, prov12 = [], {}
     for i, acao in enumerate(acoes, 1):
         t = acao["t"]
         erro = None
@@ -470,6 +472,7 @@ def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA
                 det["multiplos"] = montar_multiplos(acao, bruto, hoje, fx)
                 (pasta / f"{t}.json").write_text(
                     json.dumps(det, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+                prov12[t] = det["proventos_12m"]
                 erro = None
                 break
             except Exception as e:
@@ -483,7 +486,7 @@ def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA
             log.info("[%d/%d] histórico de %s ok", i, len(acoes), t)
         if pausa:
             time.sleep(pausa)
-    return falhas
+    return falhas, prov12
 
 
 # ---------------------------------------------------------------- saídas
@@ -591,8 +594,14 @@ def main(argv=None) -> int:
 
     if not args.sem_historico:
         log.info("Coletando histórico de cotação, proventos e resultados...")
-        falhas_det = coletar_detalhes(acoes, agora.date())
+        falhas_det, prov12 = coletar_detalhes(acoes, agora.date())
         log.info("Histórico: %d ok, %d falhas.", len(acoes) - len(falhas_det), len(falhas_det))
+        # DY 12m = soma dos proventos pagos nos últimos 12 meses ÷ preço.
+        # Substitui o campo pronto do Yahoo (trailingAnnualDividendYield), desatualizado para várias ações da B3.
+        for a in acoes:
+            if a["t"] in prov12 and a["preco"]:
+                a["dy"] = prov12[a["t"]] / a["preco"]
+        salvar(acoes, falhas, agora)
     log.info("Pronto em %.0fs. Página: %s", time.time() - inicio, destino)
     if args.abrir:
         webbrowser.open(destino.as_uri())
