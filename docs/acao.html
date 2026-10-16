@@ -94,7 +94,7 @@ footer p{margin:0}
 <body>
 <div class="wrap">
   <div class="top">
-    <a class="back" href="./">← Radar de Ações</a>
+    <span style="display:flex;gap:16px;flex-wrap:wrap"><a class="back" href="./">← Radar de Ações</a><a class="back" id="cmp" href="comparar.html">Comparar com outras →</a></span>
     <form class="jump" id="jump">
       <input id="jump-t" list="lista" placeholder="Ticker" aria-label="Ir para outro ticker" autocomplete="off">
       <datalist id="lista"></datalist>
@@ -159,6 +159,7 @@ async function main(){
   const a = acoes.find(x=>x.t===ticker);
   if(!a){ $("conteudo").innerHTML = `<div class="msg">${ticker? `<b>${esc(ticker)}</b> não está no radar.` : "Nenhum ticker informado."} Volte ao <a href="./">radar</a> e escolha uma ação, ou adicione o ticker em tickers.csv.</div>`; return; }
   document.title = `${a.t} · Radar de Ações B3`;
+  $("cmp").href = `comparar.html?t=${a.t}`;
 
   let det = null;
   try { det = await fetch(`acoes/${a.t}.json`,{cache:"no-cache"}).then(r=> r.ok? r.json() : null); } catch(e){}

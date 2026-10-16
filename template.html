@@ -28,6 +28,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body)
 header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:8px 24px}
 h1{font-family:var(--font-display);font-weight:800;font-size:clamp(22px,3vw,30px);letter-spacing:-.02em;margin:0;text-wrap:balance}
 h1 span{color:var(--accent)}
+.cmp-link{display:inline-block;margin:2px 0 4px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none}
+.cmp-link:hover{text-decoration:underline}
 .meta{color:var(--muted);font-size:13px}
 .meta b{color:var(--ink);font-weight:600}
 
@@ -100,6 +102,7 @@ footer p{margin:0}
   <header>
     <div>
       <h1>Radar de Ações <span>B3</span></h1>
+      <a class="cmp-link" href="comparar.html">Comparar ações →</a>
       <div class="meta">Atualizado em <b id="quando">–</b> · <b id="total">0</b> ações · indicadores dos últimos 12 meses</div>
     </div>
     <div class="legend">
@@ -294,7 +297,7 @@ function detail(o){
     <div><span class="k">Dívida líquida</span><span class="v">${big(o.dl)}</span></div>
     <div><span class="k">EBITDA 12m</span><span class="v">${big(o.ebitda)}</span></div>
     ${notes.length?`<p class="dnote">${notes.join(" ")}</p>`:""}
-    <p class="dnote"><a href="acao.html?t=${o.t}">Abrir a página de ${o.t}: cotação, proventos e resultados →</a></p>
+    <p class="dnote"><a href="acao.html?t=${o.t}">Abrir a página de ${o.t}: cotação, proventos e resultados →</a> · <a href="comparar.html?t=${o.t}">Comparar com outras →</a></p>
   </div>`;
 }
 
