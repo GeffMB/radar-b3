@@ -1,0 +1,53 @@
+name: Coleta diária
+
+on:
+  schedule:
+    # 21:40 UTC = 18:40 em Brasília, de segunda a sexta (depois do fechamento da B3)
+    - cron: "40 21 * * 1-5"
+  workflow_dispatch: {}   # botão "Run workflow" para rodar na hora
+
+permissions:
+  contents: write
+
+concurrency:
+  group: coleta
+  cancel-in-progress: false
+
+jobs:
+  coletar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Coletar dados
+        run: python coletar.py
+
+      - name: Salvar resultado no repositório
+        if: always()
+        run: |
+          git config user.name  "radar-b3-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/ saida/historico.csv
+          if git diff --cached --quiet; then
+            echo "Nada novo para salvar."
+          else
+            git commit -m "Coleta $(TZ=America/Sao_Paulo date +'%d/%m/%Y %H:%M')"
+            git push
+          fi
+
+      - name: Guardar o log da execução
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: execucao-log
+          path: saida/execucao.log
+          retention-days: 14

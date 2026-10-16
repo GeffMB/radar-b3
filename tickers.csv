@@ -1,0 +1,71 @@
+ticker;nome;setor
+PETR4;Petrobras PN;Petróleo e Gás
+PRIO3;PRIO ON;Petróleo e Gás
+RECV3;PetroReconcavo ON;Petróleo e Gás
+VBBR3;Vibra ON;Petróleo e Gás
+UGPA3;Ultrapar ON;Petróleo e Gás
+CSAN3;Cosan ON;Petróleo e Gás
+BRAV3;Brava ON;Petróleo e Gás
+VALE3;Vale ON;Mineração e Siderurgia
+GGBR4;Gerdau PN;Mineração e Siderurgia
+GOAU4;Metalúrgica Gerdau PN;Mineração e Siderurgia
+CSNA3;CSN ON;Mineração e Siderurgia
+USIM5;Usiminas PNA;Mineração e Siderurgia
+ITUB4;Itaú Unibanco PN;Bancos
+BBDC4;Bradesco PN;Bancos
+BBAS3;Banco do Brasil ON;Bancos
+SANB11;Santander Brasil Unit;Bancos
+BPAC11;BTG Pactual Unit;Bancos
+ABCB4;ABC Brasil PN;Bancos
+BBSE3;BB Seguridade ON;Seguros e Serviços Financeiros
+CXSE3;Caixa Seguridade ON;Seguros e Serviços Financeiros
+PSSA3;Porto Seguro ON;Seguros e Serviços Financeiros
+B3SA3;B3 ON;Seguros e Serviços Financeiros
+AXIA3;Axia Energia (ex-Eletrobras) ON;Energia Elétrica
+EGIE3;Engie Brasil ON;Energia Elétrica
+TAEE11;Taesa Unit;Energia Elétrica
+CPLE3;Copel ON;Energia Elétrica
+CMIG4;Cemig PN;Energia Elétrica
+EQTL3;Equatorial ON;Energia Elétrica
+ISAE4;ISA Energia PN;Energia Elétrica
+ALUP11;Alupar Unit;Energia Elétrica
+AURE3;Auren ON;Energia Elétrica
+ENGI11;Energisa Unit;Energia Elétrica
+SBSP3;Sabesp ON;Saneamento
+SAPR11;Sanepar Unit;Saneamento
+CSMG3;Copasa ON;Saneamento
+MGLU3;Magazine Luiza ON;Varejo
+LREN3;Lojas Renner ON;Varejo
+ASAI3;Assaí ON;Varejo
+VIVA3;Vivara ON;Varejo
+RADL3;Raia Drogasil ON;Varejo
+AUAU3;Petz Cobasi ON;Varejo
+ABEV3;Ambev ON;Alimentos e Bebidas
+MBRF3;MBRF (Marfrig + BRF) ON;Alimentos e Bebidas
+BEEF3;Minerva ON;Alimentos e Bebidas
+SMTO3;São Martinho ON;Alimentos e Bebidas
+WEGE3;WEG ON;Indústria
+EMBJ3;Embraer ON;Indústria
+POMO4;Marcopolo PN;Indústria
+TUPY3;Tupy ON;Indústria
+RANI3;Irani ON;Indústria
+RAIL3;Rumo ON;Transporte e Logística
+MOTV3;Motiva (ex-CCR) ON;Transporte e Logística
+RENT3;Localiza ON;Transporte e Logística
+RDOR3;Rede D'Or ON;Saúde
+HAPV3;Hapvida ON;Saúde
+FLRY3;Fleury ON;Saúde
+VIVT3;Telefônica Vivo ON;Telecom
+TIMS3;TIM ON;Telecom
+CYRE3;Cyrela ON;Construção
+EZTC3;EZTEC ON;Construção
+DIRR3;Direcional ON;Construção
+MRVE3;MRV ON;Construção
+CURY3;Cury ON;Construção
+SUZB3;Suzano ON;Papel e Celulose
+KLBN11;Klabin Unit;Papel e Celulose
+TOTS3;TOTVS ON;Tecnologia
+COGN3;Cogna ON;Educação
+YDUQ3;Yduqs ON;Educação
+MULT3;Multiplan ON;Shoppings
+ALOS3;Allos ON;Shoppings
