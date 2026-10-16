@@ -73,7 +73,9 @@ td:first-child{text-align:left;font-family:var(--font-body)}
 tbody tr{cursor:pointer}
 tbody tr:hover td{background:var(--soft)}
 tbody tr.open td{background:var(--accent-soft)}
-.tk{font-weight:700;font-size:14px;letter-spacing:.01em}
+.tk{font-weight:700;font-size:14px;letter-spacing:.01em;color:var(--ink);text-decoration:none}
+a.tk:hover{color:var(--accent);text-decoration:underline}
+.dnote a{color:var(--accent);font-weight:600}
 .nm{display:block;color:var(--muted);font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis}
 .setor-tag{font-size:11px;color:var(--muted)}
 .pos{color:var(--good)} .neg{color:var(--bad)} .na{color:var(--muted)}
@@ -150,7 +152,7 @@ footer p{margin:0}
   <footer>
     <p id="falhas" hidden></p>
     <p><b>Fonte:</b> <span id="fonte">–</span> DY é o dividend yield dos últimos 12 meses. Dívida líquida/EBITDA = (dívida total − caixa) ÷ EBITDA; não se aplica a bancos, cuja dívida é a própria matéria-prima do negócio.</p>
-    <p>Alguns números do Yahoo podem divergir de Status Invest ou Investidor10 por diferenças de método (ex.: dívida com ou sem arrendamentos). Toque numa linha para ver os componentes do cálculo. Material para estudo, não é recomendação de investimento.</p>
+    <p>Alguns números do Yahoo podem divergir de Status Invest ou Investidor10 por diferenças de método (ex.: dívida com ou sem arrendamentos). Toque numa linha para ver os componentes do cálculo, ou no ticker para abrir a página da ação. Material para estudo, não é recomendação de investimento.</p>
   </footer>
 </div>
 
@@ -292,6 +294,7 @@ function detail(o){
     <div><span class="k">Dívida líquida</span><span class="v">${big(o.dl)}</span></div>
     <div><span class="k">EBITDA 12m</span><span class="v">${big(o.ebitda)}</span></div>
     ${notes.length?`<p class="dnote">${notes.join(" ")}</p>`:""}
+    <p class="dnote"><a href="acao.html?t=${o.t}">Abrir a página de ${o.t}: cotação, proventos e resultados →</a></p>
   </div>`;
 }
 
@@ -306,9 +309,9 @@ function render(){
   const tb=$("tbody"); tb.innerHTML="";
   rows.forEach(o=>{
     const tr=document.createElement("tr"); if(state.open===o.t) tr.className="open";
-    tr.innerHTML = `<td><span class="tk">${o.t}</span> <span class="setor-tag">· ${o.setor}</span><span class="nm">${o.n}</span></td>` +
+    tr.innerHTML = `<td><a class="tk" href="acao.html?t=${o.t}">${o.t}</a> <span class="setor-tag">· ${o.setor}</span><span class="nm">${o.n}</span></td>` +
       COLS.slice(1).map(c=>`<td>${cell(c.k,o)}</td>`).join("");
-    tr.onclick=()=>{ state.open = state.open===o.t? null : o.t; render(); };
+    tr.onclick=(e)=>{ if(e.target.closest('a')) return; state.open = state.open===o.t? null : o.t; render(); };
     tb.append(tr);
     if (state.open===o.t){ const d=document.createElement("tr"); d.className="detail"; d.innerHTML=`<td colspan="${COLS.length}">${detail(o)}</td>`; tb.append(d); }
   });

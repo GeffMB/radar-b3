@@ -26,6 +26,8 @@ Depois disso, abra `docs\index.html` quando quiser ver o radar. Para atualizar n
 | `template.html` | Modelo da página. O coletor coloca os dados no lugar de `/*__DADOS__*/null`. |
 | `docs/index.html` | A página pronta, com os dados do dia. |
 | `docs/dados.json` | Os mesmos dados em JSON. |
+| `docs/acao.html` | Página de cada ação (`acao.html?t=PETR4`): cotação de 5 anos, proventos por ano com DY, receita e lucro, indicadores comparados com a mediana do setor. |
+| `docs/acoes/*.json` | Histórico de cada ação usado pela página acima. |
 | `saida/historico.csv` | Uma linha por ação por dia. Base para gráficos de evolução no futuro. |
 | `saida/execucao.log` | Registro de cada execução e das ações que falharam. |
 
@@ -34,6 +36,7 @@ Depois disso, abra `docs\index.html` quando quiser ver o radar. Para atualizar n
 ```
 .venv\Scripts\python.exe coletar.py --tickers PETR4,VALE3   # teste rápido
 .venv\Scripts\python.exe coletar.py --abrir                 # coleta e abre a página
+.venv\Scripts\python.exe coletar.py --sem-historico         # só o radar, mais rápido
 .venv\Scripts\python.exe -m pip install -U yfinance         # se o Yahoo mudar algo e a coleta parar
 ```
 

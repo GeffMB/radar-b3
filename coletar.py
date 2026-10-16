@@ -6,6 +6,7 @@ via biblioteca yfinance), calcula os indicadores e gera:
 
   docs/index.html      página do radar com os dados embutidos (abra no navegador)
   docs/dados.json      os mesmos dados em JSON
+  docs/acoes/XXXX.json cotação de 5 anos, proventos e resultados de cada ação (usado por docs/acao.html)
   saida/historico.csv  uma linha por ação por dia, para análises e gráficos futuros
   saida/execucao.log   registro de cada execução e das falhas
 
@@ -169,6 +170,144 @@ def coletar(tickers: list[dict], buscar=buscar_info, pausa=PAUSA_ENTRE_ACOES):
     return acoes, falhas
 
 
+# ---------------------------------------------------------------- detalhe por ação
+
+ANOS_PRECO = 5          # cotação diária guardada na página da ação
+ANOS_PROVENTOS = 10     # proventos e DY anual
+
+
+def anos_atras(d, n):
+    """Mesma data n anos antes (29/02 vira 28/02)."""
+    try:
+        return d.replace(year=d.year - n)
+    except ValueError:
+        return d.replace(year=d.year - n, day=28)
+
+
+def arred2(x):
+    return None if x is None else round(x, 2)
+
+
+def buscar_detalhe(ticker: str) -> dict:
+    """Busca no Yahoo o histórico de preços, os proventos e o resultado anual."""
+    import yfinance as yf
+    tk = yf.Ticker(f"{ticker}.SA")
+    hist = tk.history(period=f"{ANOS_PROVENTOS}y", interval="1d", auto_adjust=False, actions=False)
+    precos = [(idx.date(), num(c)) for idx, c in hist["Close"].items()] if len(hist) else []
+    divs = tk.dividends
+    proventos = [(idx.date(), num(v)) for idx, v in divs.items()] if divs is not None and len(divs) else []
+    resultados = {}
+    try:
+        dre = tk.income_stmt              # colunas = fim de cada exercício
+        if dre is not None and not dre.empty:
+            for col in dre.columns:
+                ano = col.year
+                def linha(*nomes):
+                    for n in nomes:
+                        if n in dre.index:
+                            return num(dre.at[n, col])
+                    return None
+                resultados[ano] = {
+                    "receita": linha("Total Revenue", "Operating Revenue"),
+                    "lucro": linha("Net Income Common Stockholders", "Net Income"),
+                }
+    except Exception as e:                # resultado é opcional; não derruba a ação
+        log.info("   %s sem DRE anual: %s", ticker, e)
+    return {"precos": precos, "proventos": proventos, "resultados": resultados}
+
+
+def montar_detalhe(acao: dict, bruto: dict, hoje) -> dict | None:
+    precos = [(d, c) for d, c in bruto.get("precos", []) if c is not None]
+    if not precos:
+        return None
+    precos.sort()
+    # o último preço do histórico pode ser de ontem; o preço do dia vem do radar
+    if precos[-1][0] < hoje:
+        precos.append((hoje, acao["preco"]))
+    elif precos[-1][0] == hoje:
+        precos[-1] = (hoje, acao["preco"])
+
+    corte = anos_atras(hoje, ANOS_PRECO)
+    serie = [(d, c) for d, c in precos if d >= corte]
+
+    # fechamento do último pregão de cada ano, para o DY anual
+    fech_ano = {}
+    for d, c in precos:
+        fech_ano[d.year] = c
+
+    provs = sorted((d, v) for d, v in bruto.get("proventos", []) if v and v > 0)
+    primeiro_ano = hoje.year - ANOS_PROVENTOS + 1
+    por_ano = {}
+    for d, v in provs:
+        if d.year >= primeiro_ano:
+            por_ano[d.year] = por_ano.get(d.year, 0.0) + v
+    anos = list(range(max(primeiro_ano, min(por_ano) if por_ano else hoje.year), hoje.year + 1))
+    anual = []
+    for a in anos:
+        total = por_ano.get(a, 0.0)
+        preco_ref = acao["preco"] if a == hoje.year else fech_ano.get(a)
+        anual.append({
+            "ano": a,
+            "total": round(total, 4),
+            "dy": round(total / preco_ref, 4) if preco_ref else None,
+            "parcial": a == hoje.year,
+        })
+
+    res = bruto.get("resultados") or {}
+    resultados = [
+        {"ano": a, "receita": res[a].get("receita"), "lucro": res[a].get("lucro")}
+        for a in sorted(res)
+        if res[a].get("receita") is not None or res[a].get("lucro") is not None
+    ]
+
+    ult12 = [(d, v) for d, v in provs if d > anos_atras(hoje, 1)]
+    return {
+        "t": acao["t"],
+        "precos": {
+            "d": [d.isoformat() for d, _ in serie],
+            "c": [round(c, 2) for _, c in serie],
+        },
+        "max52": arred2(max((c for d, c in precos if d > anos_atras(hoje, 1)), default=None)),
+        "min52": arred2(min((c for d, c in precos if d > anos_atras(hoje, 1)), default=None)),
+        "proventos_anual": anual,
+        "proventos": [[d.isoformat(), round(v, 6)] for d, v in provs[-40:]][::-1],
+        "proventos_12m": round(sum(v for _, v in ult12), 4),
+        "resultados": resultados,
+    }
+
+
+def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA_ENTRE_ACOES):
+    """Gera docs/acoes/<TICKER>.json. Se uma ação falhar, mantém o arquivo anterior."""
+    pasta = PASTA_DOCS / "acoes"
+    pasta.mkdir(parents=True, exist_ok=True)
+    falhas = []
+    for i, acao in enumerate(acoes, 1):
+        t = acao["t"]
+        erro = None
+        for tentativa in range(1, TENTATIVAS + 1):
+            try:
+                det = montar_detalhe(acao, buscar(t), hoje)
+                if det is None:
+                    erro = "sem histórico de preços"
+                    break
+                (pasta / f"{t}.json").write_text(
+                    json.dumps(det, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+                erro = None
+                break
+            except Exception as e:
+                erro = f"{type(e).__name__}: {e}"
+                if tentativa < TENTATIVAS:
+                    time.sleep(2 * tentativa)
+        if erro:
+            falhas.append(t)
+            log.warning("[%d/%d] histórico de %s falhou: %s", i, len(acoes), t, erro)
+        else:
+            log.info("[%d/%d] histórico de %s ok", i, len(acoes), t)
+        if pausa:
+            time.sleep(pausa)
+    return falhas
+
+
 # ---------------------------------------------------------------- saídas
 
 def arredondar(acao: dict) -> dict:
@@ -247,6 +386,8 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Coleta os dados do Radar de Ações B3")
     p.add_argument("--tickers", help="lista separada por vírgula, ex.: PETR4,VALE3")
     p.add_argument("--abrir", action="store_true", help="abre a página ao terminar")
+    p.add_argument("--sem-historico", action="store_true",
+                   help="pula cotação histórica e proventos (mais rápido)")
     args = p.parse_args(argv)
 
     configurar_log()
@@ -264,10 +405,17 @@ def main(argv=None) -> int:
         log.error("Nenhuma ação coletada. A página anterior foi mantida. Verifique a internet ou atualize o yfinance: pip install -U yfinance")
         return 1
 
-    destino = salvar(acoes, falhas, datetime.now(FUSO_BR))
-    log.info("Pronto: %d ações, %d falhas, %.0fs. Página: %s", len(acoes), len(falhas), time.time() - inicio, destino)
+    agora = datetime.now(FUSO_BR)
+    destino = salvar(acoes, falhas, agora)
+    log.info("Radar: %d ações, %d falhas, %.0fs.", len(acoes), len(falhas), time.time() - inicio)
     if falhas:
         log.info("Falharam: %s", ", ".join(f["t"] for f in falhas))
+
+    if not args.sem_historico:
+        log.info("Coletando histórico de cotação, proventos e resultados...")
+        falhas_det = coletar_detalhes(acoes, agora.date())
+        log.info("Histórico: %d ok, %d falhas.", len(acoes) - len(falhas_det), len(falhas_det))
+    log.info("Pronto em %.0fs. Página: %s", time.time() - inicio, destino)
     if args.abrir:
         webbrowser.open(destino.as_uri())
     # mais da metade falhando indica problema na fonte, não em tickers isolados
