@@ -2,10 +2,18 @@
 
 Coletor diário em Python que gera a página do radar (P/L, P/VP, DY, ROE, margem líquida e dívida líquida/EBITDA) com dados do Yahoo Finance.
 
-## Primeira vez
+## Como funciona no GitHub
+
+- **Coleta automática**: o GitHub Actions roda `coletar.py` de segunda a sexta às 18:40 (Brasília) e salva os dados novos no repositório.
+- **Site**: o GitHub Pages publica a pasta `docs/`. O endereço fica em Settings → Pages.
+- **Rodar na hora**: aba Actions → "Coleta diária" → Run workflow.
+- **Se a coleta falhar**: o GitHub manda um e-mail. O log fica na execução, em Artifacts → execucao-log. A página anterior continua no ar.
+- **Incluir ou tirar ações**: edite `tickers.csv` direto no site do GitHub (ícone de lápis). A próxima coleta já usa a lista nova.
+
+## Rodar num PC com Windows (opcional)
 
 1. Dê dois cliques em `instalar.bat`. Ele cria o ambiente Python, instala o `yfinance`, faz a primeira coleta e abre a página.
-2. Dê dois cliques em `agendar.bat` para a coleta rodar sozinha de segunda a sexta às 18:40.
+2. Só se não usar o GitHub Actions: dê dois cliques em `agendar.bat` para a coleta rodar sozinha de segunda a sexta às 18:40.
 
 Depois disso, abra `docs\index.html` quando quiser ver o radar. Para atualizar na hora, dê dois cliques em `atualizar.bat`.
 
