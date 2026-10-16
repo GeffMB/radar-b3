@@ -69,3 +69,112 @@ COGN3;Cogna ON;Educação
 YDUQ3;Yduqs ON;Educação
 MULT3;Multiplan ON;Shoppings
 ALOS3;Allos ON;Shoppings
+PETR3;Petrobras ON;Petróleo e Gás
+RAIZ4;Raízen PN;Petróleo e Gás
+OPCT3;OceanPact ON;Petróleo e Gás
+CMIN3;CSN Mineração ON;Mineração e Siderurgia
+CBAV3;CBA (Alumínio) ON;Mineração e Siderurgia
+FESA4;Ferbasa PN;Mineração e Siderurgia
+BRAP4;Bradespar PN;Mineração e Siderurgia
+ITSA4;Itaúsa PN;Bancos
+ITUB3;Itaú Unibanco ON;Bancos
+BBDC3;Bradesco ON;Bancos
+BRSR6;Banrisul PNB;Bancos
+BPAN4;Banco Pan PN;Bancos
+BMGB4;Banco BMG PN;Bancos
+IRBR3;IRB Re ON;Seguros e Serviços Financeiros
+WIZC3;Wiz Co ON;Seguros e Serviços Financeiros
+BRBI11;BR Partners Unit;Seguros e Serviços Financeiros
+AXIA6;Axia Energia (ex-Eletrobras) PNB;Energia Elétrica
+CMIG3;Cemig ON;Energia Elétrica
+ENEV3;Eneva ON;Energia Elétrica
+CPFE3;CPFL Energia ON;Energia Elétrica
+NEOE3;Neoenergia ON;Energia Elétrica
+SRNA3;Serena Energia ON;Energia Elétrica
+LIGT3;Light ON;Energia Elétrica
+EMAE4;EMAE PN;Energia Elétrica
+ORVR3;Orizon ON;Saneamento
+AMER3;Americanas ON;Varejo
+SBFG3;Grupo SBF (Centauro) ON;Varejo
+CEAB3;C&A ON;Varejo
+GUAR3;Guararapes (Riachuelo) ON;Varejo
+ALPA4;Alpargatas PN;Varejo
+AZZA3;Azzas 2154 (Arezzo+Soma) ON;Varejo
+GMAT3;Grupo Mateus ON;Varejo
+PCAR3;GPA (Pão de Açúcar) ON;Varejo
+PGMN3;Pague Menos ON;Varejo
+PNVL3;Panvel ON;Varejo
+LJQQ3;Lojas Quero-Quero ON;Varejo
+BHIA3;Casas Bahia ON;Varejo
+NATU3;Natura ON;Varejo
+TFCO4;Track & Field PN;Varejo
+CAML3;Camil ON;Alimentos e Bebidas
+MDIA3;M. Dias Branco ON;Alimentos e Bebidas
+SLCE3;SLC Agrícola ON;Agronegócio
+AGRO3;BrasilAgro ON;Agronegócio
+TTEN3;3tentos ON;Agronegócio
+SOJA3;Boa Safra ON;Agronegócio
+JALL3;Jalles Machado ON;Agronegócio
+RAPT4;Randon PN;Indústria
+FRAS3;Fras-le ON;Indústria
+KEPL3;Kepler Weber ON;Indústria
+SHUL4;Schulz PN;Indústria
+MYPK3;Iochpe-Maxion ON;Indústria
+LEVE3;Mahle Metal Leve ON;Indústria
+ROMI3;Romi ON;Indústria
+TASA4;Taurus PN;Indústria
+DXCO3;Dexco ON;Indústria
+PTBL3;Portobello ON;Indústria
+VULC3;Vulcabras ON;Indústria
+GRND3;Grendene ON;Indústria
+AERI3;Aeris Energy ON;Indústria
+PRNR3;Priner ON;Indústria
+BRKM5;Braskem PNA;Química e Petroquímica
+UNIP6;Unipar PNB;Química e Petroquímica
+AZUL4;Azul PN;Transporte e Logística
+ECOR3;Ecorodovias ON;Transporte e Logística
+HBSA3;Hidrovias do Brasil ON;Transporte e Logística
+SIMH3;Simpar ON;Transporte e Logística
+JSLG3;JSL ON;Transporte e Logística
+VAMO3;Vamos ON;Transporte e Logística
+MOVI3;Movida ON;Transporte e Logística
+TGMA3;Tegma ON;Transporte e Logística
+QUAL3;Qualicorp ON;Saúde
+ODPV3;Odontoprev ON;Saúde
+MATD3;Mater Dei ON;Saúde
+ONCO3;Oncoclínicas ON;Saúde
+DASA3;Dasa ON;Saúde
+HYPE3;Hypera ON;Saúde
+BLAU3;Blau Farmacêutica ON;Saúde
+VVEO3;Viveo ON;Saúde
+KRSA3;Kora Saúde ON;Saúde
+PFRM3;Profarma ON;Saúde
+DESK3;Desktop ON;Telecom
+BRST3;Brisanet ON;Telecom
+EVEN3;Even ON;Construção
+TEND3;Tenda ON;Construção
+JHSF3;JHSF ON;Construção
+LAVV3;Lavvi ON;Construção
+MDNE3;Moura Dubeux ON;Construção
+TRIS3;Trisul ON;Construção
+PLPL3;Plano & Plano ON;Construção
+MTRE3;Mitre ON;Construção
+HBOR3;Helbor ON;Construção
+LWSA3;Locaweb ON;Tecnologia
+CASH3;Méliuz ON;Tecnologia
+INTB3;Intelbras ON;Tecnologia
+POSI3;Positivo ON;Tecnologia
+BMOB3;Bemobi ON;Tecnologia
+NGRD3;Neogrid ON;Tecnologia
+VLID3;Valid ON;Tecnologia
+MLAS3;Multi (Multilaser) ON;Tecnologia
+CSUD3;CSU Digital ON;Tecnologia
+ANIM3;Ânima ON;Educação
+SEER3;Ser Educacional ON;Educação
+CSED3;Cruzeiro do Sul Educacional ON;Educação
+IGTI11;Iguatemi Unit;Shoppings
+LOGG3;LOG Commercial Properties ON;Shoppings
+SMFT3;Smart Fit ON;Serviços e Lazer
+CVCB3;CVC ON;Serviços e Lazer
+ZAMP3;Zamp (Burger King) ON;Serviços e Lazer
+MEAL3;IMC (KFC, Frango Assado) ON;Serviços e Lazer
