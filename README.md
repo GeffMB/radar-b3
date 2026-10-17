@@ -52,7 +52,7 @@ O coletor marca com **conferir** as ações cujos números fogem do normal: DY a
 
 ## Assistente
 
-O botão **Assistente** (canto inferior direito de todas as páginas) monta uma pergunta com os dados da página e abre uma conversa nova no claude.ai, na conta de quem clicou. Não há chave de API no site, então não há custo extra. O código fica em `docs/assistente.js`.
+O botão **Assistente** abre um chat dentro do site. As perguntas, com os dados da página, vão para um servidor intermediário (Cloudflare Worker, pasta `worker/`) que consulta o Google Gemini com busca na web. A chave da IA fica só no painel da Cloudflare. Instruções de ativação em `worker/LEIA-ME.md`.
 
 ## Segurança e privacidade
 
