@@ -267,5 +267,5 @@ function desenharDY(){
   charts.dy = new Chart($("c-dy"),{type:"bar",data:{labels:L.map(a=>a===atual? a+"*" : String(a)),datasets:ds},options:o});
 }
 
-matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>{ if(sel.length>=2) atualizar(); });
+document.addEventListener("radar:tema", ()=>{ if(sel.length>=2) atualizar(); });
 main();

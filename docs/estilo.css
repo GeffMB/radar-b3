@@ -14,14 +14,6 @@
   --font-num:"Manrope","Segoe UI",system-ui,sans-serif;
   --r:14px;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#111917; --surface:#18221F; --surface-2:#1C2724; --ink:#E6EEEC; --muted:#A3B3AF; --line:#28352F; --soft:#1F2B28;
-  --accent:#86C7C1; --accent-ink:#0E1615; --accent-soft:#1E3533; --accent-2:#E8B884;
-  --good:#6FD1A6; --good-bg:#13281F; --bad:#F08A7E; --bad-bg:#33191A; --warn:#E9C072; --warn-bg:#2F2714;
-  --gold:#E9C072; --silver:#B4C2BE; --bronze:#D9A07E;
-  --s1:#86C7C1; --s2:#E8B884; --s3:#A3B2E8; --s4:#DDA3C2;
-  --shadow:0 1px 2px rgba(0,0,0,.22); --shadow-hover:0 6px 22px rgba(0,0,0,.32);
-  color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111917; --surface:#18221F; --surface-2:#1C2724; --ink:#E6EEEC; --muted:#A3B3AF; --line:#28352F; --soft:#1F2B28;
   --accent:#86C7C1; --accent-ink:#0E1615; --accent-soft:#1E3533; --accent-2:#E8B884;
@@ -57,7 +49,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .jump input{font:inherit;font-size:14px;width:240px;max-width:42vw;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:10px;padding:8px 12px;text-transform:uppercase}
 .jump input::placeholder{text-transform:none;color:var(--muted)}
 .jump input:focus{background:var(--surface);border-color:var(--line)}
-@media (max-width:560px){.jump{margin-left:0;width:100%}.jump input{flex:1;max-width:none;width:auto}}
+.tema{flex:none;width:38px;height:38px;border-radius:10px;border:0;background:var(--soft);color:var(--muted);cursor:pointer;display:grid;place-items:center;transition:color .15s,background .15s}
+.tema:hover{color:var(--accent);background:var(--accent-soft)}
+.tema svg{width:19px;height:19px}
+.tema .sol{display:none}
+:root[data-theme="dark"] .tema .sol{display:block}
+:root[data-theme="dark"] .tema .lua{display:none}
+@media (max-width:560px){.jump{margin-left:0;width:100%;order:5}.jump input{flex:1;max-width:none;width:auto}.tema{margin-left:auto}}
 
 /* ---------- estrutura ---------- */
 .wrap{max-width:1240px;margin:0 auto;padding-block:22px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:22px}
@@ -87,7 +85,6 @@ h2{font-size:19px;font-weight:700}
 .logo.mono{border:0;font-family:var(--font-display);font-weight:800;font-size:calc(var(--ls,38px) * .34);letter-spacing:-.02em;
   color:hsl(var(--h) 55% 32%);background:hsl(var(--h) 70% 92%)}
 :root[data-theme="dark"] .logo.mono{color:hsl(var(--h) 80% 82%);background:hsl(var(--h) 35% 22%)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .logo.mono{color:hsl(var(--h) 80% 82%);background:hsl(var(--h) 35% 22%)}}
 
 /* ---------- selos ---------- */
 .tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}

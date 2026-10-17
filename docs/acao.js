@@ -188,7 +188,7 @@ function render(a, det, pares, dados){
   try { precoModo = localStorage.getItem("radar-modo") || precoModo; } catch(e){}
   $("modo").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoModo=b.dataset.m; try{localStorage.setItem("radar-modo",precoModo);}catch(e){} desenharPreco(det); };
   $("ranges").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoRange=b.dataset.r; try{localStorage.setItem("radar-range",precoRange);}catch(e){} desenharPreco(det); };
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>desenharTudo(det));
+  document.addEventListener("radar:tema", ()=>desenharTudo(det));
 }
 
 function configurarAssistente(a, det, pares, quando){
