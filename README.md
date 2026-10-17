@@ -48,6 +48,16 @@ O coletor marca com **conferir** as ações cujos números fogem do normal: DY a
 
 O botão **Assistente** (canto inferior direito de todas as páginas) monta uma pergunta com os dados da página e abre uma conversa nova no claude.ai, na conta de quem clicou. Não há chave de API no site, então não há custo extra. O código fica em `docs/assistente.js`.
 
+## Segurança e privacidade
+
+- **Nada de terceiros no navegador do visitante:** fontes e biblioteca de gráficos ficam em `docs/vendor/`. Só o GitHub (hospedagem) vê o IP de quem acessa, e ele não repassa esse dado.
+- **Content-Security-Policy** em todas as páginas: o navegador só executa scripts do próprio site. Os dados do radar vão num bloco JSON não executável.
+- **Sem referer:** nenhum site de destino (inclusive o claude.ai, pelo Assistente) recebe o endereço de onde o visitante veio.
+- **Anti-iframe:** o site não aparece se for embutido em página de terceiros (proteção contra clickjacking).
+- **Textos escapados:** nomes e setores do `tickers.csv` e mensagens de alerta não viram código HTML.
+- **Coleta:** sem senhas ou chaves no repositório; actions fixadas por SHA e `yfinance` em versão fixa (`requirements.txt`), para que uma atualização maliciosa de terceiros não rode aqui sem revisão. Para atualizar o yfinance, troque a versão e rode a coleta manualmente para testar.
+- **Não adicione** Google Analytics, pixels, widgets ou scripts de CDN: cada um volta a enviar o IP dos visitantes para terceiros.
+
 ## Como os indicadores são calculados
 
 - **P/L**: preço ÷ lucro por ação dos últimos 12 meses. Negativo quando há prejuízo.

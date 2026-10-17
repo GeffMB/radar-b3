@@ -40,9 +40,16 @@ SETORES_SEM_ALAVANCAGEM = {"Bancos", "Seguros e Serviços Financeiros"}
 # Mas a B3 é empresa operacional comum e o indicador vale para ela
 EXCECOES_ALAVANCAGEM = {"B3SA3"}
 
+# Content-Security-Policy: o navegador só executa scripts e carrega fontes/estilos do próprio site.
+# Nada de terceiros (Google Fonts, CDNs, analytics), então nenhum outro serviço recebe o IP do visitante.
+CSP = (
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests"
+)
 CABECALHO_HTML = (
     '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">'
-    '<meta name="viewport" content="width=device-width,initial-scale=1"></head>\n'
+    '<meta name="viewport" content="width=device-width,initial-scale=1">'
+    f'<meta http-equiv="Content-Security-Policy" content="{CSP}">'
+    '<meta name="referrer" content="no-referrer"></head>\n'
 )
 
 PAUSA_ENTRE_ACOES = 0.4   # segundos; evita bloqueio do Yahoo por excesso de pedidos
@@ -620,9 +627,9 @@ def salvar(acoes: list[dict], falhas: list[dict], agora: datetime) -> Path:
     (PASTA_DOCS / "dados.json").write_text(dados, encoding="utf-8")
 
     template = ARQ_TEMPLATE.read_text(encoding="utf-8")
-    marcador = "/*__DADOS__*/null"
+    marcador = "__DADOS_JSON__"
     if marcador not in template:
-        raise RuntimeError("template.html sem o marcador /*__DADOS__*/null")
+        raise RuntimeError("template.html sem o marcador __DADOS_JSON__")
     # </ dentro do JSON fecharia a tag <script>; escapar evita isso
     pagina = template.replace(marcador, dados.replace("</", "<\\/"))
     if not pagina.lstrip().lower().startswith("<!doctype"):

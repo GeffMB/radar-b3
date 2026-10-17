@@ -1,1 +1,2 @@
-yfinance>=0.2.54
+yfinance==1.7.0
+# Versão fixa: uma atualização só entra quando for revisada (proteção contra pacote comprometido).

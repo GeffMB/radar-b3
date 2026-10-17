@@ -8,6 +8,13 @@
  *                           sugestoes: () => ["pergunta 1", "pergunta 2"] })
  */
 (function () {
+  // Impede que o site seja exibido dentro de uma página de terceiros (clickjacking).
+  // O GitHub Pages não permite o cabeçalho X-Frame-Options, então a proteção é feita aqui.
+  // Navegadores bloqueiam o redirecionamento da página de cima, então o conteúdo é escondido.
+  if (window.top !== window.self) {
+    document.documentElement.style.display = "none";
+    try { window.top.location = window.self.location.href; } catch (e) { /* bloqueado: segue escondido */ }
+  }
   const LIMITE_CONTEXTO = 1500;   // caracteres; a URL inteira precisa ficar abaixo de ~4000
   const LIMITE_PERGUNTA = 400;
   let cfg = { contexto: () => "", sugestoes: () => [] };
@@ -64,7 +71,7 @@
       <textarea id="ast-q" maxlength="${LIMITE_PERGUNTA}" placeholder="Ex.: Quais foram as últimas notícias da empresa?"></textarea>
       <details><summary class="ast-nota" style="cursor:pointer">Ver os dados que serão enviados</summary><div class="ast-ctx" id="ast-ctx"></div></details>
       <button type="button" class="ast-go" id="ast-go" disabled>Perguntar</button>
-      <p class="ast-nota">A resposta abre em uma nova aba, no claude.ai, onde é preciso estar logado. Informação para estudo, não é recomendação de investimento.</p>`;
+      <p class="ast-nota">A resposta abre em uma nova aba, no claude.ai, onde é preciso estar logado, e fica no histórico dessa conta. Não escreva dados pessoais (CPF, saldo, carteira) na pergunta. Informação para estudo, não é recomendação de investimento.</p>`;
     document.body.append(btn, pan);
 
     const q = pan.querySelector("#ast-q"), go = pan.querySelector("#ast-go");
@@ -72,7 +79,7 @@
       pan.hidden = !on; btn.setAttribute("aria-expanded", String(on));
       if (on) {
         const sug = (cfg.sugestoes() || []).slice(0, 4);
-        pan.querySelector("#ast-sug").innerHTML = sug.map(s => `<button type="button">${s.replace(/</g, "&lt;")}</button>`).join("");
+        pan.querySelector("#ast-sug").innerHTML = sug.map(s => `<button type="button">${String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}</button>`).join("");
         pan.querySelectorAll("#ast-sug button").forEach((b, i) => b.onclick = () => { q.value = sug[i]; go.disabled = false; q.focus(); });
         pan.querySelector("#ast-ctx").textContent = (cfg.contexto() || "Sem dados específicos nesta página.").slice(0, LIMITE_CONTEXTO);
         q.focus();
@@ -85,7 +92,7 @@
     q.addEventListener("keydown", e => { if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && q.value.trim()) go.click(); });
     go.onclick = () => {
       const url = "https://claude.ai/new?q=" + encodeURIComponent(montarPergunta(q.value));
-      const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener"; document.body.append(a); a.click(); a.remove();
+      const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.rel = "noopener noreferrer"; a.referrerPolicy = "no-referrer"; document.body.append(a); a.click(); a.remove();
     };
   }
 
