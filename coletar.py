@@ -492,6 +492,64 @@ def retornos(precos, provs, hoje) -> dict:
     return out
 
 
+# ---------------------------------------------------------------- alertas de dados suspeitos
+# Cada alerta: {"m": mensagem, "k": indicador afetado}. São avisos para conferir, não erros certos.
+
+def _pct(x):
+    return f"{x * 100:.1f}%".replace(".", ",")
+
+
+def alertas_indicadores(a: dict) -> list:
+    out = []
+    dy, pl, pvp, roe, ml, dle, var = (a.get(k) for k in ("dy", "pl", "pvp", "roe", "ml", "dle", "var"))
+    if dy is not None and dy > 0.20:
+        out.append({"k": "dy", "m": f"DY 12m de {_pct(dy)}, muito acima do normal. Pode ser provento extraordinário (não se repete) ou erro na fonte."})
+    if pvp is not None and pvp > 15:
+        out.append({"k": "pvp", "m": f"P/VP de {pvp:.1f}: patrimônio líquido muito pequeno ou dado incoerente. O indicador perde utilidade.".replace(".", ",", 1)})
+    if pvp is not None and 0 < pvp < 0.15:
+        out.append({"k": "pvp", "m": f"P/VP de {pvp:.2f}, extremamente baixo. Confira o patrimônio no balanço: pode ser erro na fonte.".replace(".", ",", 1)})
+    if pl is not None and pl > 100:
+        out.append({"k": "pl", "m": f"P/L de {pl:.0f}: lucro muito pequeno em relação ao preço ou dado incoerente. O P/L pouco informa aqui."})
+    if roe is not None and abs(roe) > 1:
+        out.append({"k": "roe", "m": f"ROE de {_pct(roe)}, fora do usual. Pode refletir patrimônio muito pequeno ou dado incoerente."})
+    if ml is not None and abs(ml) > 1:
+        out.append({"k": "ml", "m": f"Margem líquida de {_pct(ml)}: lucro maior que a receita. Comum em holdings (lucro vem de participações) ou ganho não recorrente; senão, erro na fonte."})
+    if var is not None and abs(var) > 0.15:
+        out.append({"k": "preco", "m": f"Variação de {_pct(var)} no dia. Confira se houve fato relevante, grupamento ou desdobramento."})
+    return out
+
+
+def alertas_historico(acao: dict, bruto: dict, hoje) -> list:
+    out = []
+    precos = sorted((d, c) for d, c in bruto.get("precos", []) if c)
+    provs = sorted((d, v) for d, v in bruto.get("proventos", []) if v and v > 0)
+    if precos:
+        ult = precos[-1][0]
+        if (hoje - ult).days > 7:
+            out.append({"k": "preco", "m": f"Último pregão no histórico é de {ult:%d/%m/%Y}. A ação pode estar suspensa ou sem negociação."})
+        # Saltos de preço que não são explicados por proventos: desdobramento/grupamento sem ajuste na fonte
+        ano = anos_atras(hoje, 1)
+        div_por_dia = {}
+        for d, v in provs:
+            div_por_dia[d] = div_por_dia.get(d, 0) + v
+        for (d0, c0), (d1, c1) in zip(precos, precos[1:]):
+            if d1 < ano:
+                continue
+            r = (c1 + div_por_dia.get(d1, 0)) / c0 - 1
+            if abs(r) > 0.40:
+                out.append({"k": "preco", "m": f"Cotação variou {_pct(r)} em {d1:%d/%m/%Y}. Se não houve evento real, pode ser desdobramento ou grupamento sem ajuste na fonte, o que distorce os gráficos."})
+                break
+    # Provento único muito grande em relação ao preço da época
+    for d, v in reversed(provs):
+        if d < anos_atras(hoje, 1):
+            break
+        ref = next((c for dd, c in reversed(precos) if dd <= d), None)
+        if ref and v / ref > 0.12:
+            out.append({"k": "dy", "m": f"Provento de R$ {v:.2f} por ação em {d:%d/%m/%Y}, {_pct(v / ref)} do preço. Provavelmente extraordinário: o DY 12m não deve se repetir.".replace(".", ",", 1)})
+            break
+    return out
+
+
 def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA_ENTRE_ACOES):
     """Gera docs/acoes/<TICKER>.json. Se uma ação falhar, mantém o arquivo anterior."""
     pasta = PASTA_DOCS / "acoes"
@@ -511,7 +569,8 @@ def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA
                 det["multiplos"] = montar_multiplos(acao, bruto, hoje, fx)
                 (pasta / f"{t}.json").write_text(
                     json.dumps(det, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-                extras[t] = {"prov12": det["proventos_12m"], "ret": det.get("retorno") or {}}
+                extras[t] = {"prov12": det["proventos_12m"], "ret": det.get("retorno") or {},
+                             "alertas": alertas_historico(acao, bruto, hoje)}
                 erro = None
                 break
             except Exception as e:
@@ -646,6 +705,10 @@ def main(argv=None) -> int:
             r1 = x["ret"].get("1a")
             if r1:
                 a["var12"], a["rt12"] = r1["p"], r1["t"]
+        for a in acoes:
+            a["alertas"] = alertas_indicadores(a) + (extras.get(a["t"], {}).get("alertas") or [])
+        n_alerta = sum(1 for a in acoes if a["alertas"])
+        log.info("Alertas: %d ações com dados para conferir.", n_alerta)
         salvar(acoes, falhas, agora)
     log.info("Pronto em %.0fs. Página: %s", time.time() - inicio, destino)
     if args.abrir:

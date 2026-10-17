@@ -81,6 +81,10 @@ th{position:sticky;top:0;background:var(--surface);text-align:right;font-size:11
 th:first-child,td:first-child{text-align:left}
 td{padding:7px 10px;border-bottom:1px solid var(--soft);font-family:var(--font-num);font-size:13px;text-align:right}
 .empty{color:var(--muted);padding:24px 8px;text-align:center}
+.alertas{background:var(--warn-bg);border-radius:10px;padding:12px 14px;font-size:13px;display:grid;gap:4px}
+.alertas b{color:var(--warn)}
+.alertas ul{margin:2px 0;padding-left:18px;display:grid;gap:4px}
+.alertas .small{font-size:12px;color:var(--muted)}
 .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px 20px}
 .stats>div{display:grid;gap:2px;align-content:start}
 .stats .v{font-family:var(--font-num);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -111,6 +115,7 @@ footer p{margin:0}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="assistente.js"></script>
 <script>
 const $ = id => document.getElementById(id);
 const nf = d => new Intl.NumberFormat("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d});
@@ -181,6 +186,10 @@ async function main(){
 }
 
 function cardHTML(ind, a, pares){
+  const sus = (a.alertas||[]).some(x=>x.k===ind.k);
+  return cardBase(ind, a, pares).replace('<span class="label">', sus? '<span class="label">⚠ ' : '<span class="label">');
+}
+function cardBase(ind, a, pares){
   if(ind.k==="dle" && a.fin) return `<div class="card"><span class="label">${ind.l}</span><span class="v na">n/a</span><span class="cmp">Não se aplica a ${a.banco?"bancos":"seguradoras"}</span></div>`;
   const v = a[ind.k];
   const ok = x => x!=null && isFinite(x) && (!ind.valido || ind.valido(x));
@@ -221,11 +230,12 @@ function render(a, det, pares, dados){
       <span class="label" style="text-transform:none;letter-spacing:0;font-weight:400">Atualizado em ${quando}</span>
     </div>
   </div>
+  ${(a.alertas||[]).length? `<div class="alertas" role="note"><b>Dados para conferir</b><ul>${a.alertas.map(x=>`<li>${esc(x.m)}</li>`).join("")}</ul><span class="small">Os números vêm do Yahoo Finance. Antes de usar, compare com o RI da empresa ou com o balanço na CVM.</span></div>` : ""}
   <div class="cards">${IND.map(i=>cardHTML(i,a,pares)).join("")}</div>`;
 
   if (!det) {
     html += `<div class="msg">O histórico de cotação e proventos de ${a.t} ainda não foi coletado. Ele aparece depois da próxima coleta diária.</div>`;
-    $("conteudo").innerHTML = html; return;
+    $("conteudo").innerHTML = html; configurarAssistente(a, null, pares, quando); return;
   }
 
   // período da cotação
@@ -280,6 +290,7 @@ function render(a, det, pares, dados){
   </section>`;
 
   $("conteudo").innerHTML = html;
+  configurarAssistente(a, det, pares, quando);
 
   if (!window.Chart) { document.querySelectorAll(".chart").forEach(c=>c.innerHTML='<div class="empty">Os gráficos não carregaram. Verifique a conexão e recarregue a página.</div>'); return; }
   try { precoRange = localStorage.getItem("radar-range") || precoRange; } catch(e){}
@@ -294,6 +305,32 @@ function render(a, det, pares, dados){
   $("modo").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoModo=b.dataset.m; try{localStorage.setItem("radar-modo",precoModo);}catch(e){} desenharPreco(det); };
   $("ranges").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoRange=b.dataset.r; try{localStorage.setItem("radar-range",precoRange);}catch(e){} desenharPreco(det); };
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>desenharTudo(det));
+}
+
+function configurarAssistente(a, det, pares, quando){
+  if (!window.Assistente) return;
+  const sinal = x => x==null? "–" : (x>0?"+":"")+f1.format(x*100)+"%";
+  const ind = i => { const v=a[i.k]; if (i.k==="dle" && a.fin) return `${i.l} n/a`; return `${i.l} ${v==null?"–":i.fmt(v)}`; };
+  const med = i => { const v = median(pares.filter(p=>p.t!==a.t).map(p=>p[i.k]).filter(x=>x!=null && isFinite(x) && (!i.valido||i.valido(x)))); return `${i.l} ${v==null?"–":i.fmt(v)}`; };
+  const r = det?.retorno || {};
+  const linhas = [
+    `${a.t} (${a.n}), setor ${a.setor}. Cotação ${brl(a.preco)} em ${quando} (${sinal(a.var)} no dia). Valor de mercado ${big(a.mc)}.`,
+    `Indicadores: ${IND.map(ind).join(" | ")}.`,
+    pares.length>1? `Medianas do setor no radar (${pares.length-1} empresas): ${IND.map(med).join(" | ")}.` : "",
+    r["1a"]? `Retorno total 12m ${sinal(r["1a"].t)} (só cotação ${sinal(r["1a"].p)})${r["5a"]? `; 5 anos ${sinal(r["5a"].t)} (só cotação ${sinal(r["5a"].p)})` : ""}.` : "",
+    det? `Proventos 12m: ${brl(det.proventos_12m)} por ação. Faixa de 52 semanas: ${brl(det.min52)} a ${brl(det.max52)}.` : "",
+    (a.alertas||[]).length? `Alertas de dados: ${a.alertas.map(x=>x.m).join(" ")}` : "",
+  ].filter(Boolean);
+  const r12 = r["1a"]? sinal(r["1a"].t) : null;
+  Assistente.configurar({
+    contexto: () => linhas.join("\n"),
+    sugestoes: () => [
+      `Quais as notícias mais recentes sobre ${a.t} e como podem afetar a ação?`,
+      r12? `Por que ${a.t} teve retorno total de ${r12} em 12 meses?` : `O que explica o desempenho recente de ${a.t}?`,
+      `${a.t} está cara ou barata frente ao próprio histórico e ao setor? Quais os riscos?`,
+      `Os proventos de ${a.t} são sustentáveis? Explique a política de dividendos.`,
+    ],
+  });
 }
 
 function base(){

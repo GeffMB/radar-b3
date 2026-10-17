@@ -40,6 +40,14 @@ Depois disso, abra `docs\index.html` quando quiser ver o radar. Para atualizar n
 .venv\Scripts\python.exe -m pip install -U yfinance         # se o Yahoo mudar algo e a coleta parar
 ```
 
+## Alertas de dados suspeitos
+
+O coletor marca com **conferir** as ações cujos números fogem do normal: DY acima de 20%, provento único acima de 12% do preço, P/VP acima de 15 ou abaixo de 0,15, P/L acima de 100, ROE ou margem acima de 100%, variação de mais de 15% no dia, salto de mais de 40% na cotação sem provento que explique (possível desdobramento/grupamento sem ajuste) e cotação parada há mais de 7 dias. As regras ficam em `alertas_indicadores` e `alertas_historico`, em `coletar.py`.
+
+## Assistente
+
+O botão **Assistente** (canto inferior direito de todas as páginas) monta uma pergunta com os dados da página e abre uma conversa nova no claude.ai, na conta de quem clicou. Não há chave de API no site, então não há custo extra. O código fica em `docs/assistente.js`.
+
 ## Como os indicadores são calculados
 
 - **P/L**: preço ÷ lucro por ação dos últimos 12 meses. Negativo quando há prejuízo.
