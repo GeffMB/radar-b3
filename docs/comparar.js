@@ -66,7 +66,8 @@ async function main(){
   try { const dados = await fetch("dados.json",{cache:"no-cache"}).then(r=>{ if(!r.ok) throw 0; return r.json(); });
         ACOES = dados.acoes; ACOES.forEach(a=>MAPA[a.t]=a); }
   catch(e){ $("conteudo").innerHTML='<div class="msg">Não foi possível carregar os dados do radar.</div>'; return; }
-  $("lista").innerHTML = ACOES.map(a=>`<option value="${a.t}">${esc(a.n)}</option>`).join("");
+  $("lista").innerHTML = ACOES.map(a=>`<option value="${esc(a.t)}">${esc(a.n)}</option>`).join("");
+  R.ligarBusca(ACOES);
   const q = (new URLSearchParams(location.search).get("t")||"").toUpperCase().split(",").map(s=>s.replace(/[^A-Z0-9]/g,"")).filter(t=>MAPA[t]);
   sel = [...new Set(q)].slice(0,MAX);
   $("add").onsubmit = e => { e.preventDefault(); adicionar($("add-t").value.trim().toUpperCase()); $("add-t").value=""; };
@@ -84,7 +85,7 @@ function remover(t){ sel = sel.filter(x=>x!==t); atualizar(); }
 async function atualizar(){
   history.replaceState(null,"", sel.length? `?t=${sel.join(",")}` : location.pathname);
   document.title = sel.length? `${sel.join(" × ")} · Comparador` : "Comparador · Radar de Ações B3";
-  $("chips").innerHTML = sel.map((t,i)=>`<span class="chip"><i style="background:${COR(i)}"></i>${t}<button type="button" aria-label="Remover ${t}" data-t="${t}">×</button></span>`).join("");
+  $("chips").innerHTML = sel.map((t,i)=>`<span class="chip" style="--c:${COR(i)}">${R.logo(MAPA[t],26)}${esc(t)}<button type="button" aria-label="Remover ${esc(t)}" data-t="${esc(t)}">×</button></span>`).join("");
   $("chips").querySelectorAll("button").forEach(b=>b.onclick=()=>remover(b.dataset.t));
   $("add-btn").disabled = sel.length>=MAX; $("add-t").disabled = sel.length>=MAX;
   $("add-t").placeholder = sel.length>=MAX? "Máximo de 4" : "Ticker";
@@ -138,7 +139,7 @@ function render(){
       return `<td class="${cls}">${L.fmt(v)}</td>`;
     }).join("")}</tr>`;
   }
-  const head = `<tr><th></th>${A.map((a,i)=>`<th><i style="background:${COR(i)}"></i><a href="acao.html?t=${a.t}">${a.t}</a>${(a.alertas||[]).length? ` <span class="conferir" title="${esc(a.alertas.map(x=>x.m).join("\n"))}">conferir</span>`:""}<span class="nm">${esc(a.n)}</span></th>`).join("")}</tr>`;
+  const head = `<tr><th></th>${A.map((a,i)=>`<th><span class="th-at">${R.logo(a,36)}<span><a href="acao.html?t=${encodeURIComponent(a.t)}">${esc(a.t)}</a>${(a.alertas||[]).length? ` <span class="conferir" title="${esc(a.alertas.map(x=>x.m).join("\n"))}">conferir</span>`:""}<span class="nm">${esc(a.n)}</span></span></span><i style="background:${COR(i)}"></i></th>`).join("")}</tr>`;
   const legenda = A.map((a,i)=>`<span><i style="background:${COR(i)}"></i>${a.t}</span>`).join("");
   const semHist = sel.filter(t=>!DET[t]);
   $("conteudo").innerHTML = `

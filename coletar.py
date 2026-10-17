@@ -578,7 +578,10 @@ def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA
                 det["multiplos"] = montar_multiplos(acao, bruto, hoje, fx)
                 (pasta / f"{t}.json").write_text(
                     json.dumps(det, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+                ano = anos_atras(hoje, 1).isoformat()
+                ult_ano = [c for d, c in zip(det["precos"]["d"], det["precos"]["c"]) if d >= ano]
                 extras[t] = {"prov12": det["proventos_12m"], "ret": det.get("retorno") or {},
+                             "sp": ult_ano[::-5][::-1] if ult_ano else [],      # ~1 ponto por semana, termina hoje
                              "alertas": alertas_historico(acao, bruto, hoje)}
                 erro = None
                 break
@@ -594,6 +597,76 @@ def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA
         if pausa:
             time.sleep(pausa)
     return falhas, extras
+
+
+# ---------------------------------------------------------------- logos
+
+URL_LOGO = "https://icons.brapi.dev/icons/{t}.svg"
+DIAS_VALIDADE_LOGO = 30
+TAMANHO_MAX_LOGO = 300_000
+
+
+def higienizar_svg(texto: str) -> str | None:
+    """Aceita só SVG e remove tudo que poderia executar código se o arquivo fosse aberto direto."""
+    import re
+    t = texto.lstrip("\ufeff \t\r\n")
+    t = re.sub(r"^<\?xml[^>]*\?>\s*", "", t)
+    t = re.sub(r"<!DOCTYPE[^>]*>\s*", "", t, flags=re.I)
+    t = re.sub(r"<!--.*?-->", "", t, flags=re.S)
+    if not t.lower().startswith("<svg"):
+        return None
+    t = re.sub(r"<script\b.*?</script\s*>", "", t, flags=re.S | re.I)
+    t = re.sub(r"<script\b[^>]*/>", "", t, flags=re.I)
+    t = re.sub(r"<foreignObject\b.*?</foreignObject\s*>", "", t, flags=re.S | re.I)
+    t = re.sub(r"\son[a-z]+\s*=\s*(\"[^\"]*\"|'[^']*'|[^\s>]+)", "", t, flags=re.I)
+    t = re.sub(r"(href\s*=\s*[\"'])\s*(javascript|data:text/html)[^\"']*", r"\1#", t, flags=re.I)
+    # imagens externas dentro do SVG fariam o navegador do visitante contatar terceiros
+    t = re.sub(r"(href\s*=\s*[\"'])\s*https?://[^\"']*", r"\1#", t, flags=re.I)
+    return t if "<svg" in t.lower() and t.rstrip().lower().endswith("</svg>") else None
+
+
+def atualizar_logos(acoes, baixar=None, pausa=0.2):
+    """Baixa as logos para docs/logos/ (uma vez por mês por ação). O site serve as próprias cópias,
+    então o navegador do visitante não contata nenhum servidor de terceiros.
+    Logos genéricas (o mesmo arquivo para 4 ou mais ações) são descartadas."""
+    import hashlib, urllib.request
+    pasta = PASTA_DOCS / "logos"
+    pasta.mkdir(parents=True, exist_ok=True)
+
+    def baixar_url(t):
+        req = urllib.request.Request(URL_LOGO.format(t=t), headers={"User-Agent": "radar-b3/1.0"})
+        with urllib.request.urlopen(req, timeout=15) as r:
+            if int(r.headers.get("Content-Length") or 0) > TAMANHO_MAX_LOGO:
+                return None
+            return r.read(TAMANHO_MAX_LOGO + 1).decode("utf-8", "replace")
+    baixar = baixar or baixar_url
+
+    novas = falhas = 0
+    agora = time.time()
+    for a in acoes:
+        arq = pasta / f"{a['t']}.svg"
+        if arq.exists() and agora - arq.stat().st_mtime < DIAS_VALIDADE_LOGO * 86400:
+            continue
+        try:
+            bruto = baixar(a["t"])
+            svg = higienizar_svg(bruto) if bruto and len(bruto) <= TAMANHO_MAX_LOGO else None
+            if svg:
+                arq.write_text(svg, encoding="utf-8")
+                novas += 1
+            else:
+                falhas += 1
+        except Exception:
+            falhas += 1
+        if pausa:
+            time.sleep(pausa)
+
+    por_hash = {}
+    for arq in pasta.glob("*.svg"):
+        por_hash.setdefault(hashlib.md5(arq.read_bytes()).hexdigest(), []).append(arq)
+    genericas = [a for grupo in por_hash.values() if len(grupo) >= 4 for a in grupo]
+    for arq in genericas:
+        arq.unlink()
+    log.info("Logos: %d novas, %d sem logo na fonte, %d genéricas descartadas.", novas, falhas, len(genericas))
 
 
 # ---------------------------------------------------------------- saídas
@@ -674,6 +747,7 @@ def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Coleta os dados do Radar de Ações B3")
     p.add_argument("--tickers", help="lista separada por vírgula, ex.: PETR4,VALE3")
     p.add_argument("--abrir", action="store_true", help="abre a página ao terminar")
+    p.add_argument("--sem-logos", action="store_true", help="não baixa logos")
     p.add_argument("--sem-historico", action="store_true",
                    help="pula cotação histórica e proventos (mais rápido)")
     args = p.parse_args(argv)
@@ -714,10 +788,16 @@ def main(argv=None) -> int:
             r1 = x["ret"].get("1a")
             if r1:
                 a["var12"], a["rt12"] = r1["p"], r1["t"]
+            if x.get("sp"):
+                a["sp"] = x["sp"]
         for a in acoes:
             a["alertas"] = alertas_indicadores(a) + (extras.get(a["t"], {}).get("alertas") or [])
         n_alerta = sum(1 for a in acoes if a["alertas"])
         log.info("Alertas: %d ações com dados para conferir.", n_alerta)
+        if not args.sem_logos:
+            atualizar_logos(acoes)
+        for a in acoes:
+            a["logo"] = (PASTA_DOCS / "logos" / f"{a['t']}.svg").exists()
         salvar(acoes, falhas, agora)
     log.info("Pronto em %.0fs. Página: %s", time.time() - inicio, destino)
     if args.abrir:

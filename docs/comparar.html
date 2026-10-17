@@ -5,90 +5,64 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
 <meta name="referrer" content="no-referrer">
-<title>Comparador · Radar de Ações B3</title>
+<title>Comparador · Radar B3</title>
 <link rel="stylesheet" href="vendor/fonts.css">
+<link rel="stylesheet" href="estilo.css">
 <style>
 /* Layout: seletor de até 4 ativos no topo; tabela de indicadores com o melhor de cada linha marcado; gráficos com uma cor fixa por ativo */
-:root{
-  --bg:#F3F5F4; --surface:#FFFFFF; --ink:#13201C; --muted:#5B6B65; --line:#DCE3E0; --soft:#E9EEEC;
-  --accent:#0E6E55; --accent-ink:#FFFFFF; --accent-soft:#DDEFE8;
-  --good:#167A4A; --good-bg:#E1F2E8; --bad:#B53A26; --bad-bg:#F8E4DF; --warn:#9A6412; --warn-bg:#F6EBD4;
-  --s1:#0E6E55; --s2:#C27C0E; --s3:#2F64B0; --s4:#9A4A9E;
-  --font-display:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --font-body:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --font-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
-}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E1513; --surface:#151E1B; --ink:#E4ECE8; --muted:#93A39C; --line:#26332F; --soft:#1C2724;
-  --accent:#43C29C; --accent-ink:#06130F; --accent-soft:#173A30;
-  --good:#5DD39A; --good-bg:#14301F; --bad:#F08C76; --bad-bg:#3A1C16; --warn:#E3B160; --warn-bg:#34280F;
-  --s1:#43C29C; --s2:#E3B160; --s3:#79A9EC; --s4:#CC93D0;
-  color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0E1513; --surface:#151E1B; --ink:#E4ECE8; --muted:#93A39C; --line:#26332F; --soft:#1C2724;
-  --accent:#43C29C; --accent-ink:#06130F; --accent-soft:#173A30;
-  --good:#5DD39A; --good-bg:#14301F; --bad:#F08C76; --bad-bg:#3A1C16; --warn:#E3B160; --warn-bg:#34280F;
-  --s1:#43C29C; --s2:#E3B160; --s3:#79A9EC; --s4:#CC93D0;
-  color-scheme:dark}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.45}
-.wrap{max-width:1180px;margin:0 auto;padding-block:16px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:18px}
-a{color:var(--accent)}
-.back{font-weight:600;text-decoration:none;font-size:13px}
-.back:hover{text-decoration:underline}
-h1{font-family:var(--font-display);font-weight:800;font-size:clamp(26px,4vw,36px);letter-spacing:-.025em;margin:0}
-.sub{color:var(--muted);margin-top:4px;max-width:70ch}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.picker{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.chips{display:flex;flex-wrap:wrap;gap:8px}
-.chip{display:inline-flex;align-items:center;gap:8px;font-family:var(--font-num);font-weight:600;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 10px;background:var(--bg)}
-.chip i{width:10px;height:10px;border-radius:50%;display:inline-block}
-.chip button{font:inherit;border:0;background:var(--soft);color:var(--muted);width:22px;height:22px;border-radius:50%;cursor:pointer;line-height:1}
-.chip button:hover{color:var(--bad)}
+.intro{display:grid;gap:4px}
+.sub{color:var(--muted);margin:2px 0 0;max-width:70ch}
+.picker{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:14px 16px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .add{display:flex;gap:6px;margin-left:auto}
-.add input{font:inherit;font-family:var(--font-num);text-transform:uppercase;width:150px;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:7px 10px}
-.btn,.ranges button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:7px;padding:7px 12px;cursor:pointer}
-.btn:hover,.ranges button:hover{border-color:var(--accent)}
-.btn:disabled{opacity:.5;cursor:not-allowed}
+.add input{font:inherit;font-size:14px;text-transform:uppercase;width:170px;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:10px;padding:8px 12px}
+.add input::placeholder{text-transform:none}
+.add .btn:disabled{opacity:.5;cursor:not-allowed}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-family:var(--font-display);font-size:14px;border:1px solid var(--line);border-radius:999px;padding:4px 6px 4px 4px;background:var(--surface);border-left:4px solid var(--c)}
+.chip .logo{--ls:26px}
+.chip button{font:inherit;border:0;background:var(--soft);color:var(--muted);width:24px;height:24px;border-radius:50%;cursor:pointer;line-height:1}
+.chip button:hover{color:var(--bad);background:var(--bad-bg)}
 .sugest{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted);width:100%}
-.sugest button{font:inherit;font-size:12px;border:1px dashed var(--line);background:none;color:var(--ink);border-radius:999px;padding:3px 10px;cursor:pointer}
+.sugest button{font:inherit;font-size:13px;font-weight:600;border:1px dashed var(--line);background:none;color:var(--ink);border-radius:999px;padding:4px 11px;cursor:pointer}
 .sugest button:hover{border-color:var(--accent);color:var(--accent)}
-.msg{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:32px 16px;text-align:center;color:var(--muted)}
-section.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:12px;min-width:0}
-.ph{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 16px}
-.ph h2{font-family:var(--font-display);font-size:18px;font-weight:700;margin:0}
-.note{font-size:12px;color:var(--muted);margin:0}
-.ranges{display:flex;gap:6px;flex-wrap:wrap}
-.ranges button{padding:4px 10px;font-family:var(--font-num);font-size:12px}
-.ranges button[aria-pressed=true]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-family:var(--font-num);font-size:12px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;font-weight:700}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .legend i{width:14px;height:3px;border-radius:2px;display:inline-block}
 .chart{position:relative;height:300px;min-width:0}
-.tablebox{overflow-x:auto;min-width:0}
-table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;min-width:520px}
+.tablebox{overflow-x:auto;min-width:0;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;min-width:560px}
 th,td{padding:9px 12px;border-bottom:1px solid var(--soft);text-align:right;white-space:nowrap}
-thead th{font-family:var(--font-num);font-size:14px;font-weight:700;border-bottom:1px solid var(--line);vertical-align:bottom}
+thead th{font-family:var(--font-display);font-size:15px;font-weight:800;border-bottom:1px solid var(--line);vertical-align:bottom;background:var(--surface-2);padding:12px}
+.th-at{display:inline-flex;align-items:center;gap:10px;text-align:left}
+.th-at .logo{--ls:36px}
 thead th a{color:var(--ink);text-decoration:none}
 thead th a:hover{color:var(--accent);text-decoration:underline}
 thead th .nm{display:block;font-family:var(--font-body);font-weight:400;font-size:12px;color:var(--muted)}
-.conferir{display:inline-block;font-family:var(--font-body);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:1px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn);vertical-align:2px;cursor:help}
-thead th i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
-th[scope=row]{text-align:left;font-weight:500;color:var(--muted);font-size:13px}
+thead th i{display:block;height:4px;border-radius:99px;margin-top:10px}
+th[scope=row]{text-align:left;font-weight:600;color:var(--muted);font-size:14px}
 th[scope=row] small{display:block;font-size:11px;font-weight:400}
-td{font-family:var(--font-num);font-size:13px}
-td.best{background:var(--good-bg);color:var(--good);font-weight:600}
+td{font-size:14px;font-weight:600}
+td.best{background:var(--good-bg);color:var(--good);font-weight:800}
 td.neg{color:var(--bad)}
-.na{color:var(--muted)}
-tr.grp th{background:var(--bg);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;padding:6px 12px}
-footer{font-size:12px;color:var(--muted);max-width:90ch;display:grid;gap:6px}
-footer p{margin:0}
+tr.grp th{background:var(--surface-2);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600;padding:6px 12px}
+
+.ranges{display:inline-flex;background:var(--soft);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
+.ranges button{font:inherit;font-size:13px;font-weight:600;color:var(--muted);background:none;border:0;border-radius:8px;padding:6px 11px;cursor:pointer;transition:background .15s,color .15s}
+.ranges button:hover{color:var(--ink)}
+.ranges button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(23,32,51,.12)}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <a class="back" href="./">← Radar de Ações</a>
-  <div>
+<header class="topbar"><div class="in">
+  <a class="brand" href="./" aria-label="Radar B3, início">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><path d="M9 23a10 10 0 0 1 14-14" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" opacity=".55"/><path d="M12.5 21a5.5 5.5 0 0 1 8-8" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round"/><circle cx="21.5" cy="10.5" r="2.4" fill="var(--accent-2)"/><circle cx="10" cy="22" r="1.8" fill="var(--accent-ink)"/></svg>
+    <span>Radar <b>B3</b></span></a>
+  <nav class="nav"><a href="./">Ações</a><a href="comparar.html" aria-current="page">Comparar</a></nav>
+  <form class="jump" id="jump" role="search"><input id="jump-t" list="jump-lista" placeholder="Buscar ativo (ex.: PETR4)" aria-label="Buscar ativo" autocomplete="off"><datalist id="jump-lista"></datalist></form>
+</div></header>
+<main class="wrap">
+  <div class="intro">
+    <span class="eyebrow">Ferramenta</span>
     <h1>Comparador</h1>
     <p class="sub">Escolha de 2 a 4 ações. O endereço desta página guarda a seleção, então dá para salvar ou enviar a comparação.</p>
   </div>
@@ -105,14 +79,15 @@ footer p{margin:0}
 
   <div id="conteudo"><div class="msg">Carregando…</div></div>
 
-  <footer>
+</main>
+<footer class="site">
     <p><b>Fonte:</b> Yahoo Finance. Em verde, o melhor valor de cada linha: menor P/L, P/VP e alavancagem; maior DY, ROE e margem. P/L negativo (prejuízo) não concorre. Retorno total = cotação + proventos brutos reinvestidos na data ex (sem IR do JCP, sem custos).</p>
-    <p>Material para estudo, não é recomendação de investimento.</p>
-  </footer>
-</div>
+    <p>Logos são marcas das respectivas empresas, exibidas só para identificação. Material para estudo, não é recomendação de investimento.</p>
+</footer>
 
 <script src="vendor/chart.umd.js"></script>
 <script src="assistente.js"></script>
+<script src="comum.js"></script>
 <script src="comparar.js"></script>
 </body>
 </html>

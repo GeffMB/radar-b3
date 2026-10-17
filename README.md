@@ -40,6 +40,12 @@ Depois disso, abra `docs\index.html` quando quiser ver o radar. Para atualizar n
 .venv\Scripts\python.exe -m pip install -U yfinance         # se o Yahoo mudar algo e a coleta parar
 ```
 
+## Visual
+
+- `docs/estilo.css`: cores (claro e escuro), fontes e componentes compartilhados. `docs/comum.js`: formatação, logos, minigráficos e busca do topo.
+- Fontes Plus Jakarta Sans (títulos) e Manrope (texto e números), servidas pelo próprio site.
+- Logos: baixadas de icons.brapi.dev durante a coleta (uma vez por mês por ação), higienizadas e salvas em `docs/logos/`. Sem logo na fonte, aparece um monograma colorido com as iniciais do ticker.
+
 ## Alertas de dados suspeitos
 
 O coletor marca com **conferir** as ações cujos números fogem do normal: DY acima de 20%, provento único acima de 12% do preço, P/VP acima de 15 ou abaixo de 0,15, P/L acima de 100, ROE ou margem acima de 100%, variação de mais de 15% no dia, salto de mais de 40% na cotação sem provento que explique (possível desdobramento/grupamento sem ajuste) e cotação parada há mais de 7 dias. As regras ficam em `alertas_indicadores` e `alertas_historico`, em `coletar.py`.

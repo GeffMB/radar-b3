@@ -52,13 +52,11 @@ async function main(){
   try { dados = await fetch("dados.json",{cache:"no-cache"}).then(r=>{ if(!r.ok) throw 0; return r.json(); }); }
   catch(e){ $("conteudo").innerHTML = '<div class="msg">Não foi possível carregar os dados do radar.</div>'; return; }
   const acoes = dados.acoes;
-  $("lista").innerHTML = acoes.map(a=>`<option value="${a.t}">${esc(a.n)}</option>`).join("");
-  $("jump").onsubmit = e => { e.preventDefault(); const t=$("jump-t").value.trim().toUpperCase(); if(t) location.href = "acao.html?t="+encodeURIComponent(t); };
+  R.ligarBusca(acoes);
 
   const a = acoes.find(x=>x.t===ticker);
   if(!a){ $("conteudo").innerHTML = `<div class="msg">${ticker? `<b>${esc(ticker)}</b> não está no radar.` : "Nenhum ticker informado."} Volte ao <a href="./">radar</a> e escolha uma ação, ou adicione o ticker em tickers.csv.</div>`; return; }
   document.title = `${a.t} · Radar de Ações B3`;
-  $("cmp").href = `comparar.html?t=${a.t}`;
 
   let det = null;
   try { det = await fetch(`acoes/${a.t}.json`,{cache:"no-cache"}).then(r=> r.ok? r.json() : null); } catch(e){}
@@ -101,9 +99,13 @@ function render(a, det, pares, dados){
   }
   let html = `
   <div class="hero">
-    <div>
-      <h1>${a.t}</h1>
-      <div class="sub"><b>${esc(a.n)}</b> · ${esc(a.setor)} · valor de mercado ${big(a.mc)}</div>
+    <div class="hero-id">
+      ${R.logo(a, 64)}
+      <div>
+        <h1>${esc(a.t)}</h1>
+        <div class="sub"><b>${esc(a.n)}</b> · ${esc(a.setor)} · valor de mercado ${big(a.mc)}</div>
+        <a class="btn" id="cmp" href="comparar.html?t=${encodeURIComponent(a.t)}" style="margin-top:10px;font-size:13px;padding:6px 12px">Comparar com outras</a>
+      </div>
     </div>
     ${r52}
     <div class="price">

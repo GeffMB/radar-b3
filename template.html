@@ -1,170 +1,181 @@
-<title>Radar de Ações B3</title>
+<title>Radar B3 · Ações</title>
 <link rel="stylesheet" href="vendor/fonts.css">
+<link rel="stylesheet" href="estilo.css">
 <style>
-/* Layout: ferramenta de triagem — barra de controles no topo, faixa de medianas, tabela densa ordenável que rola na horizontal no celular */
-:root{
-  --bg:#F3F5F4; --surface:#FFFFFF; --ink:#13201C; --muted:#5B6B65; --line:#DCE3E0; --soft:#E9EEEC;
-  --accent:#0E6E55; --accent-ink:#FFFFFF; --accent-soft:#DDEFE8;
-  --good:#167A4A; --good-bg:#E1F2E8; --bad:#B53A26; --bad-bg:#F8E4DF; --warn:#9A6412; --warn-bg:#F6EBD4;
-  --font-display:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --font-body:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --font-num:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
-}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0E1513; --surface:#151E1B; --ink:#E4ECE8; --muted:#93A39C; --line:#26332F; --soft:#1C2724;
-  --accent:#43C29C; --accent-ink:#06130F; --accent-soft:#173A30;
-  --good:#5DD39A; --good-bg:#14301F; --bad:#F08C76; --bad-bg:#3A1C16; --warn:#E3B160; --warn-bg:#34280F;
-  color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#0E1513; --surface:#151E1B; --ink:#E4ECE8; --muted:#93A39C; --line:#26332F; --soft:#1C2724;
-  --accent:#43C29C; --accent-ink:#06130F; --accent-soft:#173A30;
-  --good:#5DD39A; --good-bg:#14301F; --bad:#F08C76; --bad-bg:#3A1C16; --warn:#E3B160; --warn-bg:#34280F;
-  color-scheme:dark}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.45}
-.wrap{max-width:1280px;margin:0 auto;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
-header{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:8px 24px}
-h1{font-family:var(--font-display);font-weight:800;font-size:clamp(22px,3vw,30px);letter-spacing:-.02em;margin:0;text-wrap:balance}
-h1 span{color:var(--accent)}
-.cmp-link{display:inline-block;margin:2px 0 4px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none}
-.cmp-link:hover{text-decoration:underline}
-.meta{color:var(--muted);font-size:13px}
-.meta b{color:var(--ink);font-weight:600}
+/* Página inicial: resumo do dia em blocos, painéis de ranking (3 por linha) e tabela completa com logos e minigráficos */
+.intro{display:grid;gap:4px}
+.intro p{margin:2px 0 0}
 
-.controls{display:grid;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+/* resumo do dia */
+.resumo{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+@media (max-width:560px){.resumo{grid-template-columns:1fr 1fr;gap:10px}.resumo .tile:first-child,.resumo .tile:last-child{grid-column:1/-1}.tile{padding:13px}.tile .big{font-size:22px}}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;display:grid;gap:8px;align-content:start;min-width:0;text-decoration:none;color:inherit}
+a.tile{transition:box-shadow .2s,transform .2s}
+a.tile:hover{box-shadow:var(--shadow-hover);transform:translateY(-2px)}
+.tile .big{font-family:var(--font-display);font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.tile .linha{display:flex;align-items:center;gap:10px;min-width:0}
+.tile .linha div{min-width:0}
+.tile .tk{font-weight:800;font-family:var(--font-display)}
+.tile .nm{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.split{display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--soft)}
+.split i{display:block;height:100%}
+.legenda{display:flex;gap:14px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.legenda b{font-weight:800}
+
+/* painéis de ranking */
+.rk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:16px}
+@media (max-width:400px){.rk-grid{grid-template-columns:1fr}}
+.rk{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;transition:box-shadow .2s}
+.rk:hover{box-shadow:var(--shadow-hover)}
+.rk header{background:var(--surface-2);padding:18px 16px 16px;display:grid;justify-items:center;gap:8px;text-align:center;border-bottom:1px solid var(--line)}
+.rk header svg{width:26px;height:26px;color:var(--accent)}
+.rk header h3{font-size:17px;font-weight:700}
+.rk ol{list-style:none;margin:0;padding:6px 14px;flex:1}
+.rk li{border-bottom:1px solid var(--soft)}
+.rk li:last-child{border-bottom:0}
+.rk li a{display:grid;grid-template-columns:28px auto minmax(0,1fr) auto 14px;align-items:center;gap:10px;padding:11px 4px;text-decoration:none;color:inherit;border-radius:10px;transition:background .15s}
+.rk li a:hover{background:var(--soft)}
+.rk li a:hover .chev{transform:translateX(3px);color:var(--accent)}
+.pos-n{font-family:var(--font-display);font-weight:800;font-size:15px;color:var(--silver)}
+.pos-n.p1{color:var(--gold)} .pos-n.p3{color:var(--bronze)}
+.rk .id{min-width:0}
+.rk .tk{font-weight:800;font-size:15px;font-family:var(--font-display);letter-spacing:-.01em}
+.rk .nm{display:block;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk .val{font-weight:700;font-size:15px;white-space:nowrap;text-align:right;display:flex;align-items:center;gap:6px;justify-content:flex-end}
+.al{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--warn-bg);color:var(--warn);font-size:11px;font-weight:800;cursor:help}
+.chev{color:var(--muted);transition:transform .15s,color .15s;width:14px;height:14px}
+.rk .ver{margin:4px 14px 14px;justify-content:center}
+
+/* tabela completa */
+.controls{display:grid;gap:12px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-input[type=search],select,.num input{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:8px 10px;min-width:0}
-input[type=search]{flex:1 1 220px}
-select{flex:0 1 240px}
-input:focus-visible,select:focus-visible,button:focus-visible,th button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.label{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.busca{flex:1 1 240px;font:inherit;font-size:14px;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:10px;padding:9px 12px;min-width:0}
+.busca:focus{background:var(--surface);border-color:var(--line)}
+select{font:inherit;font-size:14px;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:10px;padding:9px 12px;flex:0 1 250px;min-width:0}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
-.chip{font:inherit;font-size:13px;font-weight:500;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:999px;padding:5px 12px;cursor:pointer}
-.chip:hover{border-color:var(--line)}
-.chip[aria-pressed=true]{background:var(--accent);color:var(--accent-ink)}
-details summary{cursor:pointer;font-weight:600;font-size:13px;color:var(--accent);list-style:none;display:inline-flex;gap:6px;align-items:center}
+.chip{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 13px;cursor:pointer;transition:border-color .15s,color .15s,background .15s}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+details summary{cursor:pointer;font-weight:700;font-size:14px;color:var(--accent);list-style:none;display:inline-flex;gap:6px;align-items:center}
 details summary::-webkit-details-marker{display:none}
-details summary::before{content:"+";font-family:var(--font-num);width:14px}
+details summary::before{content:"+";width:14px;font-weight:800}
 details[open] summary::before{content:"−"}
-.filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:12px}
-.num{display:grid;gap:4px}
-.num input{width:100%;font-family:var(--font-num);font-size:13px}
-.check{display:flex;gap:8px;align-items:center;font-size:13px;cursor:pointer}
+.filters{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:12px}
+.f{display:grid;gap:4px}
+.f input{font:inherit;font-size:14px;width:100%;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:9px;padding:8px 10px}
+.check{display:flex;gap:8px;align-items:center;font-size:14px;cursor:pointer}
 .check input{accent-color:var(--accent);width:16px;height:16px}
 .btn-link{font:inherit;font-size:13px;background:none;border:0;color:var(--muted);text-decoration:underline;cursor:pointer;padding:4px}
+.btn-alerta{font:inherit;font-size:13px;font-weight:700;color:var(--warn);background:var(--warn-bg);border:0;border-radius:999px;padding:4px 12px;cursor:pointer}
+.btn-alerta[aria-pressed=true]{background:var(--warn);color:var(--surface)}
 
-.medianas{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.med{background:var(--surface);padding:10px 12px;display:grid;gap:2px}
-.med .v{font-family:var(--font-num);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
-.med .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
-.medhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.medianas{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.med{background:var(--surface-2);border-radius:12px;padding:10px 12px;display:grid;gap:2px}
+.med .v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
 
-.tablebox{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto;min-width:0}
-table{border-collapse:collapse;width:100%;min-width:1060px;font-variant-numeric:tabular-nums}
-thead th{position:sticky;top:0;background:var(--surface);z-index:1;border-bottom:1px solid var(--line);text-align:right;padding:0;white-space:nowrap}
-thead th:first-child{text-align:left}
-th button{font:inherit;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:none;border:0;padding:12px 12px 10px;cursor:pointer;width:100%;text-align:inherit;display:flex;gap:4px;justify-content:flex-end;align-items:center}
+.tablebox{overflow-x:auto;min-width:0;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:1240px;font-variant-numeric:tabular-nums}
+thead th{position:sticky;top:0;background:var(--surface-2);z-index:2;text-align:right;padding:0;white-space:nowrap;border-bottom:1px solid var(--line)}
+thead th:first-child{text-align:left;left:0;z-index:3}
+th button{font:inherit;font-size:12px;font-weight:700;color:var(--muted);background:none;border:0;padding:12px 12px 10px;cursor:pointer;width:100%;text-align:inherit;display:flex;gap:4px;justify-content:flex-end;align-items:center}
 thead th:first-child button{justify-content:flex-start}
 th button:hover{color:var(--ink)}
 th[aria-sort] button{color:var(--accent)}
-th .arr{font-family:var(--font-num);font-size:11px;width:9px}
-td{padding:9px 12px;border-bottom:1px solid var(--soft);text-align:right;font-family:var(--font-num);font-size:13px;white-space:nowrap}
-td:first-child{text-align:left;font-family:var(--font-body)}
+th .arr{width:9px}
+td{padding:9px 12px;border-bottom:1px solid var(--soft);text-align:right;font-size:14px;white-space:nowrap;background:var(--surface)}
+td:first-child{text-align:left;position:sticky;left:0;z-index:1}
 tbody tr{cursor:pointer}
-tbody tr:hover td{background:var(--soft)}
+tbody tr:hover td{background:var(--surface-2)}
 tbody tr.open td{background:var(--accent-soft)}
-.tk{font-weight:700;font-size:14px;letter-spacing:.01em;color:var(--ink);text-decoration:none}
-a.tk:hover{color:var(--accent);text-decoration:underline}
-.dnote a{color:var(--accent);font-weight:600}
-.nm{display:block;color:var(--muted);font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis}
-.setor-tag{font-size:11px;color:var(--muted)}
-.conferir{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:1px 6px;border-radius:4px;background:var(--warn-bg);color:var(--warn);vertical-align:2px;cursor:help}
+.at{display:flex;align-items:center;gap:10px;min-width:210px}
+.at .tk{font-weight:800;font-family:var(--font-display);color:var(--ink);text-decoration:none;font-size:15px}
+.at a.tk:hover{color:var(--accent)}
+.at .nm{display:block;color:var(--muted);font-size:12px;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.pill{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:700}
+.pill.good{background:var(--good-bg);color:var(--good)} .pill.bad{background:var(--bad-bg);color:var(--bad)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
 td.sus{text-decoration:underline dotted var(--warn);text-underline-offset:4px;cursor:help}
-.alertas{grid-column:1/-1;background:var(--warn-bg);color:var(--ink);border-radius:8px;padding:10px 12px;font-size:13px}
-.alertas b{color:var(--warn)}
-.alertas ul{margin:6px 0 0;padding-left:18px;display:grid;gap:4px}
-.btn-alerta{font:inherit;font-size:13px;font-weight:600;color:var(--warn);background:var(--warn-bg);border:0;border-radius:5px;padding:1px 8px;cursor:pointer}
-.btn-alerta[aria-pressed=true]{background:var(--warn);color:var(--surface)}
-.pos{color:var(--good)} .neg{color:var(--bad)} .na{color:var(--muted)}
-.pill{display:inline-block;padding:1px 7px;border-radius:5px}
-.pill.good{background:var(--good-bg);color:var(--good)}
-.pill.bad{background:var(--bad-bg);color:var(--bad)}
-.pill.warn{background:var(--warn-bg);color:var(--warn)}
-tr.detail td{background:var(--accent-soft);cursor:default;padding:4px 12px 14px;text-align:left;font-family:var(--font-body);white-space:normal}
-.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px 20px}
+.spark{display:block;margin-left:auto}
+tr.detail td{background:var(--accent-soft);cursor:default;padding:6px 14px 16px;text-align:left;white-space:normal;position:static}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px 20px}
 .dgrid div{display:grid;gap:1px}
-.dgrid .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
-.dgrid .v{font-family:var(--font-num);font-size:13px}
-.dnote{grid-column:1/-1;font-size:12px;color:var(--muted);max-width:72ch}
-.empty{padding:40px 16px;text-align:center;color:var(--muted)}
-.legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:12px;color:var(--muted);align-items:center}
-footer{font-size:12px;color:var(--muted);display:grid;gap:6px;max-width:90ch}
-footer p{margin:0}
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.dgrid .v{font-weight:700}
+.dnote{grid-column:1/-1;font-size:13px;color:var(--muted);max-width:80ch;margin:0}
+.dnote a{font-weight:700}
+.dgrid .alertas{grid-column:1/-1}
+.vazio{padding:40px 16px;text-align:center;color:var(--muted)}
+.mais{justify-self:center}
 </style>
 
-<div class="wrap">
-  <header>
+<header class="topbar"><div class="in">
+  <a class="brand" href="./" aria-label="Radar B3, início">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><path d="M9 23a10 10 0 0 1 14-14" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" opacity=".55"/><path d="M12.5 21a5.5 5.5 0 0 1 8-8" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round"/><circle cx="21.5" cy="10.5" r="2.4" fill="var(--accent-2)"/><circle cx="10" cy="22" r="1.8" fill="var(--accent-ink)"/></svg>
+    <span>Radar <b>B3</b></span></a>
+  <nav class="nav"><a href="./" aria-current="page">Ações</a><a href="comparar.html">Comparar</a></nav>
+  <form class="jump" id="jump" role="search"><input id="jump-t" list="jump-lista" placeholder="Buscar ativo (ex.: PETR4)" aria-label="Buscar ativo" autocomplete="off"><datalist id="jump-lista"></datalist></form>
+</div></header>
+
+<main class="wrap">
+  <section class="intro">
+    <span class="eyebrow">Ações da B3</span>
+    <h1>Radar de ações</h1>
+    <p class="note" id="meta">Carregando…</p>
+  </section>
+
+  <section class="resumo" id="resumo" aria-label="Resumo do dia"></section>
+
+  <section aria-labelledby="t-dest" style="display:grid;gap:14px">
+    <div class="ph"><h2 id="t-dest">Destaques</h2><span class="note">Toque numa ação para ver cotação, proventos e resultados</span></div>
+    <div class="rk-grid" id="rk-grid"></div>
+  </section>
+
+  <section class="panel" id="tabela" aria-labelledby="t-todas">
+    <div class="ph"><h2 id="t-todas">Todas as ações</h2><span id="alerta-meta"></span></div>
+    <div class="controls">
+      <div class="row">
+        <input type="search" class="busca" id="busca" placeholder="Filtrar por ticker ou empresa" aria-label="Filtrar ações">
+        <select id="setor" aria-label="Setor"><option value="">Todos os setores</option></select>
+      </div>
+      <div class="row"><span class="label">Ordenar por</span><div class="chips" id="rankings"></div></div>
+      <details id="avancado">
+        <summary>Filtros por indicador</summary>
+        <div class="filters">
+          <label class="f"><span class="label">P/L máximo</span><input id="f-plmax" type="number" step="0.5" inputmode="decimal" placeholder="ex.: 15"></label>
+          <label class="f"><span class="label">P/VP máximo</span><input id="f-pvpmax" type="number" step="0.1" inputmode="decimal" placeholder="ex.: 2"></label>
+          <label class="f"><span class="label">DY mínimo (%)</span><input id="f-dymin" type="number" step="0.5" inputmode="decimal" placeholder="ex.: 6"></label>
+          <label class="f"><span class="label">ROE mínimo (%)</span><input id="f-roemin" type="number" step="1" inputmode="decimal" placeholder="ex.: 15"></label>
+          <label class="f"><span class="label">Margem líq. mín. (%)</span><input id="f-mlmin" type="number" step="1" inputmode="decimal" placeholder="ex.: 10"></label>
+          <label class="f"><span class="label">Dív. líq./EBITDA máx.</span><input id="f-dlmax" type="number" step="0.5" inputmode="decimal" placeholder="ex.: 2,5"></label>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <label class="check"><input type="checkbox" id="f-lucro"> Só empresas com lucro</label>
+          <label class="check"><input type="checkbox" id="f-semfin"> Ocultar bancos e seguradoras</label>
+          <label class="check"><input type="checkbox" id="f-semalerta"> Ocultar ações com dados para conferir</label>
+          <button class="btn-link" id="limpar" type="button">Limpar filtros</button>
+        </div>
+      </details>
+    </div>
     <div>
-      <h1>Radar de Ações <span>B3</span></h1>
-      <a class="cmp-link" href="comparar.html">Comparar ações →</a>
-      <div class="meta">Atualizado em <b id="quando">–</b> · <b id="total">0</b> ações · indicadores dos últimos 12 meses<span id="alerta-meta"></span></div>
+      <span class="label">Medianas da seleção · <span id="nsel">0</span> ações</span>
+      <div class="medianas" id="medianas" style="margin-top:8px"></div>
     </div>
-    <div class="legend">
-      <span><span class="pill good">verde</span> ponto forte</span>
-      <span><span class="pill warn">âmbar</span> atenção</span>
-      <span><span class="pill bad">vermelho</span> negativo ou risco</span>
+    <div class="tablebox">
+      <table>
+        <thead><tr id="thead"></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="vazio" id="vazio" hidden>Nenhuma ação passa nesses filtros. Afrouxe um dos limites ou toque em “Limpar filtros”.</div>
     </div>
-  </header>
-
-  <section class="controls" aria-label="Filtros">
-    <div class="row">
-      <input type="search" id="busca" placeholder="Buscar ticker ou empresa (ex.: PETR4, Itaú)" aria-label="Buscar ação">
-      <select id="setor" aria-label="Setor"><option value="">Todos os setores</option></select>
-    </div>
-    <div class="row">
-      <span class="label">Rankings</span>
-      <div class="chips" id="rankings"></div>
-    </div>
-    <details id="avancado">
-      <summary>Filtros por indicador</summary>
-      <div class="filters">
-        <label class="num"><span class="label">P/L máximo</span><input id="f-plmax" type="number" step="0.5" inputmode="decimal" placeholder="ex.: 15"></label>
-        <label class="num"><span class="label">P/VP máximo</span><input id="f-pvpmax" type="number" step="0.1" inputmode="decimal" placeholder="ex.: 2"></label>
-        <label class="num"><span class="label">DY mínimo (%)</span><input id="f-dymin" type="number" step="0.5" inputmode="decimal" placeholder="ex.: 6"></label>
-        <label class="num"><span class="label">ROE mínimo (%)</span><input id="f-roemin" type="number" step="1" inputmode="decimal" placeholder="ex.: 15"></label>
-        <label class="num"><span class="label">Margem líq. mín. (%)</span><input id="f-mlmin" type="number" step="1" inputmode="decimal" placeholder="ex.: 10"></label>
-        <label class="num"><span class="label">Dív. líq./EBITDA máx.</span><input id="f-dlmax" type="number" step="0.5" inputmode="decimal" placeholder="ex.: 2,5"></label>
-      </div>
-      <div class="row" style="margin-top:12px">
-        <label class="check"><input type="checkbox" id="f-lucro"> Só empresas com lucro</label>
-        <label class="check"><input type="checkbox" id="f-semfin"> Ocultar bancos e seguradoras</label>
-        <label class="check"><input type="checkbox" id="f-semalerta"> Ocultar ações com dados para conferir</label>
-        <button class="btn-link" id="limpar" type="button">Limpar filtros</button>
-      </div>
-    </details>
+    <button class="btn mais" id="mais" type="button" hidden>Mostrar todas</button>
   </section>
+</main>
 
-  <section aria-label="Medianas da seleção">
-    <div class="medhead"><span class="label">Medianas da seleção · <span id="nsel">0</span> ações</span></div>
-    <div class="medianas" id="medianas" style="margin-top:6px"></div>
-  </section>
-
-  <div class="tablebox">
-    <table>
-      <thead><tr id="thead"></tr></thead>
-      <tbody id="tbody"></tbody>
-    </table>
-    <div class="empty" id="vazio" hidden>Nenhuma ação passa nesses filtros. Afrouxe um dos limites ou clique em “Limpar filtros”.</div>
-  </div>
-
-  <footer>
-    <p id="falhas" hidden></p>
-    <p><b>Fonte:</b> <span id="fonte">–</span> DY 12m = proventos pagos nos últimos 12 meses ÷ cotação atual. Dívida líquida/EBITDA = (dívida total − caixa) ÷ EBITDA; não se aplica a bancos, cuja dívida é a própria matéria-prima do negócio.</p>
-    <p>Alguns números do Yahoo podem divergir de Status Invest ou Investidor10 por diferenças de método (ex.: dívida com ou sem arrendamentos). Retorno 12m inclui proventos reinvestidos (passe o mouse para ver só a cotação). Toque numa linha para ver os componentes do cálculo, ou no ticker para abrir a página da ação. Material para estudo, não é recomendação de investimento.</p>
-  </footer>
-</div>
+<footer class="site">
+  <p id="falhas" hidden></p>
+  <p><b>Fonte:</b> <span id="fonte">–</span> DY 12m = proventos pagos nos últimos 12 meses ÷ cotação atual. Retorno 12m inclui proventos reinvestidos. Dívida líquida/EBITDA = (dívida total − caixa) ÷ EBITDA; não se aplica a bancos e seguradoras.</p>
+  <p>Logos são marcas das respectivas empresas, exibidas só para identificação. Material para estudo, não é recomendação de investimento.</p>
+</footer>
 
 <script src="assistente.js"></script>
+<script src="comum.js"></script>
 <script type="application/json" id="dados">__DADOS_JSON__</script>
 <script src="radar.js"></script>
