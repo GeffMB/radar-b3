@@ -2,38 +2,38 @@
    Layout: barra superior fixa com marca e navegação; conteúdo em painéis brancos sobre fundo azulado claro;
    números em Manrope com algarismos tabulares; títulos em Plus Jakarta Sans. */
 :root{
-  --bg:#F4F6FB; --surface:#FFFFFF; --surface-2:#F1F3F9; --ink:#172033; --muted:#5D6880; --line:#E2E6EF; --soft:#EDF0F6;
-  --accent:#2C55E0; --accent-ink:#FFFFFF; --accent-soft:#E6ECFE; --accent-2:#E08A1E;
-  --good:#0B9467; --good-bg:#E2F5EC; --bad:#D93D33; --bad-bg:#FCEBE9; --warn:#A86B12; --warn-bg:#FCF1DD;
-  --gold:#D4951B; --silver:#8E98AB; --bronze:#BF7440;
-  --s1:#2C55E0; --s2:#E08A1E; --s3:#0B9467; --s4:#A845C2;
-  --shadow:0 1px 2px rgba(23,32,51,.04),0 4px 14px rgba(23,32,51,.05);
-  --shadow-hover:0 2px 4px rgba(23,32,51,.06),0 10px 28px rgba(23,32,51,.10);
+  --bg:#F5F7F4; --surface:#FFFFFF; --surface-2:#F4F7F5; --ink:#22302E; --muted:#5F6F6B; --line:#E2E9E5; --soft:#EDF2EF;
+  --accent:#2F6F74; --accent-ink:#FFFFFF; --accent-soft:#E2EFEE; --accent-2:#D9A066;
+  --good:#24704F; --good-bg:#E4F2EA; --bad:#B0463D; --bad-bg:#FBEDEA; --warn:#86601C; --warn-bg:#FAF1DE;
+  --gold:#C99A3E; --silver:#94A3A0; --bronze:#B98262;
+  --s1:#2F6F74; --s2:#D9A066; --s3:#7D8FC4; --s4:#B97A9B;
+  --shadow:0 1px 2px rgba(34,48,46,.03),0 6px 18px rgba(34,48,46,.05);
+  --shadow-hover:0 2px 4px rgba(34,48,46,.05),0 12px 30px rgba(34,48,46,.09);
   --font-display:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,sans-serif;
   --font-body:"Manrope","Segoe UI",system-ui,-apple-system,sans-serif;
   --font-num:"Manrope","Segoe UI",system-ui,sans-serif;
   --r:14px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0D1220; --surface:#151B2B; --surface-2:#1A2133; --ink:#E7EBF4; --muted:#9AA4BA; --line:#262F46; --soft:#1D2538;
-  --accent:#7B98FF; --accent-ink:#0A0F1E; --accent-soft:#1E2A4F; --accent-2:#F2A548;
-  --good:#3DD39C; --good-bg:#10291F; --bad:#FF7A6E; --bad-bg:#3A1816; --warn:#F2B84B; --warn-bg:#33270F;
-  --gold:#F2B84B; --silver:#AEB7C9; --bronze:#DE9560;
-  --s1:#7B98FF; --s2:#F2A548; --s3:#3DD39C; --s4:#D48BE6;
-  --shadow:0 1px 2px rgba(0,0,0,.25); --shadow-hover:0 6px 22px rgba(0,0,0,.35);
+  --bg:#111917; --surface:#18221F; --surface-2:#1C2724; --ink:#E6EEEC; --muted:#A3B3AF; --line:#28352F; --soft:#1F2B28;
+  --accent:#86C7C1; --accent-ink:#0E1615; --accent-soft:#1E3533; --accent-2:#E8B884;
+  --good:#6FD1A6; --good-bg:#13281F; --bad:#F08A7E; --bad-bg:#33191A; --warn:#E9C072; --warn-bg:#2F2714;
+  --gold:#E9C072; --silver:#B4C2BE; --bronze:#D9A07E;
+  --s1:#86C7C1; --s2:#E8B884; --s3:#A3B2E8; --s4:#DDA3C2;
+  --shadow:0 1px 2px rgba(0,0,0,.22); --shadow-hover:0 6px 22px rgba(0,0,0,.32);
   color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0D1220; --surface:#151B2B; --surface-2:#1A2133; --ink:#E7EBF4; --muted:#9AA4BA; --line:#262F46; --soft:#1D2538;
-  --accent:#7B98FF; --accent-ink:#0A0F1E; --accent-soft:#1E2A4F; --accent-2:#F2A548;
-  --good:#3DD39C; --good-bg:#10291F; --bad:#FF7A6E; --bad-bg:#3A1816; --warn:#F2B84B; --warn-bg:#33270F;
-  --gold:#F2B84B; --silver:#AEB7C9; --bronze:#DE9560;
-  --s1:#7B98FF; --s2:#F2A548; --s3:#3DD39C; --s4:#D48BE6;
-  --shadow:0 1px 2px rgba(0,0,0,.25); --shadow-hover:0 6px 22px rgba(0,0,0,.35);
+  --bg:#111917; --surface:#18221F; --surface-2:#1C2724; --ink:#E6EEEC; --muted:#A3B3AF; --line:#28352F; --soft:#1F2B28;
+  --accent:#86C7C1; --accent-ink:#0E1615; --accent-soft:#1E3533; --accent-2:#E8B884;
+  --good:#6FD1A6; --good-bg:#13281F; --bad:#F08A7E; --bad-bg:#33191A; --warn:#E9C072; --warn-bg:#2F2714;
+  --gold:#E9C072; --silver:#B4C2BE; --bronze:#D9A07E;
+  --s1:#86C7C1; --s2:#E8B884; --s3:#A3B2E8; --s4:#DDA3C2;
+  --shadow:0 1px 2px rgba(0,0,0,.22); --shadow-hover:0 6px 22px rgba(0,0,0,.32);
   color-scheme:dark}
 
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+body{margin:0;background:radial-gradient(1100px 520px at 12% -8%,color-mix(in srgb,var(--accent-soft) 85%,transparent),transparent 70%),radial-gradient(900px 480px at 92% -12%,color-mix(in srgb,var(--accent-2) 10%,transparent),transparent 70%),var(--bg);background-repeat:no-repeat;color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
   font-feature-settings:"tnum" 1;-webkit-font-smoothing:antialiased}
 a{color:var(--accent)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
@@ -74,7 +74,7 @@ h2{font-size:19px;font-weight:700}
 .seg{display:inline-flex;background:var(--soft);border-radius:10px;padding:3px;gap:2px;flex-wrap:wrap}
 .seg button{font:inherit;font-size:13px;font-weight:600;color:var(--muted);background:none;border:0;border-radius:8px;padding:6px 11px;cursor:pointer;transition:background .15s,color .15s}
 .seg button:hover{color:var(--ink)}
-.seg button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(23,32,51,.12)}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(34,48,46,.10)}
 .btn{font:inherit;font-size:14px;font-weight:700;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:10px;padding:8px 14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:border-color .15s,background .15s}
 .btn:hover{border-color:var(--accent);color:var(--accent)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -82,7 +82,7 @@ h2{font-size:19px;font-weight:700}
 
 /* ---------- logo do ativo ---------- */
 .logo{flex:none;width:var(--ls,38px);height:var(--ls,38px);border-radius:calc(var(--ls,38px) * .26);overflow:hidden;display:grid;place-items:center;
-  background:#fff;border:1px solid var(--line);box-shadow:0 1px 2px rgba(23,32,51,.05)}
+  background:#fff;border:1px solid var(--line);box-shadow:0 1px 2px rgba(34,48,46,.05)}
 .logo img{width:100%;height:100%;object-fit:contain;display:block}
 .logo.mono{border:0;font-family:var(--font-display);font-weight:800;font-size:calc(var(--ls,38px) * .34);letter-spacing:-.02em;
   color:hsl(var(--h) 55% 32%);background:hsl(var(--h) 70% 92%)}
