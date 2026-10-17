@@ -87,23 +87,48 @@ export default {
       if (ult && ult.role === c.role) ult.parts[0].text += "\n\n" + c.parts[0].text; else conv.push(c);
     }
 
-    let r;
-    try {
-      r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.MODELO)}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: INSTRUCOES }] },
-          contents: conv,
-          tools: [{ google_search: {} }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 1500, thinkingConfig: { thinkingBudget: 0 } },
-        }),
-      });
-    } catch {
-      return json({ erro: "Não foi possível falar com a IA agora. Tente de novo em instantes." }, 502);
+    // Tenta o modelo configurado; se o Google recusar o formato (400) ou não achar o modelo (404),
+    // tenta de novo com configurações mais simples e, por fim, com o modelo Flash-Lite.
+    const tentativas = [
+      { modelo: cfg.MODELO, pensar: false, busca: true },
+      { modelo: cfg.MODELO, pensar: null, busca: true },
+      { modelo: "gemini-2.5-flash-lite", pensar: null, busca: true },
+      { modelo: cfg.MODELO, pensar: null, busca: false },
+    ];
+    let r, status = 0, detalhe = "", usouBusca = true;
+    for (const t of tentativas) {
+      const geracao = { temperature: 0.4, maxOutputTokens: 2048 };
+      if (t.pensar === false) geracao.thinkingConfig = { thinkingBudget: 0 };
+      const corpo = { systemInstruction: { parts: [{ text: INSTRUCOES }] }, contents: conv, generationConfig: geracao };
+      if (t.busca) corpo.tools = [{ google_search: {} }];
+      try {
+        r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(t.modelo)}:generateContent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+          body: JSON.stringify(corpo),
+        });
+      } catch (e) {
+        console.log("gemini: falha de rede", String(e));
+        return json({ erro: "Não foi possível falar com a IA agora. Tente de novo em instantes." }, 502);
+      }
+      if (r.ok) { usouBusca = t.busca; break; }
+      status = r.status;
+      detalhe = (await r.text()).slice(0, 400);
+      // registro visível só no painel da Cloudflare (Observability → Logs); a resposta do Google não contém a chave
+      console.log("gemini: erro", t.modelo, "pensar=" + t.pensar, "busca=" + t.busca, status, detalhe);
+      if (status !== 400 && status !== 404) break;
     }
-    if (r.status === 429) return json({ erro: "A IA atingiu o limite gratuito por agora. Tente de novo mais tarde." }, 429);
-    if (!r.ok) return json({ erro: "A IA não respondeu. Tente de novo em instantes." }, 502);
+    if (!r.ok) {
+      const motivo = {
+        400: "a IA recusou o formato do pedido",
+        401: "a chave do Gemini é inválida",
+        403: "a chave do Gemini não tem permissão (verifique se a API está ativada no Google AI Studio)",
+        404: "o modelo de IA não está disponível",
+        429: "a IA atingiu o limite gratuito por agora",
+      }[status] || "a IA não respondeu";
+      const msg = /location|region|country/i.test(detalhe) ? "o Google não liberou a API gratuita para a região do servidor" : motivo;
+      return json({ erro: `Não foi possível responder: ${msg} (código ${status}). Tente de novo mais tarde.`, codigo: status }, status === 429 ? 429 : 502);
+    }
 
     let g;
     try { g = await r.json(); } catch { return json({ erro: "Resposta inválida da IA." }, 502); }
