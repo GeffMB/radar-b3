@@ -26,6 +26,7 @@ const PADRAO = {
   POR_DIA_IP: 40,      // perguntas por visitante por dia
   POR_DIA_TOTAL: 400,  // teto do site inteiro por dia (abaixo das 500 buscas grátis do Gemini)
 };
+const PRAZO_TOTAL = 80000;   // ms: o site desiste aos 100 s, então o servidor responde antes
 const MAX = { corpo: 12000, pergunta: 500, contexto: 2500, historico: 6, msg: 1500 };
 
 const INSTRUCOES = `Você é o assistente do Radar B3, um site de análise de ações brasileiras.
@@ -109,12 +110,20 @@ export default {
         const corpo = { systemInstruction: { parts: [{ text: INSTRUCOES }] }, contents: conv, generationConfig: { temperature: 0.4, maxOutputTokens: 8192 } };
         if (busca) corpo.tools = [{ google_search: {} }];
         try {
+          // cada tentativa tem no máximo 35 s; o conjunto respeita o orçamento total
+          const resta = PRAZO_TOTAL - (Date.now() - agoraMs);
+          if (resta < 8000) { status = 504; detalhe = "tempo esgotado"; break fora; }
           r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent`, {
+            signal: AbortSignal.timeout(Math.min(35000, resta)),
             method: "POST",
             headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
             body: JSON.stringify(corpo),
           });
         } catch (e) {
+          if (e && (e.name === "TimeoutError" || e.name === "AbortError")) {
+            status = 504; detalhe = "tempo esgotado"; console.log("gemini: demorou demais", modelo, "busca=" + busca);
+            continue;                                                     // tenta o próximo caminho, se ainda houver tempo
+          }
           console.log("gemini: falha de rede", String(e));
           return json({ erro: "Não foi possível falar com a IA agora. Tente de novo em instantes." }, 502);
         }
@@ -147,6 +156,7 @@ export default {
     }
     if (!RESPOSTA) {
       if (status === 204) return json({ erro: "A IA não conseguiu montar uma resposta agora. Tente reformular a pergunta ou começar uma nova conversa." }, 502);
+      if (status === 504) return json({ erro: "A IA demorou demais para responder. Tente de novo em instantes ou faça uma pergunta mais específica." }, 504);
       const motivo = {
         400: "a IA recusou o pedido",
         401: "a chave do Gemini é inválida",

@@ -88,6 +88,9 @@
   .ast-sug button{font:inherit;font-size:13px;text-align:left;border:1px solid var(--line,#E2E6EF);background:var(--surface,#fff);color:var(--ink,#172033);border-radius:12px;padding:8px 11px;cursor:pointer;transition:border-color .15s,color .15s}
   .ast-sug button:hover{border-color:var(--accent,#2C55E0);color:var(--accent,#2C55E0)}
   .ast-dig{display:inline-flex;gap:4px;align-items:center;padding:4px 2px}
+  .ast-esp{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .ast-et{font-size:13.5px;color:var(--ink,#172033)}
+  .ast-seg{font-size:12px;color:var(--muted,#5D6880);font-variant-numeric:tabular-nums;margin-left:auto}
   .ast-dig i{width:7px;height:7px;border-radius:50%;background:var(--muted,#5D6880);opacity:.4;animation:astd 1s infinite}
   .ast-dig i:nth-child(2){animation-delay:.15s} .ast-dig i:nth-child(3){animation-delay:.3s}
   @keyframes astd{0%,60%,100%{opacity:.25;transform:none}30%{opacity:.9;transform:translateY(-3px)}}
@@ -147,9 +150,22 @@
       const historico = conversa.filter(m => m.papel !== "erro").slice(-HISTORICO).map(m => ({ papel: m.papel, texto: m.texto }));
       conversa.push({ papel: "usuario", texto: pergunta });
       q.value = ""; env.disabled = true; ocupado = true;
-      desenhar('<div class="ast-m ast-a"><span class="ast-dig" aria-label="Pensando"><i></i><i></i><i></i></span></div>');
+      // Enquanto espera: mensagens de andamento que mudam com o tempo, para não parecer travado.
+      const ETAPAS = [[0, "Buscando informações…"], [6, "Pesquisando notícias e dados na web…"], [15, "Analisando o que encontrou…"],
+        [28, "Organizando a resposta…"], [45, "Está levando mais tempo que o normal, mas continua buscando. Aguarde…"]];
+      const inicio = Date.now();
+      const espera = () => {
+        const seg = (Date.now() - inicio) / 1000;
+        const txt = ETAPAS.filter(([t]) => seg >= t).pop()[1];
+        desenhar(`<div class="ast-m ast-a ast-esp"><span class="ast-dig" aria-hidden="true"><i></i><i></i><i></i></span><span class="ast-et">${txt}</span><span class="ast-seg">${Math.floor(seg)}s</span></div>`);
+      };
+      espera();
+      const relogio = setInterval(espera, 1000);
+      const ctrl = new AbortController();
+      const limite = setTimeout(() => ctrl.abort(), 100000);   // nunca fica esperando para sempre
       try {
         const r = await fetch(ENDPOINT + "/perguntar", {
+          signal: ctrl.signal,
           method: "POST", headers: { "Content-Type": "application/json" }, referrerPolicy: "no-referrer", credentials: "omit", cache: "no-store",
           body: JSON.stringify({ pergunta, contexto: (cfg.contexto() || "").slice(0, LIMITE_CONTEXTO), historico }),
         });
@@ -157,8 +173,10 @@
         if (!r.ok || !d.resposta) conversa.push({ papel: "erro", texto: d.erro || "Não foi possível responder agora. Tente de novo." });
         else conversa.push({ papel: "assistente", texto: String(d.resposta), semBusca: !!d.sem_busca, fontes: Array.isArray(d.fontes) ? d.fontes.filter(f => /^https:\/\//.test(f.url || "")) : [] });
       } catch (e) {
-        conversa.push({ papel: "erro", texto: "Sem conexão com o assistente. Verifique a internet e tente de novo." });
-      }
+        conversa.push({ papel: "erro", texto: e && e.name === "AbortError"
+          ? "A busca demorou demais e foi interrompida. Tente de novo ou faça uma pergunta mais específica."
+          : "Sem conexão com o assistente. Verifique a internet e tente de novo." });
+      } finally { clearInterval(relogio); clearTimeout(limite); }
       ocupado = false; desenhar(); if (!celular()) q.focus();
     }
 
