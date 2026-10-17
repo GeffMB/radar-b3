@@ -43,103 +43,160 @@
     return html;
   }
 
+  // Ícones desenhados para o site (traço simples, herdam a cor do texto)
+  const IC = {
+    brilho: '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2.5c.6 3.9 1.9 6.4 3.6 7.9 1.5 1.3 3.5 2 5.9 2.1-2.4.2-4.4.9-5.9 2.2-1.7 1.5-3 4-3.6 7.8-.6-3.8-1.9-6.3-3.6-7.8C6.9 13.4 4.9 12.7 2.5 12.5c2.4-.1 4.4-.8 5.9-2.1 1.7-1.5 3-4 3.6-7.9z"/><path fill="currentColor" opacity=".65" d="M19 2.8c.25 1.3.7 2.1 1.3 2.6.5.45 1.2.7 2 .75-.8.05-1.5.3-2 .75-.6.5-1.05 1.3-1.3 2.6-.25-1.3-.7-2.1-1.3-2.6-.5-.45-1.2-.7-2-.75.8-.05 1.5-.3 2-.75.6-.5 1.05-1.3 1.3-2.6z"/></svg>',
+    novo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h8"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+    info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5v.5"/></svg>',
+    fechar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    enviar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6"/></svg>',
+    seta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+    alerta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4M12 17v.5"/><path d="M10.3 3.9L2.4 17.5A2 2 0 0 0 4.1 20.5h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>',
+    link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
+  };
+
   const css = `
-  .ast-btn{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:50;
-    font:700 14px/1 var(--font-body,system-ui,sans-serif);color:var(--accent-ink,#fff);background:var(--accent,#2C55E0);border:0;border-radius:999px;
-    padding:13px 18px;cursor:pointer;box-shadow:0 8px 24px rgba(23,32,51,.25);display:flex;gap:8px;align-items:center;transition:transform .15s,filter .15s}
-  .ast-btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
-  .ast-btn svg{width:18px;height:18px}
-  .ast-pan{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:51;
-    width:min(430px,calc(100vw - 32px));height:min(640px,calc(100vh - 110px));background:var(--surface,#fff);color:var(--ink,#172033);
-    border:1px solid var(--line,#E2E6EF);border-radius:16px;box-shadow:0 18px 50px rgba(23,32,51,.28);display:flex;flex-direction:column;overflow:hidden;
-    font:14.5px/1.5 var(--font-body,system-ui,sans-serif)}
+  .ast-btn,.ast-pan{--ag1:var(--accent,#2C55E0);--ag2:#7B5CFF}
+  .ast-btn{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:50;
+    height:56px;min-width:56px;padding:0 16px;border:0;border-radius:999px;cursor:pointer;color:#fff;
+    background:linear-gradient(135deg,var(--ag1),var(--ag2));box-shadow:0 10px 28px color-mix(in srgb,var(--ag2) 40%,transparent),0 2px 6px rgba(0,0,0,.12);
+    display:flex;align-items:center;gap:0;font:700 15px/1 var(--font-body,system-ui,sans-serif);transition:transform .2s,box-shadow .2s,gap .25s}
+  .ast-btn svg{width:24px;height:24px;flex:none}
+  .ast-btn span{max-width:0;overflow:hidden;white-space:nowrap;transition:max-width .3s ease}
+  .ast-btn:hover{transform:translateY(-2px);gap:8px}
+  .ast-btn:hover span,.ast-btn:focus-visible span{max-width:120px}
+  .ast-btn[aria-expanded=true]{transform:scale(.92)}
+  .ast-pan{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:51;
+    width:min(410px,calc(100vw - 32px));height:min(640px,calc(100vh - 120px));display:flex;flex-direction:column;overflow:hidden;
+    background:var(--surface,#fff);color:var(--ink,#172033);border:1px solid color-mix(in srgb,var(--line,#E2E6EF) 70%,transparent);border-radius:22px;
+    box-shadow:0 24px 60px rgba(15,20,40,.28),0 2px 8px rgba(15,20,40,.08);font:15px/1.55 var(--font-body,system-ui,sans-serif);transform-origin:bottom right}
   .ast-pan[hidden]{display:none}
+  @media (prefers-reduced-motion:no-preference){.ast-pan:not([hidden]){animation:astin .22s cubic-bezier(.2,.8,.2,1)}}
+  @keyframes astin{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+
+  .ast-top{display:flex;align-items:center;gap:10px;padding:14px 12px 10px 16px}
+  .ast-orb{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--ag1),var(--ag2))}
+  .ast-orb svg{width:18px;height:18px}
+  .ast-orb.p{width:26px;height:26px}.ast-orb.p svg{width:14px;height:14px}
+  .ast-tit{flex:1;min-width:0;line-height:1.2}
+  .ast-tit b{display:block;font-family:var(--font-display,inherit);font-size:16px;letter-spacing:-.01em}
+  .ast-tit small{font-size:12px;color:var(--muted,#5D6880);display:flex;align-items:center;gap:5px}
+  .ast-tit small i{width:6px;height:6px;border-radius:50%;background:var(--good,#0B9467)}
+  .ast-ic{border:0;background:none;color:var(--muted,#5D6880);width:36px;height:36px;border-radius:50%;cursor:pointer;display:grid;place-items:center;transition:background .15s,color .15s}
+  .ast-ic:hover{background:var(--soft,#EDF0F6);color:var(--ink,#172033)}
+  .ast-ic svg{width:19px;height:19px}
+  .ast-info{margin:0 14px 6px;padding:10px 12px;border-radius:12px;background:var(--soft,#EDF0F6);font-size:12.5px;color:var(--muted,#5D6880);line-height:1.5}
+  .ast-info[hidden]{display:none}
+
+  .ast-msgs{flex:1;overflow-y:auto;padding:8px 16px 16px;display:flex;flex-direction:column;gap:18px;overscroll-behavior:contain;scroll-behavior:smooth}
+  .ast-u{align-self:flex-end;max-width:85%;padding:10px 14px;border-radius:18px 18px 6px 18px;color:#fff;background:linear-gradient(135deg,var(--ag1),color-mix(in srgb,var(--ag1) 60%,var(--ag2)));white-space:pre-wrap;overflow-wrap:anywhere}
+  .ast-a{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;align-items:start}
+  .ast-txt{overflow-wrap:anywhere}
+  .ast-txt p{margin:0 0 8px} .ast-txt p:last-child{margin:0}
+  .ast-txt ul,.ast-txt ol{margin:4px 0 8px;padding-left:20px} .ast-txt li{margin:2px 0}
+  .ast-txt .ast-h{font-weight:800;font-family:var(--font-display,inherit);margin-top:4px}
+  .ast-txt strong{font-weight:700}
+  .ast-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+  .ast-meta a,.ast-meta span{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;border-radius:999px;padding:4px 10px;text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ast-meta a{color:var(--ink,#172033);background:var(--soft,#EDF0F6)}
+  .ast-meta a:hover{color:var(--accent,#2C55E0)}
+  .ast-meta a svg{width:12px;height:12px;flex:none;opacity:.6}
+  .ast-meta span{color:var(--muted,#5D6880);border:1px dashed var(--line,#E2E6EF);cursor:help}
+  .ast-erro{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:var(--warn-bg,#FCF1DD);font-size:13.5px}
+  .ast-erro svg{width:18px;height:18px;flex:none;color:var(--warn,#A86B12);margin-top:1px}
+
+  .ast-boas{margin:auto 0;display:grid;gap:18px;padding:10px 2px}
+  .ast-boas .ast-orb{width:52px;height:52px}.ast-boas .ast-orb svg{width:26px;height:26px}
+  .ast-boas h3{margin:0;font-family:var(--font-display,inherit);font-size:22px;letter-spacing:-.02em;line-height:1.2}
+  .ast-boas h3 em{font-style:normal;background:linear-gradient(90deg,var(--ag1),var(--ag2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .ast-boas p{margin:4px 0 0;color:var(--muted,#5D6880);font-size:14px}
+  .ast-sug{display:grid;gap:8px}
+  .ast-sug button{display:flex;align-items:center;gap:10px;justify-content:space-between;font:inherit;font-size:13.5px;text-align:left;color:var(--ink,#172033);
+    background:var(--soft,#EDF0F6);border:1px solid transparent;border-radius:14px;padding:11px 14px;cursor:pointer;transition:border-color .15s,background .15s,transform .15s}
+  .ast-sug button svg{width:16px;height:16px;flex:none;color:var(--muted,#5D6880);transition:transform .15s,color .15s}
+  .ast-sug button:hover{background:var(--surface,#fff);border-color:color-mix(in srgb,var(--ag1) 45%,transparent)}
+  .ast-sug button:hover svg{transform:translateX(3px);color:var(--accent,#2C55E0)}
+
+  .ast-esp .ast-txt{display:flex;align-items:center;min-height:26px}
+  .ast-et{font-size:14px;font-weight:600;background:linear-gradient(90deg,var(--muted,#5D6880) 0%,var(--ink,#172033) 45%,var(--muted,#5D6880) 90%);background-size:220% 100%;
+    -webkit-background-clip:text;background-clip:text;color:transparent;animation:astbrilho 1.8s linear infinite}
+  @keyframes astbrilho{from{background-position:120% 0}to{background-position:-120% 0}}
+  .ast-esp .ast-orb{animation:astpulso 1.6s ease-in-out infinite}
+  @keyframes astpulso{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ag2) 45%,transparent)}50%{box-shadow:0 0 0 7px transparent}}
+  @media (prefers-reduced-motion:reduce){.ast-et,.ast-esp .ast-orb{animation:none;color:var(--muted,#5D6880)}}
+
+  .ast-form{padding:10px 14px 14px}
+  .ast-campo{display:flex;align-items:flex-end;gap:8px;background:var(--soft,#EDF0F6);border:1.5px solid transparent;border-radius:24px;padding:6px 6px 6px 16px;transition:border-color .15s,background .15s}
+  .ast-campo:focus-within{background:var(--surface,#fff);border-color:color-mix(in srgb,var(--ag1) 55%,transparent)}
+  .ast-campo textarea{flex:1;font:inherit;font-size:15px;color:inherit;background:none;border:0;outline:none;resize:none;height:40px;max-height:120px;padding:9px 0;line-height:1.45}
+  .ast-env{flex:none;width:40px;height:40px;border:0;border-radius:50%;cursor:pointer;display:grid;place-items:center;color:#fff;background:linear-gradient(135deg,var(--ag1),var(--ag2));transition:opacity .15s,transform .15s}
+  .ast-env:hover:not(:disabled){transform:scale(1.06)}
+  .ast-env:disabled{opacity:.35;cursor:not-allowed}
+  .ast-env svg{width:18px;height:18px}
+  .ast-rod{margin:8px 0 0;text-align:center;font-size:11px;color:var(--muted,#5D6880)}
+  .ast-pan :focus-visible,.ast-btn:focus-visible{outline:2px solid var(--accent,#2C55E0);outline-offset:2px}
+  .ast-pan .ast-campo textarea:focus-visible{outline:none}   /* o contorno fica na caixa inteira */
+
   /* celular: tela cheia que acompanha a área visível (teclado e barra do navegador) */
   @media (max-width:640px){
     .ast-pan{left:0;right:0;top:0;bottom:auto;width:auto;height:100dvh;max-height:none;border-radius:0;border:0;box-shadow:none;
       padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
     .ast-pan .ast-form{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
-    .ast-pan .ast-form textarea{font-size:16px}           /* 16px evita o zoom automático do iPhone ao tocar */
+    .ast-pan .ast-campo textarea{font-size:16px}           /* 16px evita o zoom automático do iPhone ao tocar */
     html.ast-aberto,html.ast-aberto body{overflow:hidden;overscroll-behavior:none}
     html.ast-aberto .ast-btn{display:none}
-    .ast-pan .ast-nota{display:none}
-    .ast-pan .ast-m{max-width:94%}
+    .ast-btn span{display:none}
   }
-  .ast-top{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line,#E2E6EF);background:var(--surface-2,#F1F3F9)}
-  .ast-top b{font-family:var(--font-display,inherit);font-size:16px;display:flex;gap:8px;align-items:center}
-  .ast-top b i{width:8px;height:8px;border-radius:50%;background:var(--good,#0B9467);display:inline-block}
-  .ast-acoes{display:flex;gap:6px}
-  .ast-x{border:0;background:var(--soft,#EDF0F6);color:var(--muted,#5D6880);height:30px;min-width:30px;padding:0 10px;border-radius:999px;cursor:pointer;font:inherit;font-size:12px;font-weight:700}
-  .ast-x:hover{color:var(--ink,#172033)}
-  .ast-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;overscroll-behavior:contain}
-  .ast-m{max-width:90%;padding:10px 13px;border-radius:14px;overflow-wrap:anywhere}
-  .ast-m p{margin:0 0 6px} .ast-m p:last-child{margin:0}
-  .ast-m ul,.ast-m ol{margin:4px 0 6px;padding-left:20px}
-  .ast-m .ast-h{font-weight:800}
-  .ast-u{align-self:flex-end;background:var(--accent,#2C55E0);color:var(--accent-ink,#fff);border-bottom-right-radius:4px;white-space:pre-wrap}
-  .ast-a{align-self:flex-start;background:var(--soft,#EDF0F6);border-bottom-left-radius:4px}
-  .ast-erro{align-self:center;background:var(--warn-bg,#FCF1DD);color:var(--ink,#172033);font-size:13px;text-align:center}
-  .ast-fontes{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
-  .ast-fontes a{font-size:12px;font-weight:700;color:var(--accent,#2C55E0);background:var(--surface,#fff);border:1px solid var(--line,#E2E6EF);border-radius:999px;padding:2px 9px;text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .ast-fontes a:hover{border-color:var(--accent,#2C55E0)}
-  .ast-sb{font-size:11.5px;color:var(--muted,#5D6880);margin-top:6px!important}
-  .ast-boas{color:var(--muted,#5D6880);font-size:13.5px;display:grid;gap:10px}
-  .ast-sug{display:flex;flex-direction:column;gap:6px}
-  .ast-sug button{font:inherit;font-size:13px;text-align:left;border:1px solid var(--line,#E2E6EF);background:var(--surface,#fff);color:var(--ink,#172033);border-radius:12px;padding:8px 11px;cursor:pointer;transition:border-color .15s,color .15s}
-  .ast-sug button:hover{border-color:var(--accent,#2C55E0);color:var(--accent,#2C55E0)}
-  .ast-dig{display:inline-flex;gap:4px;align-items:center;padding:4px 2px}
-  .ast-esp{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-  .ast-et{font-size:13.5px;color:var(--ink,#172033)}
-  .ast-seg{font-size:12px;color:var(--muted,#5D6880);font-variant-numeric:tabular-nums;margin-left:auto}
-  .ast-dig i{width:7px;height:7px;border-radius:50%;background:var(--muted,#5D6880);opacity:.4;animation:astd 1s infinite}
-  .ast-dig i:nth-child(2){animation-delay:.15s} .ast-dig i:nth-child(3){animation-delay:.3s}
-  @keyframes astd{0%,60%,100%{opacity:.25;transform:none}30%{opacity:.9;transform:translateY(-3px)}}
-  @media (prefers-reduced-motion:reduce){.ast-dig i{animation:none;opacity:.6}}
-  .ast-form{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line,#E2E6EF)}
-  .ast-form textarea{flex:1;font:inherit;font-size:14px;color:inherit;background:var(--soft,#EDF0F6);border:1px solid transparent;border-radius:12px;padding:10px 12px;resize:none;height:44px;max-height:120px}
-  .ast-form textarea:focus{background:var(--surface,#fff);border-color:var(--line,#E2E6EF)}
-  .ast-env{border:0;border-radius:12px;width:44px;flex:none;background:var(--accent,#2C55E0);color:var(--accent-ink,#fff);cursor:pointer;display:grid;place-items:center}
-  .ast-env:disabled{opacity:.45;cursor:not-allowed}
-  .ast-env svg{width:18px;height:18px}
-  .ast-nota{font-size:11px;color:var(--muted,#5D6880);margin:0;padding:0 14px 10px}
-  .ast-pan :focus-visible,.ast-btn:focus-visible{outline:2px solid var(--accent,#2C55E0);outline-offset:2px}
   @media print{.ast-btn,.ast-pan{display:none}}`;
 
   function iniciar() {
     const st = document.createElement("style"); st.textContent = css; document.head.append(st);
     const btn = document.createElement("button");
     btn.type = "button"; btn.className = "ast-btn"; btn.setAttribute("aria-expanded", "false"); btn.setAttribute("aria-controls", "ast-pan");
-    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>Assistente';
+    btn.setAttribute("aria-label", "Abrir o assistente");
+    btn.innerHTML = IC.brilho + "<span>Assistente</span>";
     const pan = document.createElement("section");
     pan.className = "ast-pan"; pan.id = "ast-pan"; pan.hidden = true; pan.setAttribute("aria-label", "Assistente");
     pan.innerHTML = `
-      <div class="ast-top"><b><i aria-hidden="true"></i>Assistente</b>
-        <div class="ast-acoes"><button type="button" class="ast-x" id="ast-limpar" title="Começar nova conversa">Nova conversa</button><button type="button" class="ast-x" id="ast-fechar" aria-label="Fechar">×</button></div></div>
+      <div class="ast-top">
+        <span class="ast-orb">${IC.brilho}</span>
+        <div class="ast-tit"><b>Assistente</b><small><i aria-hidden="true"></i>Ações, indicadores e notícias</small></div>
+        <button type="button" class="ast-ic" id="ast-limpar" title="Nova conversa" aria-label="Nova conversa">${IC.novo}</button>
+        <button type="button" class="ast-ic" id="ast-sobre" title="Sobre o assistente" aria-label="Sobre o assistente" aria-expanded="false" aria-controls="ast-info">${IC.info}</button>
+        <button type="button" class="ast-ic" id="ast-fechar" title="Fechar" aria-label="Fechar">${IC.fechar}</button>
+      </div>
+      <div class="ast-info" id="ast-info" hidden>As respostas são geradas por IA (Google Gemini, plano gratuito: o Google pode usar o conteúdo para melhorar seus produtos). Os dados da página vão junto com a pergunta. Não escreva dados pessoais e confira as fontes. Não é recomendação de investimento.</div>
       <div class="ast-msgs" id="ast-msgs" aria-live="polite"></div>
       <form class="ast-form" id="ast-form">
-        <textarea id="ast-q" maxlength="${LIMITE_PERGUNTA}" placeholder="Pergunte sobre ações ou notícias" aria-label="Sua pergunta" rows="1"></textarea>
-        <button type="submit" class="ast-env" id="ast-env" aria-label="Enviar" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
-      </form>
-      <p class="ast-nota">Respostas geradas por IA (Google Gemini, plano gratuito: o Google pode usar o conteúdo para melhorar seus produtos). Não escreva dados pessoais. Confira as fontes. Não é recomendação de investimento.</p>`;
+        <div class="ast-campo">
+          <textarea id="ast-q" maxlength="${LIMITE_PERGUNTA}" placeholder="Pergunte algo…" aria-label="Sua pergunta" rows="1"></textarea>
+          <button type="submit" class="ast-env" id="ast-env" aria-label="Enviar" disabled>${IC.enviar}</button>
+        </div>
+        <p class="ast-rod">IA pode errar · não é recomendação de investimento</p>
+      </form>`;
     document.body.append(btn, pan);
 
     const msgs = pan.querySelector("#ast-msgs"), q = pan.querySelector("#ast-q"), env = pan.querySelector("#ast-env");
     const rolar = () => { msgs.scrollTop = msgs.scrollHeight; };
+    const orb = '<span class="ast-orb p" aria-hidden="true">' + IC.brilho + "</span>";
 
     function desenhar(extra) {
       if (!conversa.length && !extra) {
-        const sug = (cfg.sugestoes() || []).slice(0, 4);
-        msgs.innerHTML = `<div class="ast-boas"><p style="margin:0">Pergunte sobre as ações, os indicadores ou as notícias do mercado. Os dados desta página vão junto com a pergunta.</p>
-          <p class="ast-sb" style="margin:0!important">Respostas geradas por IA (Google Gemini, plano gratuito: o Google pode usar o conteúdo para melhorar seus produtos). Não escreva dados pessoais. Não é recomendação de investimento.</p>
-          ${sug.length ? `<div class="ast-sug">${sug.map((s, i) => `<button type="button" data-i="${i}">${esc(s)}</button>`).join("")}</div>` : ""}</div>`;
+        const sug = (cfg.sugestoes() || []).slice(0, 3);
+        msgs.innerHTML = `<div class="ast-boas">
+          <span class="ast-orb" aria-hidden="true">${IC.brilho}</span>
+          <div><h3>Olá! <em>Como posso ajudar?</em></h3><p>Pergunte sobre ações, indicadores ou notícias do mercado.</p></div>
+          ${sug.length ? `<div class="ast-sug">${sug.map((s, i) => `<button type="button" data-i="${i}"><span>${esc(s)}</span>${IC.seta}</button>`).join("")}</div>` : ""}</div>`;
         msgs.querySelectorAll(".ast-sug button").forEach(b => b.onclick = () => enviar(sug[+b.dataset.i]));
         return;
       }
-      msgs.innerHTML = conversa.map(m => m.papel === "usuario"
-        ? `<div class="ast-m ast-u">${esc(m.texto)}</div>`
-        : m.papel === "erro" ? `<div class="ast-m ast-erro">${esc(m.texto)}</div>`
-        : `<div class="ast-m ast-a">${md(m.texto)}${(m.fontes || []).length ? `<div class="ast-fontes">${m.fontes.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener noreferrer nofollow" referrerpolicy="no-referrer">${esc(f.titulo)}</a>`).join("")}</div>` : ""}${m.semBusca ? `<p class="ast-sb">Respondido sem busca na web: notícias recentes podem não estar incluídas.</p>` : ""}</div>`
-      ).join("") + (extra || "");
+      msgs.innerHTML = conversa.map(m => {
+        if (m.papel === "usuario") return `<div class="ast-u">${esc(m.texto)}</div>`;
+        if (m.papel === "erro") return `<div class="ast-erro" role="alert">${IC.alerta}<span>${esc(m.texto)}</span></div>`;
+        const fontes = (m.fontes || []).map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener noreferrer nofollow" referrerpolicy="no-referrer">${IC.link}${esc(f.titulo)}</a>`).join("");
+        const sb = m.semBusca ? `<span title="O modelo respondeu sem consultar a web; notícias muito recentes podem não estar incluídas.">Sem busca na web</span>` : "";
+        return `<div class="ast-a">${orb}<div class="ast-txt">${md(m.texto)}${fontes || sb ? `<div class="ast-meta">${fontes}${sb}</div>` : ""}</div></div>`;
+      }).join("") + (extra || "");
       rolar();
     }
 
@@ -149,18 +206,16 @@
       if (!ENDPOINT) { conversa.push({ papel: "usuario", texto: pergunta }, { papel: "erro", texto: "O assistente ainda está sendo ativado. Tente de novo mais tarde." }); desenhar(); return; }
       const historico = conversa.filter(m => m.papel !== "erro").slice(-HISTORICO).map(m => ({ papel: m.papel, texto: m.texto }));
       conversa.push({ papel: "usuario", texto: pergunta });
-      q.value = ""; env.disabled = true; ocupado = true;
+      q.value = ""; q.style.height = ""; env.disabled = true; ocupado = true;
       // Enquanto espera: mensagens de andamento que mudam com o tempo, para não parecer travado.
       const ETAPAS = [[0, "Buscando informações…"], [6, "Pesquisando notícias e dados na web…"], [15, "Analisando o que encontrou…"],
-        [28, "Organizando a resposta…"], [45, "Está levando mais tempo que o normal, mas continua buscando. Aguarde…"]];
+        [28, "Organizando a resposta…"], [45, "Está demorando um pouco mais, mas continua buscando…"]];
       const inicio = Date.now();
-      const espera = () => {
-        const seg = (Date.now() - inicio) / 1000;
-        const txt = ETAPAS.filter(([t]) => seg >= t).pop()[1];
-        desenhar(`<div class="ast-m ast-a ast-esp"><span class="ast-dig" aria-hidden="true"><i></i><i></i><i></i></span><span class="ast-et">${txt}</span><span class="ast-seg">${Math.floor(seg)}s</span></div>`);
-      };
-      espera();
-      const relogio = setInterval(espera, 1000);
+      desenhar(`<div class="ast-a ast-esp">${orb}<div class="ast-txt"><span class="ast-et" id="ast-et">${ETAPAS[0][1]}</span></div></div>`);
+      const relogio = setInterval(() => {
+        const seg = (Date.now() - inicio) / 1000, el = document.getElementById("ast-et");
+        if (el) el.textContent = ETAPAS.filter(([t]) => seg >= t).pop()[1];
+      }, 1000);
       const ctrl = new AbortController();
       const limite = setTimeout(() => ctrl.abort(), 100000);   // nunca fica esperando para sempre
       try {
@@ -193,14 +248,16 @@
 
     const abrir = on => {
       pan.hidden = !on; btn.setAttribute("aria-expanded", String(on));
+      btn.setAttribute("aria-label", on ? "Fechar o assistente" : "Abrir o assistente");
       document.documentElement.classList.toggle("ast-aberto", on);
       if (on) { desenhar(); ajustar(); if (!celular()) q.focus(); } else { ajustar(); btn.focus(); }
     };
     btn.onclick = () => abrir(pan.hidden);
     pan.querySelector("#ast-fechar").onclick = () => abrir(false);
-    pan.querySelector("#ast-limpar").onclick = () => { if (ocupado) return; conversa.length = 0; desenhar(); q.focus(); };
+    pan.querySelector("#ast-limpar").onclick = () => { if (ocupado) return; conversa.length = 0; desenhar(); if (!celular()) q.focus(); };
+    pan.querySelector("#ast-sobre").onclick = e => { const i = pan.querySelector("#ast-info"); i.hidden = !i.hidden; e.currentTarget.setAttribute("aria-expanded", String(!i.hidden)); };
     document.addEventListener("keydown", e => { if (e.key === "Escape" && !pan.hidden) abrir(false); });
-    q.addEventListener("input", () => { env.disabled = !q.value.trim() || ocupado; q.style.height = "44px"; q.style.height = Math.min(q.scrollHeight, 120) + "px"; });
+    q.addEventListener("input", () => { env.disabled = !q.value.trim() || ocupado; q.style.height = "40px"; q.style.height = Math.min(q.scrollHeight, 120) + "px"; });
     q.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); enviar(q.value); } });
     pan.querySelector("#ast-form").addEventListener("submit", e => { e.preventDefault(); enviar(q.value); });
   }
