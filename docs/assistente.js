@@ -17,7 +17,7 @@
   }
 
   // Endereço do servidor do assistente. Vazio = ainda não ativado.
-  const ENDPOINT = "";
+  const ENDPOINT = "https://radar-assistente.gefersonmarques.workers.dev";
   const LIMITE_PERGUNTA = 500, LIMITE_CONTEXTO = 2500, HISTORICO = 6;
   let cfg = { contexto: () => "", sugestoes: () => [] };
   const conversa = [];          // [{papel:"usuario"|"assistente"|"erro", texto, fontes?}]

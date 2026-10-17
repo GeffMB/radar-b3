@@ -43,7 +43,7 @@ EXCECOES_ALAVANCAGEM = {"B3SA3"}
 # Content-Security-Policy: o navegador só executa scripts e carrega fontes/estilos do próprio site.
 # Nada de terceiros (Google Fonts, CDNs, analytics), então nenhum outro serviço recebe o IP do visitante.
 CSP = (
-    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests"
+    "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://radar-assistente.gefersonmarques.workers.dev; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests"
 )
 CABECALHO_HTML = (
     '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">'
