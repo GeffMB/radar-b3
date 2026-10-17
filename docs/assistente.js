@@ -72,6 +72,7 @@
   .ast-fontes{margin-top:8px;display:flex;flex-wrap:wrap;gap:6px}
   .ast-fontes a{font-size:12px;font-weight:700;color:var(--accent,#2C55E0);background:var(--surface,#fff);border:1px solid var(--line,#E2E6EF);border-radius:999px;padding:2px 9px;text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .ast-fontes a:hover{border-color:var(--accent,#2C55E0)}
+  .ast-sb{font-size:11.5px;color:var(--muted,#5D6880);margin-top:6px!important}
   .ast-boas{color:var(--muted,#5D6880);font-size:13.5px;display:grid;gap:10px}
   .ast-sug{display:flex;flex-direction:column;gap:6px}
   .ast-sug button{font:inherit;font-size:13px;text-align:left;border:1px solid var(--line,#E2E6EF);background:var(--surface,#fff);color:var(--ink,#172033);border-radius:12px;padding:8px 11px;cursor:pointer;transition:border-color .15s,color .15s}
@@ -123,7 +124,7 @@
       msgs.innerHTML = conversa.map(m => m.papel === "usuario"
         ? `<div class="ast-m ast-u">${esc(m.texto)}</div>`
         : m.papel === "erro" ? `<div class="ast-m ast-erro">${esc(m.texto)}</div>`
-        : `<div class="ast-m ast-a">${md(m.texto)}${(m.fontes || []).length ? `<div class="ast-fontes">${m.fontes.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener noreferrer nofollow" referrerpolicy="no-referrer">${esc(f.titulo)}</a>`).join("")}</div>` : ""}</div>`
+        : `<div class="ast-m ast-a">${md(m.texto)}${(m.fontes || []).length ? `<div class="ast-fontes">${m.fontes.map(f => `<a href="${esc(f.url)}" target="_blank" rel="noopener noreferrer nofollow" referrerpolicy="no-referrer">${esc(f.titulo)}</a>`).join("")}</div>` : ""}${m.semBusca ? `<p class="ast-sb">Respondido sem busca na web: notícias recentes podem não estar incluídas.</p>` : ""}</div>`
       ).join("") + (extra || "");
       rolar();
     }
@@ -143,7 +144,7 @@
         });
         let d = {}; try { d = await r.json(); } catch (e) { }
         if (!r.ok || !d.resposta) conversa.push({ papel: "erro", texto: d.erro || "Não foi possível responder agora. Tente de novo." });
-        else conversa.push({ papel: "assistente", texto: String(d.resposta), fontes: Array.isArray(d.fontes) ? d.fontes.filter(f => /^https:\/\//.test(f.url || "")) : [] });
+        else conversa.push({ papel: "assistente", texto: String(d.resposta), semBusca: !!d.sem_busca, fontes: Array.isArray(d.fontes) ? d.fontes.filter(f => /^https:\/\//.test(f.url || "")) : [] });
       } catch (e) {
         conversa.push({ papel: "erro", texto: "Sem conexão com o assistente. Verifique a internet e tente de novo." });
       }

@@ -54,8 +54,14 @@ export default {
       headers: { ...cors, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store",
         "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" } });
 
+    const caminho = new URL(req.url).pathname;
+    if (req.method === "GET" && caminho === "/diagnostico") {
+      if (!env.GEMINI_API_KEY) return json({ ok: false, erro: "GEMINI_API_KEY não configurada." }, 503);
+      const lista = await listarModelos(env, true);
+      return json({ ok: !lista.erro, chave_configurada: true, limites_kv: !!env.LIMITES, ...lista, ordem_de_uso: lista.erro ? [] : await escolherModelos(env, cfg.MODELO) });
+    }
     if (!cors["Access-Control-Allow-Origin"]) return json({ erro: "Origem não permitida." }, 403);
-    if (req.method !== "POST" || new URL(req.url).pathname !== "/perguntar") return json({ erro: "Não encontrado." }, 404);
+    if (req.method !== "POST" || caminho !== "/perguntar") return json({ erro: "Não encontrado." }, 404);
     if (!env.GEMINI_API_KEY) return json({ erro: "Assistente ainda não configurado." }, 503);
 
     // ---- entrada
@@ -87,40 +93,38 @@ export default {
       if (ult && ult.role === c.role) ult.parts[0].text += "\n\n" + c.parts[0].text; else conv.push(c);
     }
 
-    // Tenta o modelo configurado; se o Google recusar o formato (400) ou não achar o modelo (404),
-    // tenta de novo com configurações mais simples e, por fim, com o modelo Flash-Lite.
-    const tentativas = [
-      { modelo: cfg.MODELO, pensar: false, busca: true },
-      { modelo: cfg.MODELO, pensar: null, busca: true },
-      { modelo: "gemini-2.5-flash-lite", pensar: null, busca: true },
-      { modelo: cfg.MODELO, pensar: null, busca: false },
-    ];
-    let r, status = 0, detalhe = "", usouBusca = true;
-    for (const t of tentativas) {
-      const geracao = { temperature: 0.4, maxOutputTokens: 2048 };
-      if (t.pensar === false) geracao.thinkingConfig = { thinkingBudget: 0 };
-      const corpo = { systemInstruction: { parts: [{ text: INSTRUCOES }] }, contents: conv, generationConfig: geracao };
-      if (t.busca) corpo.tools = [{ google_search: {} }];
-      try {
-        r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(t.modelo)}:generateContent`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
-          body: JSON.stringify(corpo),
-        });
-      } catch (e) {
-        console.log("gemini: falha de rede", String(e));
-        return json({ erro: "Não foi possível falar com a IA agora. Tente de novo em instantes." }, 502);
+    // Escolhe o modelo entre os que esta chave realmente pode usar (lista do próprio Google).
+    // Para cada modelo: tenta com busca na web; se a busca não for permitida no plano, tenta sem busca.
+    const modelos = await escolherModelos(env, cfg.MODELO);
+    if (!modelos.length) return json({ erro: "Nenhum modelo de IA disponível para esta chave. Gere uma nova chave no Google AI Studio.", codigo: 404 }, 502);
+    let r, status = 0, detalhe = "", usouBusca = true, modeloUsado = "";
+    fora:
+    for (const modelo of modelos.slice(0, 3)) {
+      for (const busca of [true, false]) {
+        const corpo = { systemInstruction: { parts: [{ text: INSTRUCOES }] }, contents: conv, generationConfig: { temperature: 0.4, maxOutputTokens: 2048 } };
+        if (busca) corpo.tools = [{ google_search: {} }];
+        try {
+          r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "x-goog-api-key": env.GEMINI_API_KEY },
+            body: JSON.stringify(corpo),
+          });
+        } catch (e) {
+          console.log("gemini: falha de rede", String(e));
+          return json({ erro: "Não foi possível falar com a IA agora. Tente de novo em instantes." }, 502);
+        }
+        if (r.ok) { usouBusca = busca; modeloUsado = modelo; break fora; }
+        status = r.status;
+        detalhe = (await r.text()).slice(0, 400);
+        // registro visível só no painel da Cloudflare (Observability → Logs); a resposta do Google não contém a chave
+        console.log("gemini: erro", modelo, "busca=" + busca, status, detalhe);
+        if (status === 404) break;                       // modelo indisponível: vai para o próximo
+        if (status === 401 || status === 429) break fora; // chave inválida ou limite: não adianta insistir
       }
-      if (r.ok) { usouBusca = t.busca; break; }
-      status = r.status;
-      detalhe = (await r.text()).slice(0, 400);
-      // registro visível só no painel da Cloudflare (Observability → Logs); a resposta do Google não contém a chave
-      console.log("gemini: erro", t.modelo, "pensar=" + t.pensar, "busca=" + t.busca, status, detalhe);
-      if (status !== 400 && status !== 404) break;
     }
     if (!r.ok) {
       const motivo = {
-        400: "a IA recusou o formato do pedido",
+        400: "a IA recusou o pedido",
         401: "a chave do Gemini é inválida",
         403: "a chave do Gemini não tem permissão (verifique se a API está ativada no Google AI Studio)",
         404: "o modelo de IA não está disponível",
@@ -141,9 +145,44 @@ export default {
       .filter(w => !vistos.has(w.title) && vistos.add(w.title))
       .slice(0, 6).map(w => ({ titulo: String(w.title || "fonte").slice(0, 120), url: w.uri }));
 
-    return json({ resposta, fontes });
+    return json({ resposta, fontes, modelo: modeloUsado, sem_busca: !usouBusca });
   },
 };
+
+// ---- modelos disponíveis para a chave (consulta ao Google, guardada por 1 hora)
+let CACHE_MODELOS = { ate: 0, nomes: [] };
+const PREFERENCIA = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest", "gemini-flash-lite-latest",
+  "gemini-3.6-flash", "gemini-3.8-flash", "gemini-3.5-flash-lite", "gemini-3-flash-preview"];
+
+async function listarModelos(env, forcar) {
+  if (!forcar && CACHE_MODELOS.ate > Date.now()) return { modelos: CACHE_MODELOS.nomes };
+  try {
+    const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models?pageSize=200", { headers: { "x-goog-api-key": env.GEMINI_API_KEY } });
+    if (!r.ok) {
+      const t = (await r.text()).slice(0, 300);
+      console.log("gemini: lista de modelos falhou", r.status, t);
+      return { erro: `O Google recusou a chave ao listar modelos (código ${r.status}).`, detalhe: t.replace(/AIza[0-9A-Za-z_-]{20,}/g, "[chave]") };
+    }
+    const d = await r.json();
+    const nomes = (d.models || [])
+      .filter(m => (m.supportedGenerationMethods || []).includes("generateContent"))
+      .map(m => String(m.name || "").replace(/^models\//, ""))
+      .filter(n => /^gemini/.test(n) && !/(image|tts|audio|live|embedding|vision|robotics|transcribe|translate|veo|imagen|lyria)/i.test(n));
+    CACHE_MODELOS = { ate: Date.now() + 3600e3, nomes };
+    return { modelos: nomes };
+  } catch (e) {
+    return { erro: "Falha de rede ao listar modelos." };
+  }
+}
+
+async function escolherModelos(env, preferido) {
+  const { modelos = [] } = await listarModelos(env, false);
+  if (!modelos.length) return preferido ? [preferido] : [];
+  const ordem = [preferido, ...PREFERENCIA].filter((m, i, a) => m && a.indexOf(m) === i && modelos.includes(m));
+  // depois dos preferidos, qualquer outro "flash" disponível (mais rápido e com cota gratuita maior)
+  const resto = modelos.filter(m => /flash/i.test(m) && !ordem.includes(m)).sort().reverse();
+  return [...ordem, ...resto];
+}
 
 function pick(env, chaves) {
   const o = {};
