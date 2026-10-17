@@ -62,7 +62,7 @@ details[open] summary::before{content:"−"}
 .medhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
 
 .tablebox{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto;min-width:0}
-table{border-collapse:collapse;width:100%;min-width:980px;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;min-width:1060px;font-variant-numeric:tabular-nums}
 thead th{position:sticky;top:0;background:var(--surface);z-index:1;border-bottom:1px solid var(--line);text-align:right;padding:0;white-space:nowrap}
 thead th:first-child{text-align:left}
 th button{font:inherit;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:none;border:0;padding:12px 12px 10px;cursor:pointer;width:100%;text-align:inherit;display:flex;gap:4px;justify-content:flex-end;align-items:center}
@@ -155,7 +155,7 @@ footer p{margin:0}
   <footer>
     <p id="falhas" hidden></p>
     <p><b>Fonte:</b> <span id="fonte">–</span> DY 12m = proventos pagos nos últimos 12 meses ÷ cotação atual. Dívida líquida/EBITDA = (dívida total − caixa) ÷ EBITDA; não se aplica a bancos, cuja dívida é a própria matéria-prima do negócio.</p>
-    <p>Alguns números do Yahoo podem divergir de Status Invest ou Investidor10 por diferenças de método (ex.: dívida com ou sem arrendamentos). Toque numa linha para ver os componentes do cálculo, ou no ticker para abrir a página da ação. Material para estudo, não é recomendação de investimento.</p>
+    <p>Alguns números do Yahoo podem divergir de Status Invest ou Investidor10 por diferenças de método (ex.: dívida com ou sem arrendamentos). Retorno 12m inclui proventos reinvestidos (passe o mouse para ver só a cotação). Toque numa linha para ver os componentes do cálculo, ou no ticker para abrir a página da ação. Material para estudo, não é recomendação de investimento.</p>
   </footer>
 </div>
 
@@ -183,6 +183,7 @@ const COLS = [
   {k:"roe", l:"ROE",            dir:-1},
   {k:"ml",  l:"Mg. líq.",       dir:-1},
   {k:"dle", l:"Dív. líq./EBITDA",dir:1},
+  {k:"rt12",l:"Retorno 12m",   dir:-1},
   {k:"mc",  l:"Valor de mercado",dir:-1},
 ];
 
@@ -193,6 +194,7 @@ const RANKS = [
   {id:"roe", l:"Maiores ROE",       sort:["roe",-1]},
   {id:"ml",  l:"Maiores margens",   sort:["ml",-1]},
   {id:"dle", l:"Menos endividadas", sort:["dle",1], only:o=>o.dle!=null},
+  {id:"rt12",l:"Maiores retornos 12m", sort:["rt12",-1], only:o=>o.rt12!=null},
   {id:"mc",  l:"Maiores empresas",  sort:["mc",-1]},
 ];
 
@@ -280,6 +282,7 @@ function cell(k,o){
                 if(v==null) return '<span class="na">–</span>';
                 if(v<0) return `<span class="pill good" title="Caixa maior que a dívida">${f1.format(v)}</span>`;
                 return v>3? `<span class="pill bad">${f1.format(v)}x</span>` : v>2? `<span class="pill warn">${f1.format(v)}x</span>` : f1.format(v)+"x";
+    case "rt12": return v==null? '<span class="na">–</span>' : `<span class="${v>0?"pos":v<0?"neg":"na"}" title="Só cotação: ${o.var12==null?"–":(o.var12>0?"+":"")+f1.format(o.var12*100)+"%"}">${v>0?"+":""}${f1.format(v*100)}%</span>`;
     case "mc": return big(v);
   }
 }

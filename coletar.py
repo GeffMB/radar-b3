@@ -299,7 +299,8 @@ def montar_detalhe(acao: dict, bruto: dict, hoje) -> dict | None:
         "max52": arred2(max((c for d, c in precos if d > anos_atras(hoje, 1)), default=None)),
         "min52": arred2(min((c for d, c in precos if d > anos_atras(hoje, 1)), default=None)),
         "proventos_anual": anual,
-        "proventos": [[d.isoformat(), round(v, 6)] for d, v in provs[-40:]][::-1],
+        "proventos": [[d.isoformat(), round(v, 6)] for d, v in provs if d >= anos_atras(hoje, ANOS_PROVENTOS)][::-1],
+        "retorno": retornos(precos, provs, hoje),
         "proventos_12m": round(sum(v for _, v in ult12), 4),
         "resultados": resultados,
     }
@@ -453,11 +454,49 @@ def ajustar_moeda_resultados(det: dict, acao: dict, cambio=cambio_medio_anual):
     return {a: fx.get(a, ultimo_fx) for a in range(2000, 2100) if fx.get(a, ultimo_fx)}
 
 
+def indice_retorno_total(precos, provs):
+    """Índice de retorno total (proventos reinvestidos na data ex), alinhado com `precos`.
+
+    A cada pregão: índice *= (preço de hoje + proventos com data ex entre o pregão anterior e hoje) / preço anterior.
+    Proventos brutos, como o Yahoo informa (JCP sem desconto de IR).
+    """
+    idx, j = [1.0], 0
+    provs = sorted(provs)
+    while j < len(provs) and provs[j][0] <= precos[0][0]:
+        j += 1
+    for i in range(1, len(precos)):
+        d, c = precos[i]
+        div = 0.0
+        while j < len(provs) and provs[j][0] <= d:
+            div += provs[j][1]
+            j += 1
+        idx.append(idx[-1] * (c + div) / precos[i - 1][1])
+    return idx
+
+
+def retornos(precos, provs, hoje) -> dict:
+    """Variação só da cotação ('p') e retorno total ('t') em 1, 3 e 5 anos."""
+    if len(precos) < 2:
+        return {}
+    idx = indice_retorno_total(precos, provs)
+    out = {}
+    for anos in (1, 3, 5):
+        ini = anos_atras(hoje, anos)
+        i = next((k for k, (d, _) in enumerate(precos) if d >= ini), None)
+        if i is None or (precos[i][0] - ini).days > 15:      # histórico curto demais
+            continue
+        out[f"{anos}a"] = {
+            "p": round(precos[-1][1] / precos[i][1] - 1, 4),
+            "t": round(idx[-1] / idx[i] - 1, 4),
+        }
+    return out
+
+
 def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA_ENTRE_ACOES):
     """Gera docs/acoes/<TICKER>.json. Se uma ação falhar, mantém o arquivo anterior."""
     pasta = PASTA_DOCS / "acoes"
     pasta.mkdir(parents=True, exist_ok=True)
-    falhas, prov12 = [], {}
+    falhas, extras = [], {}
     for i, acao in enumerate(acoes, 1):
         t = acao["t"]
         erro = None
@@ -472,7 +511,7 @@ def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA
                 det["multiplos"] = montar_multiplos(acao, bruto, hoje, fx)
                 (pasta / f"{t}.json").write_text(
                     json.dumps(det, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-                prov12[t] = det["proventos_12m"]
+                extras[t] = {"prov12": det["proventos_12m"], "ret": det.get("retorno") or {}}
                 erro = None
                 break
             except Exception as e:
@@ -486,7 +525,7 @@ def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA
             log.info("[%d/%d] histórico de %s ok", i, len(acoes), t)
         if pausa:
             time.sleep(pausa)
-    return falhas, prov12
+    return falhas, extras
 
 
 # ---------------------------------------------------------------- saídas
@@ -594,13 +633,19 @@ def main(argv=None) -> int:
 
     if not args.sem_historico:
         log.info("Coletando histórico de cotação, proventos e resultados...")
-        falhas_det, prov12 = coletar_detalhes(acoes, agora.date())
+        falhas_det, extras = coletar_detalhes(acoes, agora.date())
         log.info("Histórico: %d ok, %d falhas.", len(acoes) - len(falhas_det), len(falhas_det))
         # DY 12m = soma dos proventos pagos nos últimos 12 meses ÷ preço.
         # Substitui o campo pronto do Yahoo (trailingAnnualDividendYield), desatualizado para várias ações da B3.
         for a in acoes:
-            if a["t"] in prov12 and a["preco"]:
-                a["dy"] = prov12[a["t"]] / a["preco"]
+            x = extras.get(a["t"])
+            if not x:
+                continue
+            if a["preco"]:
+                a["dy"] = x["prov12"] / a["preco"]
+            r1 = x["ret"].get("1a")
+            if r1:
+                a["var12"], a["rt12"] = r1["p"], r1["t"]
         salvar(acoes, falhas, agora)
     log.info("Pronto em %.0fs. Página: %s", time.time() - inicio, destino)
     if args.abrir:

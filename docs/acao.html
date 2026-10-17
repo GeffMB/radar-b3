@@ -105,7 +105,7 @@ footer p{margin:0}
   <div id="conteudo"><div class="msg">Carregando…</div></div>
 
   <footer>
-    <p><b>Fonte:</b> Yahoo Finance. Cotação de fechamento sem ajuste por proventos. Proventos por data ex, em R$ por ação, somando dividendos e JCP como o Yahoo informa. DY anual = proventos do ano ÷ preço de fechamento do ano; no ano corrente, ÷ preço atual.</p>
+    <p><b>Fonte:</b> Yahoo Finance. Cotação de fechamento sem ajuste por proventos. Retorno total = cotação + proventos brutos reinvestidos na data ex (sem IR do JCP, sem custos). Proventos por data ex, em R$ por ação, somando dividendos e JCP como o Yahoo informa. DY anual = proventos do ano ÷ preço de fechamento do ano; no ano corrente, ÷ preço atual.</p>
     <p>Material para estudo, não é recomendação de investimento.</p>
   </footer>
 </div>
@@ -137,7 +137,19 @@ const IND = [
 ];
 
 let charts = {};
-let precoRange = "1A";
+let precoRange = "1A", precoModo = "preco";
+
+// Índice de retorno total: proventos reinvestidos na data ex (mesma conta do coletor).
+function indiceRT(D, C, provs){
+  const P = provs.map(([d,v])=>[d,v]).sort((a,b)=>a[0]<b[0]?-1:1);
+  let j = 0; while (j<P.length && P[j][0]<=D[0]) j++;
+  const idx=[1];
+  for (let i=1;i<D.length;i++){
+    let div=0; while (j<P.length && P[j][0]<=D[i]) { div+=P[j][1]; j++; }
+    idx.push(idx[i-1]*(C[i]+div)/C[i-1]);
+  }
+  return idx;
+}
 let multK = "dy", multPer = "5A", ATUAL = null;
 const MULT = [
   {k:"dy",  l:"DY 12m", fmt:v=>f1.format(v*100)+"%", eixo:v=>f1.format(v*100)+"%", melhor:+1,
@@ -220,7 +232,8 @@ function render(a, det, pares, dados){
   html += `
   <section class="panel">
     <div class="ph">
-      <h2>Cotação</h2>
+      <h2>Cotação e retorno</h2>
+      <div class="ranges" id="modo"><button type="button" data-m="preco">Preço</button><button type="button" data-m="retorno">Retorno total</button></div>
       <span class="note" id="var-periodo"></span>
       <div class="ranges" id="ranges">${["1M","6M","1A","2A","5A"].map(r=>`<button type="button" data-r="${r}">${r}</button>`).join("")}</div>
     </div>
@@ -251,7 +264,7 @@ function render(a, det, pares, dados){
     ${pagos.length? `<div class="two">
       <div class="chart short"><canvas id="c-prov" aria-label="Proventos por ano de ${a.t}"></canvas></div>
       <div class="tablebox"><table><thead><tr><th>Data ex</th><th>R$ por ação</th></tr></thead><tbody>
-        ${det.proventos.map(([d,v])=>`<tr><td>${dataBR(d)}</td><td>${f4.format(v)}</td></tr>`).join("")}
+        ${det.proventos.slice(0,40).map(([d,v])=>`<tr><td>${dataBR(d)}</td><td>${f4.format(v)}</td></tr>`).join("")}
       </tbody></table></div>
     </div>` : `<div class="empty">O Yahoo não registra proventos de ${a.t} nos últimos 10 anos.</div>`}
   </section>`;
@@ -277,6 +290,8 @@ function render(a, det, pares, dados){
     $("mult-ind").onclick = e => { const b=e.target.closest("button"); if(!b) return; multK=b.dataset.k; try{localStorage.setItem("radar-mult",multK);}catch(e){} desenharMultiplos(det); };
     $("mult-per").onclick = e => { const b=e.target.closest("button"); if(!b) return; multPer=b.dataset.r; try{localStorage.setItem("radar-mult-per",multPer);}catch(e){} desenharMultiplos(det); };
   }
+  try { precoModo = localStorage.getItem("radar-modo") || precoModo; } catch(e){}
+  $("modo").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoModo=b.dataset.m; try{localStorage.setItem("radar-modo",precoModo);}catch(e){} desenharPreco(det); };
   $("ranges").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoRange=b.dataset.r; try{localStorage.setItem("radar-range",precoRange);}catch(e){} desenharPreco(det); };
   matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ()=>desenharTudo(det));
 }
@@ -344,24 +359,41 @@ function desenharMultiplos(det){
 
 function desenharPreco(det){
   document.querySelectorAll("#ranges button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.r===precoRange)));
+  document.querySelectorAll("#modo button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.m===precoModo)));
   const meses = {"1M":1,"6M":6,"1A":12,"2A":24,"5A":60}[precoRange];
   const fim = new Date(det.precos.d[det.precos.d.length-1]+"T12:00:00");
   const ini = new Date(fim); ini.setMonth(ini.getMonth()-meses);
   const iniS = ini.toISOString().slice(0,10);
   let i0 = det.precos.d.findIndex(d=>d>=iniS); if(i0<0) i0=0;
   const D = det.precos.d.slice(i0), C = det.precos.c.slice(i0);
+  const R = indiceRT(D, C, det.proventos||[]);
   const v = C.length>1? C[C.length-1]/C[0]-1 : null;
-  $("var-periodo").innerHTML = v==null? "" : `No período: <b class="${v>=0?"pos":"neg"}">${v>0?"+":""}${f1.format(v*100)}%</b>${D.length && (new Date(D[0]) - ini) > 10*864e5 ? ` <span class="na">(histórico desde ${dataBR(D[0])})</span>`:""}`;
-  const cor = v==null||v>=0? css("--good") : css("--bad");
+  const t = R.length>1? R[R.length-1]-1 : null;
+  const sinal = x => `<b class="${x>=0?"pos":"neg"}">${x>0?"+":""}${f1.format(x*100)}%</b>`;
+  const curto = D.length && (new Date(D[0]) - ini) > 10*864e5 ? ` <span class="na">(histórico desde ${dataBR(D[0])})</span>` : "";
+  $("var-periodo").innerHTML = v==null? "" : `Só cotação: ${sinal(v)} · Com proventos: ${sinal(t)}${curto}`;
   const o = base();
   o.scales.x.ticks.callback = function(val){ const d=this.getLabelForValue(val); const [y,m,dd]=d.split("-"); return meses<=6? `${dd}/${m}` : `${m}/${y.slice(2)}`; };
-  o.scales.y.ticks = {callback:v=>"R$ "+f2.format(v)};
-  o.plugins.tooltip.callbacks = {title:it=>dataBR(it[0].label), label:it=>brl(it.parsed.y)};
   const ctx = $("c-preco");
-  const g = ctx.getContext("2d").createLinearGradient(0,0,0,300);
-  g.addColorStop(0, cor+"33"); g.addColorStop(1, cor+"00");
   charts.preco?.destroy();
-  charts.preco = new Chart(ctx,{type:"line",data:{labels:D,datasets:[{data:C,borderColor:cor,backgroundColor:g,fill:true,borderWidth:1.75,pointRadius:0,pointHoverRadius:4,tension:0}]},options:o});
+  if (precoModo==="retorno"){
+    const acc=css("--accent"), mut=css("--muted");
+    o.plugins.legend = {display:true,position:"bottom",labels:{boxWidth:14,boxHeight:2}};
+    o.scales.y.ticks = {callback:x=>(x>0?"+":"")+f1.format(x)+"%"};
+    o.plugins.tooltip.callbacks = {title:it=>dataBR(it[0].label), label:it=>`${it.dataset.label}: ${it.parsed.y>0?"+":""}${f1.format(it.parsed.y)}%`};
+    o.plugins.tooltip.displayColors = true;
+    charts.preco = new Chart(ctx,{type:"line",data:{labels:D,datasets:[
+      {label:"Retorno total (proventos reinvestidos)",data:R.map(x=>(x-1)*100),borderColor:acc,backgroundColor:acc,borderWidth:2,pointRadius:0,pointHoverRadius:4,tension:0},
+      {label:"Só cotação",data:C.map(c=>(c/C[0]-1)*100),borderColor:mut,backgroundColor:mut,borderWidth:1.5,borderDash:[5,4],pointRadius:0,pointHoverRadius:3,tension:0}
+    ]},options:o});
+  } else {
+    const cor = v==null||v>=0? css("--good") : css("--bad");
+    o.scales.y.ticks = {callback:x=>"R$ "+f2.format(x)};
+    o.plugins.tooltip.callbacks = {title:it=>dataBR(it[0].label), label:it=>brl(it.parsed.y)};
+    const g = ctx.getContext("2d").createLinearGradient(0,0,0,300);
+    g.addColorStop(0, cor+"33"); g.addColorStop(1, cor+"00");
+    charts.preco = new Chart(ctx,{type:"line",data:{labels:D,datasets:[{data:C,borderColor:cor,backgroundColor:g,fill:true,borderWidth:1.75,pointRadius:0,pointHoverRadius:4,tension:0}]},options:o});
+  }
 }
 
 function desenharProventos(det){
