@@ -58,7 +58,8 @@ export default {
     if (req.method === "GET" && caminho === "/diagnostico") {
       if (!env.GEMINI_API_KEY) return json({ ok: false, erro: "GEMINI_API_KEY não configurada." }, 503);
       const lista = await listarModelos(env, true);
-      return json({ ok: !lista.erro, chave_configurada: true, limites_kv: !!env.LIMITES, ...lista, ordem_de_uso: lista.erro ? [] : await escolherModelos(env, cfg.MODELO) });
+      return json({ ok: !lista.erro, chave_configurada: true, limites_kv: !!env.LIMITES, ...lista, ordem_de_uso: lista.erro ? [] : await escolherModelos(env, cfg.MODELO),
+        evitando_agora: [...BLOQUEADOS].filter(([, ate]) => ate > Date.now()).map(([m]) => m) });
     }
     if (!cors["Access-Control-Allow-Origin"]) return json({ erro: "Origem não permitida." }, 403);
     if (req.method !== "POST" || caminho !== "/perguntar") return json({ erro: "Não encontrado." }, 404);
@@ -98,9 +99,13 @@ export default {
     const modelos = await escolherModelos(env, cfg.MODELO);
     if (!modelos.length) return json({ erro: "Nenhum modelo de IA disponível para esta chave. Gere uma nova chave no Google AI Studio.", codigo: 404 }, 502);
     let r, status = 0, detalhe = "", usouBusca = true, modeloUsado = "";
+    const agoraMs = Date.now();
+    const candidatos = modelos.filter(m => !(BLOQUEADOS.get(m) > agoraMs)).slice(0, 6);
+    if (!candidatos.length) candidatos.push(modelos[0]);
     fora:
-    for (const modelo of modelos.slice(0, 3)) {
+    for (const modelo of candidatos) {
       for (const busca of [true, false]) {
+        if (busca && BLOQUEADOS.get(modelo + "+busca") > agoraMs) continue;   // busca sem cota neste modelo agora
         const corpo = { systemInstruction: { parts: [{ text: INSTRUCOES }] }, contents: conv, generationConfig: { temperature: 0.4, maxOutputTokens: 2048 } };
         if (busca) corpo.tools = [{ google_search: {} }];
         try {
@@ -118,8 +123,15 @@ export default {
         detalhe = (await r.text()).slice(0, 400);
         // registro visível só no painel da Cloudflare (Observability → Logs); a resposta do Google não contém a chave
         console.log("gemini: erro", modelo, "busca=" + busca, status, detalhe);
-        if (status === 404) break;                       // modelo indisponível: vai para o próximo
-        if (status === 401 || status === 429) break fora; // chave inválida ou limite: não adianta insistir
+        if (status === 401) break fora;                                   // chave inválida: não adianta insistir
+        if (status === 404) { BLOQUEADOS.set(modelo, agoraMs + 6 * 3600e3); break; }   // fechado: próximo modelo
+        if (status === 429) {
+          // cota esgotada: primeiro desiste da busca neste modelo; se nem sem busca der, desiste do modelo por um tempo
+          const semCota = /limit:\s*0\b/.test(detalhe);                 // cota grátis zero = não vai liberar hoje
+          BLOQUEADOS.set(busca ? modelo + "+busca" : modelo, agoraMs + (semCota ? 6 * 3600e3 : 10 * 60e3));
+          continue;
+        }
+        // 400/403/5xx: tenta sem busca; se já foi sem busca, próximo modelo
       }
     }
     if (!r.ok) {
@@ -148,6 +160,9 @@ export default {
     return json({ resposta, fontes, modelo: modeloUsado, sem_busca: !usouBusca });
   },
 };
+
+// Modelos (ou "modelo+busca") recusados recentemente pelo Google, com o horário até quando evitar.
+const BLOQUEADOS = new Map();
 
 // ---- modelos disponíveis para a chave (consulta ao Google, guardada por 1 hora)
 let CACHE_MODELOS = { ate: 0, nomes: [] };
