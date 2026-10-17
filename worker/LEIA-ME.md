@@ -24,11 +24,11 @@ e consulta a IA com busca na web. Plano gratuito da Cloudflare (100 mil pedidos 
 
 ## Publicação automática (GitHub → Cloudflare)
 Quando `worker/assistente.js` muda no GitHub, o workflow **Publicar Assistente (Cloudflare)** publica sozinho
-(configuração em `worker/wrangler.toml`). Precisa de dois segredos do repositório
+(configuração em `worker/wrangler.toml`). Precisa de um segredo do repositório
 (Settings → Secrets and variables → Actions):
 - `CLOUDFLARE_API_TOKEN`: token criado em Cloudflare → My Profile → API Tokens → Create Custom Token,
   com uma única permissão: **Account → Workers Scripts → Edit**, restrito à sua conta.
-- `CLOUDFLARE_ACCOUNT_ID`: o Account ID (aparece em Workers & Pages, na coluna da direita, ou no endereço do painel).
+O Account ID já está em `wrangler.toml` (não é segredo; sozinho não dá acesso a nada).
 Os segredos `GEMINI_API_KEY` e `SAL` ficam no Cloudflare e não são tocados. Se o token vazar, apague-o em API Tokens.
 
 ## Custos e limites

@@ -3,6 +3,7 @@
 # a publicação não os lê nem os apaga.
 name = "radar-assistente"
 main = "assistente.js"
+account_id = "7f0fc8c419470051d61e87f8c684333e"
 compatibility_date = "2026-09-01"
 workers_dev = true
 keep_vars = true          # não apaga variáveis criadas no painel (ex.: MODELO)
