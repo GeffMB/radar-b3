@@ -512,8 +512,10 @@ def alertas_indicadores(a: dict) -> list:
         out.append({"k": "pl", "m": f"P/L de {pl:.0f}: lucro muito pequeno em relação ao preço ou dado incoerente. O P/L pouco informa aqui."})
     if roe is not None and abs(roe) > 1:
         out.append({"k": "roe", "m": f"ROE de {_pct(roe)}, fora do usual. Pode refletir patrimônio muito pequeno ou dado incoerente."})
-    if ml is not None and abs(ml) > 1:
+    if ml is not None and ml > 1:
         out.append({"k": "ml", "m": f"Margem líquida de {_pct(ml)}: lucro maior que a receita. Comum em holdings (lucro vem de participações) ou ganho não recorrente; senão, erro na fonte."})
+    if ml is not None and ml < -1:
+        out.append({"k": "ml", "m": f"Margem líquida de {_pct(ml)}: prejuízo maior que a receita. Pode ser baixa contábil não recorrente ou erro na fonte."})
     if var is not None and abs(var) > 0.15:
         out.append({"k": "preco", "m": f"Variação de {_pct(var)} no dia. Confira se houve fato relevante, grupamento ou desdobramento."})
     return out
