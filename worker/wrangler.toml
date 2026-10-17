@@ -1,0 +1,15 @@
+# Configuração usada pelo GitHub Actions para publicar o Assistente no Cloudflare.
+# A chave do Gemini (GEMINI_API_KEY) e o SAL continuam como segredos no painel do Cloudflare:
+# a publicação não os lê nem os apaga.
+name = "radar-assistente"
+main = "assistente.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+keep_vars = true          # não apaga variáveis criadas no painel (ex.: MODELO)
+
+[[kv_namespaces]]
+binding = "LIMITES"
+id = "2ca6bccaedc84e02bc504899a1f2de87"
+
+[observability]
+enabled = true            # mantém os registros (logs) no painel

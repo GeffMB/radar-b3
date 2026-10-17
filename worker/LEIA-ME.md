@@ -22,6 +22,15 @@ e consulta a IA com busca na web. Plano gratuito da Cloudflare (100 mil pedidos 
 6. Copie o endereço do Worker (ex.: `https://radar-assistente.SEU-USUARIO.workers.dev`) e coloque em
    `docs/assistente.js` (`ENDPOINT`) e no `connect-src` da Content-Security-Policy (`coletar.py`, `docs/acao.html`, `docs/comparar.html`).
 
+## Publicação automática (GitHub → Cloudflare)
+Quando `worker/assistente.js` muda no GitHub, o workflow **Publicar Assistente (Cloudflare)** publica sozinho
+(configuração em `worker/wrangler.toml`). Precisa de dois segredos do repositório
+(Settings → Secrets and variables → Actions):
+- `CLOUDFLARE_API_TOKEN`: token criado em Cloudflare → My Profile → API Tokens → Create Custom Token,
+  com uma única permissão: **Account → Workers Scripts → Edit**, restrito à sua conta.
+- `CLOUDFLARE_ACCOUNT_ID`: o Account ID (aparece em Workers & Pages, na coluna da direita, ou no endereço do painel).
+Os segredos `GEMINI_API_KEY` e `SAL` ficam no Cloudflare e não são tocados. Se o token vazar, apague-o em API Tokens.
+
 ## Custos e limites
 - Gemini gratuito: as perguntas podem ser usadas pelo Google para melhorar seus produtos (o site avisa no chat).
 - Se o limite gratuito do Google acabar, o chat mostra "A IA atingiu o limite gratuito por agora".
