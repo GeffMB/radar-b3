@@ -98,7 +98,7 @@ export default {
     // Para cada modelo: tenta com busca na web; se a busca não for permitida no plano, tenta sem busca.
     const modelos = await escolherModelos(env, cfg.MODELO);
     if (!modelos.length) return json({ erro: "Nenhum modelo de IA disponível para esta chave. Gere uma nova chave no Google AI Studio.", codigo: 404 }, 502);
-    let r, status = 0, detalhe = "", usouBusca = true, modeloUsado = "";
+    let r, status = 0, detalhe = "", usouBusca = true, modeloUsado = "", RESPOSTA = null;
     const agoraMs = Date.now();
     const candidatos = modelos.filter(m => !(BLOQUEADOS.get(m) > agoraMs)).slice(0, 6);
     if (!candidatos.length) candidatos.push(modelos[0]);
@@ -106,7 +106,7 @@ export default {
     for (const modelo of candidatos) {
       for (const busca of [true, false]) {
         if (busca && BLOQUEADOS.get(modelo + "+busca") > agoraMs) continue;   // busca sem cota neste modelo agora
-        const corpo = { systemInstruction: { parts: [{ text: INSTRUCOES }] }, contents: conv, generationConfig: { temperature: 0.4, maxOutputTokens: 2048 } };
+        const corpo = { systemInstruction: { parts: [{ text: INSTRUCOES }] }, contents: conv, generationConfig: { temperature: 0.4, maxOutputTokens: 8192 } };
         if (busca) corpo.tools = [{ google_search: {} }];
         try {
           r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelo)}:generateContent`, {
@@ -118,7 +118,18 @@ export default {
           console.log("gemini: falha de rede", String(e));
           return json({ erro: "Não foi possível falar com a IA agora. Tente de novo em instantes." }, 502);
         }
-        if (r.ok) { usouBusca = busca; modeloUsado = modelo; break fora; }
+        if (r.ok) {
+          let g0 = null;
+          try { g0 = await r.json(); } catch { }
+          const c0 = ((g0 && g0.candidates) || [])[0] || {};
+          const txt = ((c0.content && c0.content.parts) || []).map(p => p.text || "").join("").trim();
+          if (txt) { usouBusca = busca; modeloUsado = modelo; RESPOSTA = { g: g0, cand: c0, txt }; break fora; }
+          // veio vazia (limite de tamanho, bloqueio de segurança, etc.): registra e tenta o próximo caminho
+          status = 204;
+          detalhe = `resposta vazia, finishReason=${c0.finishReason || (g0 && g0.promptFeedback && g0.promptFeedback.blockReason) || "?"}`;
+          console.log("gemini: vazio", modelo, "busca=" + busca, detalhe);
+          continue;
+        }
         status = r.status;
         detalhe = (await r.text()).slice(0, 400);
         // registro visível só no painel da Cloudflare (Observability → Logs); a resposta do Google não contém a chave
@@ -134,7 +145,8 @@ export default {
         // 400/403/5xx: tenta sem busca; se já foi sem busca, próximo modelo
       }
     }
-    if (!r.ok) {
+    if (!RESPOSTA) {
+      if (status === 204) return json({ erro: "A IA não conseguiu montar uma resposta agora. Tente reformular a pergunta ou começar uma nova conversa." }, 502);
       const motivo = {
         400: "a IA recusou o pedido",
         401: "a chave do Gemini é inválida",
@@ -146,11 +158,7 @@ export default {
       return json({ erro: `Não foi possível responder: ${msg} (código ${status}). Tente de novo mais tarde.`, codigo: status }, status === 429 ? 429 : 502);
     }
 
-    let g;
-    try { g = await r.json(); } catch { return json({ erro: "Resposta inválida da IA." }, 502); }
-    const cand = (g.candidates || [])[0] || {};
-    const resposta = ((cand.content && cand.content.parts) || []).map(p => p.text || "").join("").trim();
-    if (!resposta) return json({ erro: "A IA não conseguiu responder essa pergunta. Tente reformular." }, 502);
+    const cand = RESPOSTA.cand, resposta = RESPOSTA.txt;
     const vistos = new Set();
     const fontes = ((cand.groundingMetadata && cand.groundingMetadata.groundingChunks) || [])
       .map(c => c.web).filter(w => w && /^https:\/\//.test(w.uri || ""))

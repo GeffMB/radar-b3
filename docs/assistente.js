@@ -54,7 +54,17 @@
     border:1px solid var(--line,#E2E6EF);border-radius:16px;box-shadow:0 18px 50px rgba(23,32,51,.28);display:flex;flex-direction:column;overflow:hidden;
     font:14.5px/1.5 var(--font-body,system-ui,sans-serif)}
   .ast-pan[hidden]{display:none}
-  @media (max-width:520px){.ast-pan{right:8px;left:8px;width:auto;bottom:calc(72px + env(safe-area-inset-bottom,0px));height:calc(100vh - 96px)}}
+  /* celular: tela cheia que acompanha a área visível (teclado e barra do navegador) */
+  @media (max-width:640px){
+    .ast-pan{left:0;right:0;top:0;bottom:auto;width:auto;height:100dvh;max-height:none;border-radius:0;border:0;box-shadow:none;
+      padding-top:env(safe-area-inset-top,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+    .ast-pan .ast-form{padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+    .ast-pan .ast-form textarea{font-size:16px}           /* 16px evita o zoom automático do iPhone ao tocar */
+    html.ast-aberto,html.ast-aberto body{overflow:hidden;overscroll-behavior:none}
+    html.ast-aberto .ast-btn{display:none}
+    .ast-pan .ast-nota{display:none}
+    .ast-pan .ast-m{max-width:94%}
+  }
   .ast-top{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line,#E2E6EF);background:var(--surface-2,#F1F3F9)}
   .ast-top b{font-family:var(--font-display,inherit);font-size:16px;display:flex;gap:8px;align-items:center}
   .ast-top b i{width:8px;height:8px;border-radius:50%;background:var(--good,#0B9467);display:inline-block}
@@ -117,6 +127,7 @@
       if (!conversa.length && !extra) {
         const sug = (cfg.sugestoes() || []).slice(0, 4);
         msgs.innerHTML = `<div class="ast-boas"><p style="margin:0">Pergunte sobre as ações, os indicadores ou as notícias do mercado. Os dados desta página vão junto com a pergunta.</p>
+          <p class="ast-sb" style="margin:0!important">Respostas geradas por IA (Google Gemini, plano gratuito: o Google pode usar o conteúdo para melhorar seus produtos). Não escreva dados pessoais. Não é recomendação de investimento.</p>
           ${sug.length ? `<div class="ast-sug">${sug.map((s, i) => `<button type="button" data-i="${i}">${esc(s)}</button>`).join("")}</div>` : ""}</div>`;
         msgs.querySelectorAll(".ast-sug button").forEach(b => b.onclick = () => enviar(sug[+b.dataset.i]));
         return;
@@ -148,12 +159,24 @@
       } catch (e) {
         conversa.push({ papel: "erro", texto: "Sem conexão com o assistente. Verifique a internet e tente de novo." });
       }
-      ocupado = false; desenhar(); q.focus();
+      ocupado = false; desenhar(); if (!celular()) q.focus();
     }
+
+    // No celular, o painel ocupa exatamente a área visível, que encolhe quando o teclado abre.
+    const celular = () => matchMedia("(max-width:640px)").matches;
+    const ajustar = () => {
+      if (pan.hidden || !celular() || !window.visualViewport) { pan.style.height = ""; pan.style.top = ""; return; }
+      pan.style.height = Math.round(visualViewport.height) + "px";
+      pan.style.top = Math.round(visualViewport.offsetTop) + "px";
+      rolar();
+    };
+    if (window.visualViewport) { visualViewport.addEventListener("resize", ajustar); visualViewport.addEventListener("scroll", ajustar); }
+    window.addEventListener("orientationchange", () => setTimeout(ajustar, 250));
 
     const abrir = on => {
       pan.hidden = !on; btn.setAttribute("aria-expanded", String(on));
-      if (on) { desenhar(); q.focus(); } else btn.focus();
+      document.documentElement.classList.toggle("ast-aberto", on);
+      if (on) { desenhar(); ajustar(); if (!celular()) q.focus(); } else { ajustar(); btn.focus(); }
     };
     btn.onclick = () => abrir(pan.hidden);
     pan.querySelector("#ast-fechar").onclick = () => abrir(false);
