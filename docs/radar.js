@@ -16,9 +16,8 @@ let quando = "–";
   const d = new Date(PAYLOAD.atualizado_em);
   quando = isNaN(d) ? PAYLOAD.atualizado_em : d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   $("meta").innerHTML = `${DATA.length} ações · indicadores dos últimos 12 meses · atualizado em <b>${esc(quando)}</b>`;
-  $("fonte").textContent = PAYLOAD.fonte + ", coleta de " + quando + ".";
   const f = PAYLOAD.falhas || [];
-  if (f.length) { const el = $("falhas"); el.hidden = false; el.textContent = "Não coletadas nesta atualização: " + f.map(x => x.t).join(", ") + ". Confira se o ticker mudou e ajuste tickers.csv."; }
+  if (f.length) { const el = $("falhas"); el.hidden = false; el.textContent = "Sem dados hoje: " + f.map(x => x.t).join(", ") + "."; }
   R.ligarBusca(DATA);
 })();
 

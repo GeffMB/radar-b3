@@ -98,7 +98,7 @@ h2{font-size:19px;font-weight:700}
 .empty{color:var(--muted);padding:24px 8px;text-align:center}
 
 /* ---------- rodapé ---------- */
-footer.site{max-width:1240px;margin:0 auto;padding-block:0 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-size:13px;color:var(--muted);display:grid;gap:6px}
+footer.site{max-width:1240px;margin:0 auto;padding-block:8px 32px;text-align:center;opacity:.75;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));font-size:12px;color:var(--muted);display:grid;gap:4px;justify-items:center}
 footer.site p{margin:0;max-width:95ch}
 
 @media (prefers-reduced-motion:no-preference){
