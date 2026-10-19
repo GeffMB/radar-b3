@@ -120,6 +120,7 @@ footer.site p{margin:0;max-width:95ch}
 .mm-pan{position:absolute;top:calc(100% + 10px);left:-8px;z-index:40;width:min(760px,calc(100vw - 32px));display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
   background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 50px rgba(20,34,32,.16),0 2px 6px rgba(20,34,32,.06);overflow:hidden}
 .mm-pan[hidden]{display:none}
+@media (min-width:761px){.mm-pan{max-height:calc(100dvh - var(--mm-top,64px) - 20px);overflow:auto;overscroll-behavior:contain}}
 .mm-pan::before{content:"";position:absolute;inset:-12px 0 auto;height:12px}
 @media (prefers-reduced-motion:no-preference){.mm-pan:not([hidden]){animation:mmIn .18s ease-out}@keyframes mmIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}}
 .mm-cats{list-style:none;margin:0;padding:10px;display:grid;gap:2px;background:var(--surface-2);border-right:1px solid var(--line)}
@@ -157,4 +158,13 @@ footer.site p{margin:0;max-width:95ch}
   .mm-cats a{flex-direction:column;align-items:flex-start;gap:8px;background:var(--surface);border:1px solid var(--line)}
   .mm-cats a small{display:none}
   .mm-sep{display:none}
+}
+/* telas baixas (notebook com a janela reduzida): itens mais compactos, sem a descrição */
+@media (min-width:761px) and (max-height:760px){
+  .mm-cats{padding:8px}
+  .mm-cats a{padding:6px 10px;gap:10px}
+  .mm-cats a small{display:none}
+  .mm-ic{width:30px;height:30px;padding:6px}
+  .mm-sep{margin:4px 8px}
+  .mm-it{padding:5px 6px}
 }
