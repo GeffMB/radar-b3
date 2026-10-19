@@ -4,7 +4,13 @@ on:
   schedule:
     # 21:40 UTC = 18:40 em Brasília, de segunda a sexta (depois do fechamento da B3)
     - cron: "40 21 * * 1-5"
-  workflow_dispatch: {}   # botão "Run workflow" para rodar na hora
+  workflow_dispatch:      # botão "Run workflow" para rodar na hora
+    inputs:
+      parte:
+        description: "O que coletar"
+        type: choice
+        options: [tudo, acoes, mercado]
+        default: tudo
 
 # Permissão mínima: só gravar no próprio repositório. O token expira ao fim de cada execução.
 # Versões das actions fixadas por SHA: uma tag alterada por terceiros não muda o que roda aqui.
@@ -30,8 +36,14 @@ jobs:
       - name: Instalar dependências
         run: pip install -r requirements.txt
 
-      - name: Coletar dados
+      - name: Coletar ações
+        if: ${{ github.event_name == 'schedule' || inputs.parte != 'mercado' }}
         run: python coletar.py
+
+      - name: Coletar FIIs, ETFs, BDRs, stocks, índices, commodities, renda fixa e Tesouro
+        if: ${{ github.event_name == 'schedule' || inputs.parte != 'acoes' }}
+        continue-on-error: true      # uma fonte fora do ar não impede salvar as ações
+        run: python mercado.py
 
       - name: Salvar resultado no repositório
         if: always()

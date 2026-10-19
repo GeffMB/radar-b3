@@ -1,0 +1,40 @@
+ticker;nome;categoria;indice
+BOVA11;iShares Ibovespa;Ações Brasil;Ibovespa
+IVVB11;iShares S&P 500;Exterior;S&P 500 (em reais)
+SMAL11;iShares Small Cap;Ações Brasil;Small Caps (SMLL)
+DIVO11;It Now IDIV;Dividendos;Índice Dividendos (IDIV)
+NASD11;Trend Nasdaq 100;Exterior;Nasdaq-100 (em reais)
+GOLD11;Trend Ouro;Ouro;Ouro (em reais)
+XFIX11;Trend IFIX;Fundos imobiliários;IFIX
+BOVV11;It Now Ibovespa;Ações Brasil;Ibovespa
+BOVX11;Trend Ibovespa;Ações Brasil;Ibovespa
+BOVB11;Bradesco Ibovespa;Ações Brasil;Ibovespa
+IMAB11;It Now IMA-B;Renda fixa;IMA-B (títulos IPCA+)
+B5P211;It Now IMA-B5 P2;Renda fixa;IMA-B 5 (IPCA+ até 5 anos)
+IB5M11;It Now IMA-B5+;Renda fixa;IMA-B 5+ (IPCA+ acima de 5 anos)
+FIXA11;Mirae Renda Fixa Pré;Renda fixa;Pré-fixado (DI futuro)
+IRFM11;It Now IRF-M P2;Renda fixa;IRF-M (títulos prefixados)
+LFTS11;Investo Tesouro Selic;Renda fixa;Tesouro Selic
+B5MB11;Trend IMA-B 5;Renda fixa;IMA-B 5
+IMBB11;Trend IMA-B;Renda fixa;IMA-B
+SPXI11;It Now S&P 500;Exterior;S&P 500 (em reais)
+SPXB11;Trend S&P 500;Exterior;S&P 500 (em reais)
+ACWI11;Trend MSCI ACWI;Exterior;Ações do mundo (em reais)
+WRLD11;Investo Ações Globais;Exterior;Ações do mundo (em reais)
+USTK11;Investo Tecnologia EUA;Exterior;Tecnologia EUA
+TECK11;It Now Nyse Fang+;Exterior;Big techs EUA
+XINA11;Trend China;Exterior;Ações da China
+ALUG11;Investo REITs EUA;Exterior;Imóveis EUA (REITs)
+JOGO11;Investo Games;Exterior;Games e esportes eletrônicos
+BRAX11;iShares IBrX-100;Ações Brasil;IBrX-100
+PIBB11;It Now IBrX-50;Ações Brasil;IBrX-50
+SMAC11;Investo Small Caps;Ações Brasil;Small Caps
+NBOV11;Nu Ibovespa;Ações Brasil;Ibovespa
+LVOL11;Itaú Baixa Volatilidade;Ações Brasil;Ações de baixa volatilidade
+GOVE11;It Now IGCT;Ações Brasil;Governança corporativa
+ECOO11;iShares Carbono Eficiente;Ações Brasil;Carbono eficiente (ICO2)
+DIVD11;Itaú Dividendos;Dividendos;Dividendos
+NDIV11;Nu Dividendos;Dividendos;Dividendos
+BBSD11;BB ETF S&P Dividendos;Dividendos;S&P Dividendos Brasil
+MATB11;It Now Materiais Básicos;Setorial;Materiais básicos
+AGRI11;Agro;Setorial;Agronegócio

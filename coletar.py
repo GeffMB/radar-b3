@@ -661,7 +661,11 @@ def atualizar_logos(acoes, baixar=None, pausa=0.2):
             time.sleep(pausa)
 
     por_hash = {}
-    for arq in pasta.glob("*.svg"):
+    # só as logos desta lista: marcas que se repetem de propósito (ex.: vários fundos da mesma gestora,
+    # baixados pelo mercado.py) não podem ser confundidas com a logo genérica da fonte
+    for arq in (pasta / f"{a['t']}.svg" for a in acoes):
+        if not arq.exists():
+            continue
         por_hash.setdefault(hashlib.md5(arq.read_bytes()).hexdigest(), []).append(arq)
     genericas = [a for grupo in por_hash.values() if len(grupo) >= 4 for a in grupo]
     for arq in genericas:

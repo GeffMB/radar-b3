@@ -1,0 +1,24 @@
+simbolo;id;nome;grupo;b3;proxy;unidade
+^BVSP;IBOV;Ibovespa;Brasil;;;pontos
+IFIX;IFIX;IFIX (fundos imobiliários);Brasil;IFIX;XFIX11.SA;pontos
+SMLL;SMLL;Small Caps (SMLL);Brasil;SMLL;SMAL11.SA;pontos
+IDIV;IDIV;Índice Dividendos (IDIV);Brasil;IDIV;DIVO11.SA;pontos
+^GSPC;SP500;S&P 500;EUA;;;pontos
+^IXIC;NASDAQ;Nasdaq;EUA;;;pontos
+^DJI;DOW;Dow Jones;EUA;;;pontos
+^RUT;RUSSELL;Russell 2000;EUA;;;pontos
+^VIX;VIX;VIX (medo do mercado);EUA;;;pontos
+^STOXX50E;STOXX50;Euro Stoxx 50;Europa;;;pontos
+^GDAXI;DAX;DAX (Alemanha);Europa;;;pontos
+^FTSE;FTSE;FTSE 100 (Reino Unido);Europa;;;pontos
+^FCHI;CAC;CAC 40 (França);Europa;;;pontos
+^N225;NIKKEI;Nikkei 225 (Japão);Ásia;;;pontos
+^HSI;HANGSENG;Hang Seng (Hong Kong);Ásia;;;pontos
+000001.SS;SHANGHAI;Shanghai (China);Ásia;;;pontos
+^MERV;MERVAL;Merval (Argentina);América Latina;;;pontos
+^MXX;IPC;IPC (México);América Latina;;;pontos
+USDBRL=X;USD;Dólar;Moedas;;;R$
+EURBRL=X;EUR;Euro;Moedas;;;R$
+GBPBRL=X;GBP;Libra;Moedas;;;R$
+DX-Y.NYB;DXY;Índice do dólar (DXY);Moedas;;;pontos
+^TNX;US10Y;Juros EUA 10 anos;Juros;;;%

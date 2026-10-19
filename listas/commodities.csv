@@ -1,0 +1,24 @@
+simbolo;id;nome;grupo;unidade
+BZ=F;BRENT;Petróleo Brent;Energia;US$/barril
+CL=F;WTI;Petróleo WTI;Energia;US$/barril
+NG=F;GASNAT;Gás natural;Energia;US$/MMBtu
+RB=F;GASOLINA;Gasolina (EUA);Energia;US$/galão
+HO=F;DIESEL;Diesel/óleo de aquecimento;Energia;US$/galão
+GC=F;OURO;Ouro;Metais;US$/onça
+SI=F;PRATA;Prata;Metais;US$/onça
+HG=F;COBRE;Cobre;Metais;US$/libra-peso
+TIO=F;MINERIO;Minério de ferro;Metais;US$/tonelada
+ALI=F;ALUMINIO;Alumínio;Metais;US$/tonelada
+PL=F;PLATINA;Platina;Metais;US$/onça
+PA=F;PALADIO;Paládio;Metais;US$/onça
+ZS=F;SOJA;Soja;Agrícolas;US¢/bushel
+ZC=F;MILHO;Milho;Agrícolas;US¢/bushel
+ZW=F;TRIGO;Trigo;Agrícolas;US¢/bushel
+KC=F;CAFE;Café arábica;Agrícolas;US¢/libra-peso
+SB=F;ACUCAR;Açúcar;Agrícolas;US¢/libra-peso
+CC=F;CACAU;Cacau;Agrícolas;US$/tonelada
+CT=F;ALGODAO;Algodão;Agrícolas;US¢/libra-peso
+OJ=F;SUCO;Suco de laranja;Agrícolas;US¢/libra-peso
+LE=F;BOI;Boi gordo (EUA);Pecuária;US¢/libra-peso
+GF=F;BEZERRO;Bezerro (EUA);Pecuária;US¢/libra-peso
+HE=F;SUINO;Suíno (EUA);Pecuária;US¢/libra-peso

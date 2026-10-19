@@ -1,0 +1,94 @@
+stock;bdr;nome;setor
+AAPL;AAPL34;Apple;Tecnologia
+MSFT;MSFT34;Microsoft;Tecnologia
+NVDA;NVDC34;Nvidia;Tecnologia
+AMZN;AMZO34;Amazon;Consumo
+GOOGL;GOGL34;Alphabet (Google);Tecnologia
+META;M1TA34;Meta (Facebook);Tecnologia
+TSLA;TSLA34;Tesla;Automóveis
+BRK-B;BERK34;Berkshire Hathaway;Financeiro
+JPM;JPMC34;JPMorgan Chase;Financeiro
+V;VISA34;Visa;Financeiro
+MA;MSCD34;Mastercard;Financeiro
+UNH;UNHH34;UnitedHealth;Saúde
+JNJ;JNJB34;Johnson & Johnson;Saúde
+XOM;EXXO34;ExxonMobil;Petróleo e gás
+PG;PGCO34;Procter & Gamble;Consumo
+KO;COCA34;Coca-Cola;Consumo
+PEP;PEPB34;PepsiCo;Consumo
+HD;HOME34;Home Depot;Consumo
+COST;;Costco;Consumo
+WMT;WALM34;Walmart;Consumo
+NFLX;NFLX34;Netflix;Comunicação
+DIS;DISB34;Disney;Comunicação
+AMD;A1MD34;AMD;Tecnologia
+INTC;ITLC34;Intel;Tecnologia
+ORCL;ORCL34;Oracle;Tecnologia
+CSCO;CSCO34;Cisco;Tecnologia
+ADBE;ADBE34;Adobe;Tecnologia
+CRM;SSFO34;Salesforce;Tecnologia
+AVGO;AVGO34;Broadcom;Tecnologia
+LLY;;Eli Lilly;Saúde
+PFE;PFIZ34;Pfizer;Saúde
+MRK;MRCK34;Merck;Saúde
+ABBV;ABBV34;AbbVie;Saúde
+BAC;BOAC34;Bank of America;Financeiro
+WFC;WFCO34;Wells Fargo;Financeiro
+MCD;MCDC34;McDonald's;Consumo
+NKE;NIKE34;Nike;Consumo
+BA;BOEI34;Boeing;Indústria
+CAT;CATP34;Caterpillar;Indústria
+T;ATTB34;AT&T;Comunicação
+VZ;VERZ34;Verizon;Comunicação
+O;;Realty Income;Imóveis (REIT)
+PLTR;;Palantir;Tecnologia
+TSM;TSMC34;TSMC;Tecnologia
+ASML;ASML34;ASML;Tecnologia
+BABA;BABA34;Alibaba;Consumo
+MELI;MELI34;Mercado Livre;Consumo
+NU;ROXO34;Nubank;Financeiro
+SPOT;S1PO34;Spotify;Comunicação
+UBER;U1BE34;Uber;Tecnologia
+ABNB;AIRB34;Airbnb;Consumo
+SHOP;;Shopify;Tecnologia
+SBUX;SBUB34;Starbucks;Consumo
+IBM;IBMB34;IBM;Tecnologia
+QCOM;QCOM34;Qualcomm;Tecnologia
+TXN;TXSA34;Texas Instruments;Tecnologia
+GE;GEOO34;GE Aerospace;Indústria
+HON;HONB34;Honeywell;Indústria
+MMM;MMMC34;3M;Indústria
+CVX;CHVX34;Chevron;Petróleo e gás
+GS;GSGI34;Goldman Sachs;Financeiro
+MS;MSBR34;Morgan Stanley;Financeiro
+C;CTGP34;Citigroup;Financeiro
+AXP;AXPB34;American Express;Financeiro
+BLK;BLAK34;BlackRock;Financeiro
+SCHW;SCHW34;Charles Schwab;Financeiro
+SPGI;SPGI34;S&P Global;Financeiro
+MO;;Altria;Consumo
+PM;;Philip Morris;Consumo
+ABT;ABTT34;Abbott;Saúde
+TMO;;Thermo Fisher;Saúde
+DHR;;Danaher;Saúde
+AMGN;;Amgen;Saúde
+GILD;;Gilead;Saúde
+BMY;;Bristol-Myers Squibb;Saúde
+CVS;;CVS Health;Saúde
+UPS;;UPS;Indústria
+FDX;;FedEx;Indústria
+LMT;;Lockheed Martin;Indústria
+RTX;;RTX;Indústria
+DE;;Deere;Indústria
+;XPBR31;XP Inc.;Financeiro
+;INBR32;Inter&Co;Financeiro
+;PYPL34;PayPal;Financeiro
+;BIDU34;Baidu;Tecnologia
+;JDCO34;JD.com;Consumo
+;CMCS34;Comcast;Comunicação
+;USBC34;U.S. Bancorp;Financeiro
+;B1TI34;British American Tobacco;Consumo
+;AURA33;Aura Minerals;Mineração
+;GDBR34;General Dynamics;Indústria
+;C2OI34;Coinbase;Financeiro
+;N1OW34;ServiceNow;Tecnologia
