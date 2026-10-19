@@ -272,6 +272,7 @@ def nome_fii(nome_cvm: str, t: str) -> str:
     for lixo in ["FUNDO DE INVESTIMENTO IMOBILIÁRIO", "FUNDO DE INVESTIMENTO IMOBILIARIO", "FUNDO DE INVESTIMENTO",
                  "RESPONSABILIDADE LIMITADA", "DE RESPONSABILIDADE", "CLASSE ÚNICA", "CLASSE UNICA"]:
         n = n.replace(lixo, " ")
+    n = re.sub(r"\bFUNDO\b(\s+DE)?\s+\w+\s+IMOBILI\w*", " ", n)      # inclui grafias erradas da fonte
     n = re.sub(r"[-–]\s*FII\b|\bFII\b|\bFDO\b|\bINV\b|\bIMOB\b|\bRL\b|\bCI\b", " ", n)
     n = " ".join(n.split()).strip(" -–")
     if not n:
