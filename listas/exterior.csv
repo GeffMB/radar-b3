@@ -80,15 +80,15 @@ FDX;;FedEx;Indústria
 LMT;;Lockheed Martin;Indústria
 RTX;;RTX;Indústria
 DE;;Deere;Indústria
-;XPBR31;XP Inc.;Financeiro
-;INBR32;Inter&Co;Financeiro
-;PYPL34;PayPal;Financeiro
-;BIDU34;Baidu;Tecnologia
-;JDCO34;JD.com;Consumo
-;CMCS34;Comcast;Comunicação
-;USBC34;U.S. Bancorp;Financeiro
-;B1TI34;British American Tobacco;Consumo
+XP;XPBR31;XP Inc.;Financeiro
+INTR;INBR32;Inter&Co;Financeiro
+PYPL;PYPL34;PayPal;Financeiro
+BIDU;BIDU34;Baidu;Tecnologia
+JD;JDCO34;JD.com;Consumo
+CMCSA;CMCS34;Comcast;Comunicação
+USB;USBC34;U.S. Bancorp;Financeiro
+BTI;B1TI34;British American Tobacco;Consumo
 ;AURA33;Aura Minerals;Mineração
-;GDBR34;General Dynamics;Indústria
-;C2OI34;Coinbase;Financeiro
-;N1OW34;ServiceNow;Tecnologia
+GD;GDBR34;General Dynamics;Indústria
+COIN;C2OI34;Coinbase;Financeiro
+NOW;N1OW34;ServiceNow;Tecnologia

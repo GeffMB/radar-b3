@@ -625,7 +625,7 @@ def higienizar_svg(texto: str) -> str | None:
     return t if "<svg" in t.lower() and t.rstrip().lower().endswith("</svg>") else None
 
 
-def atualizar_logos(acoes, baixar=None, pausa=0.2):
+def atualizar_logos(acoes, baixar=None, pausa=0.2, descartar_genericas=True):
     """Baixa as logos para docs/logos/ (uma vez por mês por ação). O site serve as próprias cópias,
     então o navegador do visitante não contata nenhum servidor de terceiros.
     Logos genéricas (o mesmo arquivo para 4 ou mais ações) são descartadas."""
@@ -667,7 +667,7 @@ def atualizar_logos(acoes, baixar=None, pausa=0.2):
         if not arq.exists():
             continue
         por_hash.setdefault(hashlib.md5(arq.read_bytes()).hexdigest(), []).append(arq)
-    genericas = [a for grupo in por_hash.values() if len(grupo) >= 4 for a in grupo]
+    genericas = [a for grupo in por_hash.values() if len(grupo) >= 4 for a in grupo] if descartar_genericas else []
     for arq in genericas:
         arq.unlink()
     log.info("Logos: %d novas, %d sem logo na fonte, %d genéricas descartadas.", novas, falhas, len(genericas))

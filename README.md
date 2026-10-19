@@ -1,6 +1,7 @@
 # Radar de Ações B3
 
-Coletor diário em Python que gera a página do radar (P/L, P/VP, DY, ROE, margem líquida e dívida líquida/EBITDA) com dados do Yahoo Finance.
+Coletor diário em Python que gera a página do radar (P/L, P/VP, DY, ROE, margem líquida e dívida líquida/EBITDA) com dados do Yahoo Finance,
+e as seções de Fundos Imobiliários, Stocks, ETFs, BDRs, Índices, Commodities, Renda Fixa e Tesouro Direto (menu "Mercados" no topo).
 
 ## Como funciona no GitHub
 
@@ -9,6 +10,8 @@ Coletor diário em Python que gera a página do radar (P/L, P/VP, DY, ROE, marge
 - **Rodar na hora**: aba Actions → "Coleta diária" → Run workflow.
 - **Se a coleta falhar**: o GitHub manda um e-mail. O log fica na execução, em Artifacts → execucao-log. A página anterior continua no ar.
 - **Incluir ou tirar ações**: edite `tickers.csv` direto no site do GitHub (ícone de lápis). A próxima coleta já usa a lista nova.
+- **Incluir ou tirar FIIs, ETFs, BDRs, stocks, índices ou commodities**: edite o arquivo da pasta `listas/`.
+- **Rodar só uma parte**: em Run workflow, escolha "acoes" ou "mercado".
 
 ## Rodar num PC com Windows (opcional)
 
@@ -28,6 +31,13 @@ Depois disso, abra `docs\index.html` quando quiser ver o radar. Para atualizar n
 | `docs/dados.json` | Os mesmos dados em JSON. |
 | `docs/acao.html` | Página de cada ação (`acao.html?t=PETR4`): cotação de 5 anos, proventos por ano com DY, receita e lucro, indicadores comparados com a mediana do setor. |
 | `docs/acoes/*.json` | Histórico de cada ação usado pela página acima. |
+| `mercado.py` | Coleta as outras classes (roda depois de `coletar.py`). Cada fonte é independente: se uma cair, as outras seguem. |
+| `listas/*.csv` | Ativos de cada classe: `fiis.csv` (ticker;segmento), `etfs.csv`, `exterior.csv` (stock;BDR;nome;setor), `indices.csv`, `commodities.csv`. |
+| `docs/mercado.html` | Página de cada classe (`mercado.html?c=fiis`, `etfs`, `bdrs`, `stocks`, `indices`, `commodities`). |
+| `docs/ativo.html` | Página de cada ativo dessas classes (`ativo.html?c=fiis&t=MXRF11`). |
+| `docs/renda-fixa.html` | Selic, CDI, IPCA, poupança, Focus e simulador com IR e custódia. |
+| `docs/tesouro.html` | Títulos do Tesouro Direto à venda e histórico das taxas. |
+| `docs/mercado/` | Dados dessas páginas (JSON), gerados pelo `mercado.py`. |
 | `saida/historico.csv` | Uma linha por ação por dia. Base para gráficos de evolução no futuro. |
 | `saida/execucao.log` | Registro de cada execução e das ações que falharam. |
 
@@ -63,6 +73,19 @@ O botão **Assistente** abre um chat dentro do site. As perguntas, com os dados 
 - **Textos escapados:** nomes e setores do `tickers.csv` e mensagens de alerta não viram código HTML.
 - **Coleta:** sem senhas ou chaves no repositório; actions fixadas por SHA e `yfinance` em versão fixa (`requirements.txt`), para que uma atualização maliciosa de terceiros não rode aqui sem revisão. Para atualizar o yfinance, troque a versão e rode a coleta manualmente para testar.
 - **Não adicione** Google Analytics, pixels, widgets ou scripts de CDN: cada um volta a enviar o IP dos visitantes para terceiros.
+
+## Fontes das outras classes
+
+| Dado | Fonte |
+|---|---|
+| Cotações, proventos e fundamentos de FIIs, ETFs, BDRs, stocks, índices e commodities | Yahoo Finance |
+| Valor patrimonial, patrimônio e cotistas dos FIIs (P/VP) | Informe mensal da CVM (dados.cvm.gov.br) |
+| IFIX, SMLL e IDIV (valor do dia) | B3. O histórico usa o ETF que replica cada índice (XFIX11, SMAL11, DIVO11), na escala do índice |
+| CDI e Selic do dia | B3 |
+| Meta Selic (Copom) e projeções do Focus | Banco Central |
+| IPCA | IBGE (SIDRA) |
+| TR (poupança) | Ipeadata |
+| Títulos à venda e histórico das taxas | Tesouro Direto e Tesouro Transparente |
 
 ## Como os indicadores são calculados
 

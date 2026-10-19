@@ -213,7 +213,8 @@ def detalhe_serie(id_: str, precos, provs, extra=None) -> dict:
         for d, v in provs:
             por_ano[d.year] = por_ano.get(d.year, 0) + v
         det["prov_ano"] = [{"ano": a, "total": round(t, 4), "dy": round(t / fech[a], 4) if fech.get(a) else None,
-                            "parcial": a == ult_d.year} for a, t in sorted(por_ano.items()) if a >= ult_d.year - ANOS]
+                            "parcial": a == ult_d.year} for a, t in sorted(por_ano.items())
+                           if a >= ult_d.year - ANOS and precos[0][0] <= date(a, 1, 15)]   # só anos com histórico completo
     if extra:
         det.update(extra)
     return det
@@ -266,12 +267,18 @@ def dados_cvm(anos: list[int]) -> dict:
 
 
 def nome_fii(nome_cvm: str, t: str) -> str:
+    import re
     n = nome_cvm.upper()
-    for lixo in [" - FUNDO DE INVESTIMENTO IMOBILIÁRIO", " FUNDO DE INVESTIMENTO IMOBILIÁRIO", " FUNDO DE INVESTIMENTO IMOBILIARIO",
-                 " - FII", " FII", " RESPONSABILIDADE LIMITADA", " CLASSE ÚNICA", " - CLASSE", " DE RESPONSABILIDADE"]:
-        n = n.replace(lixo, "")
-    n = " ".join(n.replace("FUNDO DE INVESTIMENTO IMOBILIÁRIO", "").split()).strip(" -")
-    return n.title() if n else t
+    for lixo in ["FUNDO DE INVESTIMENTO IMOBILIÁRIO", "FUNDO DE INVESTIMENTO IMOBILIARIO", "FUNDO DE INVESTIMENTO",
+                 "RESPONSABILIDADE LIMITADA", "DE RESPONSABILIDADE", "CLASSE ÚNICA", "CLASSE UNICA"]:
+        n = n.replace(lixo, " ")
+    n = re.sub(r"[-–]\s*FII\b|\bFII\b|\bFDO\b|\bINV\b|\bIMOB\b|\bRL\b|\bCI\b", " ", n)
+    n = " ".join(n.split()).strip(" -–")
+    if not n:
+        return t
+    pequenas = {"DE", "DA", "DO", "DAS", "DOS", "E"}
+    siglas = {"XP", "BTG", "BB", "RBR", "CSHG", "HSI", "VBI", "TRX", "JS", "VX", "BTGP", "II", "III", "IV", "CRI", "CDI", "TG", "GGR", "HSML"}
+    return " ".join(w if w in siglas else w.lower() if w in pequenas else w.capitalize() for w in n.split())
 
 
 def coletar_fiis(series, cvm) -> tuple[list, dict]:
@@ -300,9 +307,18 @@ def coletar_fiis(series, cvm) -> tuple[list, dict]:
             if v and fech_mes.get(m) and 0.1 <= fech_mes[m] / v <= 5:
                 hist_pvp.append([m, round(fech_mes[m] / v, 3), r4(v)])
         dy_mes = (base.get("ult_prov") or {}).get("v")
+        nome = nome_fii(c.get("nome", ""), t) if c.get("nome") else None
+        if not nome or pvp is None:
+            # fundo sem informe na CVM com esse ISIN: nome e P/VP pelo Yahoo
+            inf = info_yahoo(f"{t}.SA")
+            nome = nome or nome_fii(inf.get("longName") or inf.get("shortName") or "", t)
+            ptb = num(inf.get("priceToBook"))
+            if pvp is None and ptb and 0.1 <= ptb <= 5:
+                pvp = ptb
+            time.sleep(0.3)
         item = {
             "t": t,
-            "n": nome_fii(c.get("nome", ""), t) if c.get("nome") else t,
+            "n": nome,
             "seg": l.get("segmento") or c.get("segmento_cvm") or "Outros",
             **base,
             "pvp": round(pvp, 3) if pvp else None,
@@ -371,6 +387,8 @@ def coletar_exterior(series, com_info=True) -> tuple[list, dict, list, dict]:
                 time.sleep(0.3)
             f = fundamentos(inf, base["preco"])
             f.pop("mc", None)                          # valor de mercado é da empresa, em dólar, não do BDR
+            if not s_st:
+                f["pvp"] = None                        # sem a ação americana, o P/VP do Yahoo mistura real e dólar
             bdrs.append({"t": bdr, "n": l["nome"], "setor": l["setor"], "stock": st if s_st else None, **base, **f})
             det_b[bdr] = detalhe_serie(bdr, s_bdr["precos"], s_bdr["provs"])
         elif bdr:
@@ -654,6 +672,17 @@ def gravar_menu(agora) -> None:
     except Exception:
         pass
     salvar_json(PASTA_MERCADO / "menu.json", menu)
+    # índice da busca do topo: todos os ativos de todas as classes
+    busca = []
+    try:
+        busca += [[a["t"], a["n"], "acoes"] for a in json.loads((PASTA_DOCS / "dados.json").read_text(encoding="utf-8"))["acoes"]]
+    except Exception:
+        pass
+    for classe in CLASSES:
+        arq = PASTA_MERCADO / f"{classe}.json"
+        if arq.exists():
+            busca += [[it["t"], it["n"], classe] for it in json.loads(arq.read_text(encoding="utf-8"))["itens"]]
+    salvar_json(PASTA_MERCADO / "busca.json", busca)
 
 
 def configurar_log():
@@ -720,7 +749,8 @@ def main(argv=None) -> int:
         if "exterior" in partes:
             tick += [x for l in ler_lista("exterior.csv") for x in (l.get("bdr"), l.get("stock")) if x and "-" not in x]
         if tick:
-            etapa("Logos", lambda: atualizar_logos([{"t": t} for t in tick]))
+            # fundos da mesma gestora usam a mesma logo de propósito: não descartar como "genérica"
+            etapa("Logos", lambda: atualizar_logos([{"t": t} for t in tick], descartar_genericas=False))
 
     if "fiis" in partes:
         def fiis():
