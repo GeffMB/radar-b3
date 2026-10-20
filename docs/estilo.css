@@ -2,20 +2,20 @@
    Layout: barra superior fixa com marca e navegação; conteúdo em painéis brancos sobre fundo azulado claro;
    números em Manrope com algarismos tabulares; títulos em Plus Jakarta Sans. */
 :root{
-  --bg:#F5F7F4; --surface:#FFFFFF; --surface-2:#F4F7F5; --ink:#22302E; --muted:#5F6F6B; --line:#E2E9E5; --soft:#EDF2EF;
-  --accent:#2F6F74; --accent-ink:#FFFFFF; --accent-soft:#E2EFEE; --accent-2:#D9A066;
-  --good:#24704F; --good-bg:#E4F2EA; --bad:#B0463D; --bad-bg:#FBEDEA; --warn:#86601C; --warn-bg:#FAF1DE;
+  --bg:#EDF1EE; --surface:#FFFFFF; --surface-2:#F2F6F4; --ink:#1B2826; --muted:#4E5E5A; --line:#D3DDD8; --soft:#E7EEEA;
+  --accent:#29656A; --accent-ink:#FFFFFF; --accent-soft:#DCEBE9; --accent-2:#D39550;
+  --good:#1F6847; --good-bg:#DDF0E5; --bad:#A83F36; --bad-bg:#FAE7E3; --warn:#7C5715; --warn-bg:#F8EDD5;
   --gold:#C99A3E; --silver:#94A3A0; --bronze:#B98262;
-  --s1:#2F6F74; --s2:#D9A066; --s3:#7D8FC4; --s4:#B97A9B;
-  --shadow:0 1px 2px rgba(34,48,46,.03),0 6px 18px rgba(34,48,46,.05);
-  --shadow-hover:0 2px 4px rgba(34,48,46,.05),0 12px 30px rgba(34,48,46,.09);
+  --s1:#29656A; --s2:#D39550; --s3:#7D8FC4; --s4:#B97A9B;
+  --shadow:0 1px 2px rgba(27,40,38,.06),0 6px 18px rgba(27,40,38,.07);
+  --shadow-hover:0 2px 4px rgba(27,40,38,.08),0 12px 30px rgba(27,40,38,.12);
   --font-display:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,sans-serif;
   --font-body:"Manrope","Segoe UI",system-ui,-apple-system,sans-serif;
   --font-num:"Manrope","Segoe UI",system-ui,sans-serif;
   --r:14px;
 }
 :root[data-theme="dark"]{
-  --bg:#111917; --surface:#18221F; --surface-2:#1C2724; --ink:#E6EEEC; --muted:#A3B3AF; --line:#28352F; --soft:#1F2B28;
+  --bg:#0F1614; --surface:#18221F; --surface-2:#1D2926; --ink:#EEF4F2; --muted:#B2C1BD; --line:#33433D; --soft:#22302C;
   --accent:#86C7C1; --accent-ink:#0E1615; --accent-soft:#1E3533; --accent-2:#E8B884;
   --good:#6FD1A6; --good-bg:#13281F; --bad:#F08A7E; --bad-bg:#33191A; --warn:#E9C072; --warn-bg:#2F2714;
   --gold:#E9C072; --silver:#B4C2BE; --bronze:#D9A07E;

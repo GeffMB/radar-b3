@@ -56,7 +56,7 @@
   };
 
   const css = `
-  .ast-btn,.ast-pan{--ag1:#2F6F74;--ag2:#45857A}
+  .ast-btn,.ast-pan{--ag1:#29656A;--ag2:#45857A}
   .ast-btn{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:50;
     height:56px;min-width:56px;padding:0 16px;border:0;border-radius:999px;cursor:pointer;color:#fff;
     background:linear-gradient(135deg,var(--ag1),var(--ag2));box-shadow:0 10px 28px color-mix(in srgb,var(--ag2) 40%,transparent),0 2px 6px rgba(0,0,0,.12);
