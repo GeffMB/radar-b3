@@ -16,7 +16,9 @@ jobs:
       - name: Publicar resultado no branch sondagem
         if: always()
         run: |
-          mkdir /tmp/s && cp sondagem.txt /tmp/s/ || echo "sem arquivo" > /tmp/s/sondagem.txt
-          cd /tmp/s && git init -q -b sondagem && git add . \
-            && git -c user.name=bot -c user.email=bot@users.noreply.github.com commit -qm sondagem \
-            && git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" sondagem
+          cp sondagem.txt /tmp/sondagem.txt || echo "sem arquivo" > /tmp/sondagem.txt
+          git config user.name bot && git config user.email bot@users.noreply.github.com
+          git checkout -q --orphan resultado
+          git rm -rq --cached . && git clean -fdxq
+          cp /tmp/sondagem.txt . && git add sondagem.txt && git commit -qm sondagem
+          git push -f origin HEAD:sondagem 2>&1 | tail -3
