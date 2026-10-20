@@ -128,6 +128,15 @@ POR_SETOR_YAHOO = {"financial services": "Seguros e Serviços Financeiros", "uti
                    "communication services": "Serviços e Lazer"}
 
 
+# a página de BDRs e stocks usa setores mais amplos
+SETOR_EXTERIOR = {"Bancos": "Financeiro", "Seguros e Serviços Financeiros": "Financeiro", "Energia Elétrica": "Energia",
+                  "Saneamento": "Energia", "Petróleo e Gás": "Petróleo e gás", "Mineração e Siderurgia": "Mineração",
+                  "Varejo": "Consumo", "Alimentos e Bebidas": "Consumo", "Educação": "Consumo", "Serviços e Lazer": "Consumo",
+                  "Telecom": "Comunicação", "Indústria": "Indústria", "Construção": "Indústria", "Transporte e Logística": "Indústria",
+                  "Papel e Celulose": "Indústria", "Agronegócio": "Indústria", "Química e Petroquímica": "Química",
+                  "Tecnologia": "Tecnologia", "Saúde": "Saúde", "Shoppings": "Imóveis (REIT)", "Outros": "Outros"}
+
+
 def setor_pt(info: dict) -> str:
     ind = (info.get("industry") or "").lower()
     for trecho, setor in SETORES:
@@ -169,17 +178,20 @@ def rotulo_classe(esp: str) -> str:
     return {"UNT": "Unit", "PNA": "PNA", "PNB": "PNB", "PNC": "PNC"}.get(e, e)
 
 
+NAO_ETF = re.compile(r"INFRA|ISENT|INCENTIV|FIAGRO|\bFIC\b|\bCR[AI]\b|PARTICIPA|\bFIP\b|DEBENTURES? INCENT|AGROINDUSTRIA|CADEIAS PRODUTIVAS", re.I)
+
+
 def categoria_etf(nome: str) -> tuple[str, str]:
-    n = nome.upper()
+    n = re.sub(r"RESPONSABILIDADE LIMITADA|FUNDO DE [IÍ]NDICE|CLASSE DE [IÍ]NDICE|EM COTAS DE.*", " ", nome.upper())
     regras = [
-        (r"IFIX|IMOB|FII|REAL ESTATE", "Fundos imobiliários"),
-        (r"IMA-?B|IRF-?M|PRE|FIXA|TESOURO|SELIC|LFT|IB5M|B5P|RENDA FIXA|DEBENT|IDA|CDI|INFLA|BOND|TREASURY|JUROS", "Renda fixa"),
-        (r"OURO|GOLD", "Ouro"),
-        (r"DIVID|IDIV|DIVO|YIELD", "Dividendos"),
-        (r"S&P|SP ?500|SPX|NASDAQ|NASD|NYSE|EUA|USA|U\.S|MUNDO|WORLD|WRLD|ACWI|GLOBAL|CHINA|EUROPE|EUROP|JAPAN|EMERG|INTERNAC|FANG|TECH|DOW", "Exterior"),
-        (r"SMALL|SMAL|SMLL", "Ações Brasil"),
-        (r"IBOV|IBRX|IBXX|IBXL|BRASIL|BRAZIL|ISE|ICO2|IGCT|GOVERN|MIDLARGE|IVBX", "Ações Brasil"),
-        (r"AGRO|ENERG|UTIL|FINANC|BANC|CONSUMO|INDUST|MATERIA|SAUDE|VAREJO|IMAT|ICON|IEE|IFNC|INDX|UTL", "Setorial"),
+        (r"\bIFIX\b|\bXFIX|IMOBILI", "Fundos imobiliários"),
+        (r"\bOURO\b|\bGOLD\b", "Ouro"),
+        (r"IMA-?B|IRF-?M|\bPR[EÉ]\b|PR[EÉ]-?FIXAD|TESOURO|\bSELIC\b|\bLFTS?\b|\bIB5M|\bB5P|RENDA FIXA|DEBENTURE|\bCDI\b|\bIDA\b|\bTREASURY|\bBOND|\bJUROS\b|\bDI\b", "Renda fixa"),
+        (r"DIVID|\bIDIV\b|\bDIVO\b|YIELD|INCOME", "Dividendos"),
+        (r"\bS&P\b|SP ?500|\bSPX|NASDAQ|\bNASD|NYSE|\bEUA\b|\bUSA?\b|\bU\.S\.?|MUNDO|WORLD|\bWRLD|ACWI|GLOBAL|CHINA|EURO|JAPAN|EMERG|INTERNAC|FANG|\bDOW\b|ALL-WORLD|US LISTED|CRSP|BLOOMBERG US|\bDOLAR|\bDÓLAR", "Exterior"),
+        (r"SMALL|\bSMAL|\bSMLL", "Ações Brasil"),
+        (r"IBOV|IBOVESPA|\bIBRX|\bIBXX|\bIBXL|\bBR\+|BRAZIL|BRASIL|\bISE\b|ICO2|IGCT|GOVERN|MIDLARGE|IVBX|MSCI BRAZIL", "Ações Brasil"),
+        (r"\bAGRO|ENERG|\bUTIL|UTILIDADE|FINANC|\bIFNC|BANC|CONSUMO|INDUST|MATERIA|SA[UÚ]DE|VAREJO|\bIMAT|\bICON\b|\bIEE|\bINDX|SEMICONDUCTOR|TECHNOLOGY|TECNOLOGIA", "Setorial"),
     ]
     for padrao, cat in regras:
         if re.search(padrao, n):
@@ -225,13 +237,27 @@ def varrer(hoje: date, simular=False, pausa=0.4) -> str:
     existentes = {ativo(l[0]) for l in linhas if l}
     novas = [t for t in por_classe["acoes"] if t not in existentes]
     add = []
+    irmas = {}
+    for l in linhas:
+        if l and len(l) >= 3 and not l[0].startswith("#"):
+            irmas.setdefault(l[0][:4].upper(), l)
     for t in novas:
+        if CRIPTO.search(cot[t]["nome"]):
+            continue
+        irma = irmas.get(t[:4])
+        if irma:
+            # outra classe da mesma empresa já está no site: mesmo setor e mesmo nome
+            base_nome = re.sub(r"\s+(ON|PN|PNA|PNB|PNC|Unit|UNT)$", "", irma[1])
+            add.append([t, f"{base_nome} {rotulo_classe(cot[t]['esp'])}", irma[2]])
+            continue
         inf = info_yahoo(f"{t}.SA")
         if not (inf.get("regularMarketPrice") or inf.get("currentPrice") or inf.get("previousClose")):
             log.info("   %s sem cotação no Yahoo; fica de fora", t)
             continue
-        nome = nome_curto(inf.get("shortName") or inf.get("longName") or "") or titulo(cot[t]["nome"])
-        if len(nome) > 24 or nome.isupper():
+        if CRIPTO.search(f"{inf.get('longName', '')} {inf.get('industry', '')}"):
+            continue
+        nome = nome_curto(inf.get("longName") or inf.get("shortName") or "")
+        if not nome or len(nome) > 24 or nome.isupper():
             nome = titulo(cot[t]["nome"])
         add.append([t, f"{nome} {rotulo_classe(cot[t]['esp'])}", setor_pt(inf)])
         time.sleep(pausa)
@@ -257,7 +283,7 @@ def varrer(hoje: date, simular=False, pausa=0.4) -> str:
     arq = PASTA_LISTAS / "etfs.csv"
     cab, linhas = ler_csv(arq)
     existentes = {ativo(l[0]) for l in linhas if l}
-    add, cripto = [], []
+    add, cripto, nao_etf = [], [], []
     for t in por_classe["etfs"]:
         if t in existentes:
             continue
@@ -267,6 +293,8 @@ def varrer(hoje: date, simular=False, pausa=0.4) -> str:
         nome_y = inf.get("longName") or inf.get("shortName") or cot[t]["nome"]
         if CRIPTO.search(nome_y):
             cripto.append(t); continue
+        if NAO_ETF.search(f"{nome_y} {cot[t]['nome']}"):
+            nao_etf.append(t); continue
         if not (inf.get("regularMarketPrice") or inf.get("previousClose")):
             continue
         cat, nome = categoria_etf(f"{nome_y} {cot[t]['nome']}")
@@ -278,6 +306,8 @@ def varrer(hoje: date, simular=False, pausa=0.4) -> str:
     relatorio += [f"## ETFs: {len(add)} incluídos", ""] + [f"- {a[0]} · {a[1]} · {a[2]}" for a in add] + [""]
     if cripto:
         relatorio += [f"ETFs de cripto deixados de fora: {', '.join(cripto)}", ""]
+    if nao_etf:
+        relatorio += [f"Fundos de infraestrutura, Fiagros e similares (não são ETFs) deixados de fora: {', '.join(nao_etf)}", ""]
     if not simular:
         gravar_csv(arq, cab, linhas + add)
 
@@ -295,13 +325,13 @@ def varrer(hoje: date, simular=False, pausa=0.4) -> str:
             continue
         nome = nome_curto(inf.get("longName") or inf.get("shortName") or titulo(cot[t]["nome"]))
         chave = normalizar(nome)
-        alvo = next((i for k, i in sem_bdr.items() if len(k) >= 4 and len(chave) >= 4 and (k.startswith(chave) or chave.startswith(k))), None)
+        alvo = next((i for k, i in sem_bdr.items() if k == chave or (len(k) >= 4 and len(chave) >= 4 and (k.startswith(chave) or chave.startswith(k)))), None)
         if alvo is not None:
             linhas[alvo][1] = t
             ligados.append(f"{t} → {linhas[alvo][0]}")
             sem_bdr = {k: i for k, i in sem_bdr.items() if i != alvo}
         else:
-            add.append(["", t, nome[:40], setor_pt(inf)])
+            add.append(["", t, nome[:40], SETOR_EXTERIOR.get(setor_pt(inf), "Outros")])
         time.sleep(pausa)
     relatorio += [f"## BDRs: {len(add)} incluídos, {len(ligados)} ligados a ações americanas já listadas", ""] + \
                  [f"- {a[1]} · {a[2]} · {a[3]}" for a in add] + ([""] + [f"- {x}" for x in ligados] if ligados else []) + [""]
