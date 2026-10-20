@@ -278,7 +278,7 @@ def segmento_fii(nome: str, segmento_cvm: str, mandato: str) -> str:
         (r"SHOPPING|\bMALLS?\b|VAREJO", "Shoppings"),
         (r"LAJE|ESCRIT|CORPORATE|OFFICE|\bCORP\b", "Lajes corporativas"),
         (r"AGRO|TERRAS|RURAL", "Agro"),
-        (r"HOTEL", "Hotel"), (r"HOSPITAL|SA[UÚ]DE", "Hospitalar"), (r"EDUCA", "Educacional"),
+        (r"HOTE[LI]|HOT[EÉ]IS", "Hotel"), (r"HOSPITAL|SA[UÚ]DE", "Hospitalar"), (r"EDUCA", "Educacional"),
         (r"RESIDENC|RENDA RESID", "Residencial"), (r"RENDA URBANA|VAREJO|AG[EÊ]NCIAS", "Renda urbana"),
         (r"DESENVOLV", "Desenvolvimento"),
     ]
