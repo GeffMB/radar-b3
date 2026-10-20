@@ -284,6 +284,7 @@ def varrer(hoje: date, simular=False, pausa=0.4) -> str:
     cab, linhas = ler_csv(arq)
     existentes = {ativo(l[0]) for l in linhas if l}
     add, cripto, nao_etf = [], [], []
+    fiis_listados = {ativo(l[0]) for l in ler_csv(PASTA_LISTAS / "fiis.csv")[1] if l}
     for t in por_classe["etfs"]:
         if t in existentes:
             continue
@@ -297,8 +298,12 @@ def varrer(hoje: date, simular=False, pausa=0.4) -> str:
             nao_etf.append(t); continue
         if not (inf.get("regularMarketPrice") or inf.get("previousClose")):
             continue
+        if t in fiis_listados or re.search(r"\bFII\b|IMOBILI[AÁ]RIO|TERRAS AGR", f"{nome_y} {cot[t]['nome']}", re.I):
+            nao_etf.append(t); continue
         cat, nome = categoria_etf(f"{nome_y} {cot[t]['nome']}")
         nome = nome_curto(nome_y)
+        if len(nome) < 6 or re.match(r"^(FI )?DE [IÍ]NDICE|^FI DE", nome, re.I):
+            nome = titulo(cot[t]["nome"])           # nome do Yahoo incompleto: usa o da B3
         nome = re.sub(r"\b(FUNDO DE [ÍI]NDICE|CLASSE DE [ÍI]NDICE|FUNDO DE INVESTIMENTO|EM COTAS DE.*|RESPONSABILIDADE.*)\b", "", nome, flags=re.I)
         nome = " ".join(nome.split())[:40] or titulo(cot[t]["nome"])
         add.append([t, nome, cat, nome])
