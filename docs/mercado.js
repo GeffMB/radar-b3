@@ -200,7 +200,7 @@ function desenharCartoes() {
   const valor = a => a.un === "R$" ? brl(a.preco) : a.un === "%" ? R.nf(2).format(a.preco) + "%" : numero(a.preco);
   $("cartoes").innerHTML = grupos.map(g => `<section class="grupo"><h2>${esc(g)}</h2><div class="cartoes">${DADOS.filter(a => a.grupo === g).map(a => `
     <a class="cartao" href="${link(a)}">
-      <div class="topo"><div><div class="nome">${esc(a.n)}</div><div class="un">${a.un === "pontos" ? "pontos" : esc(a.un)}${a.aprox ? " · histórico pelo ETF " + esc(a.aprox) : ""}</div></div>${pill(a.var)}</div>
+      <div class="topo"><div><div class="nome">${esc(a.n)}</div><div class="un">${a.un === "pontos" ? "pontos" : esc(a.un)}${a.aprox ? " · histórico pelo ETF " + esc(a.aprox) : a.desde ? " · histórico desde " + a.desde.split("-").reverse().join("/") : ""}</div></div>${pill(a.var)}</div>
       <div class="valor">${valor(a)}</div>
       <div class="rodape"><span>No ano <b class="${cor(a.rytd)}">${sinal(a.rytd)}</b><br>12 meses <b class="${cor(a.r12)}">${sinal(a.r12)}</b></span>${spark(a.sp, 110, 36)}</div>
     </a>`).join("")}</div></section>`).join("");

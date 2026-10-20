@@ -411,10 +411,47 @@ def cotacao_b3(indice: str) -> dict | None:
         return None
 
 
+ARQ_HIST_B3 = PASTA_MERCADO / "hist_b3.json"
+
+
+def indice_b3_sem_historico(l: dict, hist: dict):
+    """Índice da B3 sem fonte de histórico: guarda o fechamento de cada dia e o gráfico cresce com o tempo."""
+    q = cotacao_b3(l["b3"])
+    if not q or not q["preco"]:
+        return None, None
+    serie = hist.setdefault(l["id"], [])
+    dia = q["data"] or date.today().isoformat()
+    if serie and serie[-1][0] == dia:
+        serie[-1][1] = q["preco"]
+    elif not serie or serie[-1][0] < dia:
+        serie.append([dia, q["preco"]])
+    precos = [(date.fromisoformat(d), v) for d, v in serie[-ANOS * 260:]]
+    if len(precos) >= 2:
+        base = resumo_serie(precos, [], com_proventos=False)
+    else:
+        base = {"preco": r4(q["preco"]), "data": dia, "var": None, "r1m": None, "rytd": None, "r12": None, "r5a": None,
+                "max52": None, "min52": None, "sp": []}
+    base["preco"], base["var"] = r4(q["preco"]), round(q["var"], 5)
+    item = {"t": l["id"], "n": l["nome"], "grupo": l["grupo"], "un": l["unidade"], "aprox": None, "desde": serie[0][0], **base}
+    det = detalhe_serie(l["id"], precos, [], {"un": l["unidade"], "desde": serie[0][0]}) if len(precos) >= 2 else None
+    return item, det
+
+
 def coletar_indices(series) -> tuple[list, dict]:
     itens, detalhes = [], {}
+    try:
+        hist = json.loads(ARQ_HIST_B3.read_text(encoding="utf-8"))
+    except Exception:
+        hist = {}
     for l in ler_lista("indices.csv"):
         id_, proxy = l["id"], l.get("proxy")
+        if l.get("b3") and not proxy:
+            item, det = indice_b3_sem_historico(l, hist)
+            if item:
+                itens.append(item)
+                if det:
+                    detalhes[id_] = det
+            continue
         s = series.get(proxy or l["simbolo"])
         if not s:
             log.info("   índice %s sem série", id_)
@@ -434,6 +471,7 @@ def coletar_indices(series) -> tuple[list, dict]:
             base["preco"], base["var"] = r4(q["preco"]), round(q["var"], 5)
         itens.append({"t": id_, "n": l["nome"], "grupo": l["grupo"], "un": l["unidade"], "aprox": aprox, **base})
         detalhes[id_] = detalhe_serie(id_, precos, [], {"aprox": aprox, "un": l["unidade"]})
+    salvar_json(ARQ_HIST_B3, hist)
     return itens, detalhes
 
 
@@ -844,7 +882,7 @@ def main(argv=None) -> int:
         for l in ler_lista("exterior.csv"):
             simbolos += [x for x in (l.get("stock"), f"{l['bdr']}.SA" if l.get("bdr") else None) if x]
     if "indices" in partes:
-        simbolos += [l.get("proxy") or l["simbolo"] for l in ler_lista("indices.csv")]
+        simbolos += [l.get("proxy") or l["simbolo"] for l in ler_lista("indices.csv") if not l["simbolo"].startswith("B3:") or l.get("proxy")]
     if "commodities" in partes:
         simbolos += [l["simbolo"] for l in ler_lista("commodities.csv")]
     series = {}

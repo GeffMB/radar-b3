@@ -22,3 +22,32 @@ EURBRL=X;EUR;Euro;Moedas;;;R$
 GBPBRL=X;GBP;Libra;Moedas;;;R$
 DX-Y.NYB;DXY;Índice do dólar (DXY);Moedas;;;pontos
 ^TNX;US10Y;Juros EUA 10 anos;Juros;;;%
+B3:IBXX;IBXX;IBrX-100;Brasil;IBXX;BRAX11.SA;pontos
+B3:IBXL;IBXL;IBrX-50;Brasil;IBXL;PIBB11.SA;pontos
+B3:IGCX;IGCX;Governança Corporativa (IGC);Brasil;IGCX;GOVE11.SA;pontos
+B3:ICO2;ICO2;Carbono Eficiente (ICO2);Brasil;ICO2;ECOO11.SA;pontos
+B3:IMAT;IMAT;Materiais Básicos (IMAT);Brasil — setoriais;IMAT;MATB11.SA;pontos
+B3:UTIL;UTIL;Utilidade Pública (UTIL);Brasil — setoriais;UTIL;UTLL11.SA;pontos
+B3:IEEX;IEEX;Energia Elétrica (IEE);Brasil — setoriais;IEEX;;pontos
+B3:IFNC;IFNC;Financeiro (IFNC);Brasil — setoriais;IFNC;;pontos
+B3:ICON;ICON;Consumo (ICON);Brasil — setoriais;ICON;;pontos
+B3:INDX;INDX;Industrial (INDX);Brasil — setoriais;INDX;;pontos
+B3:IMOB;IMOB;Imobiliário (IMOB);Brasil — setoriais;IMOB;;pontos
+B3:BDRX;BDRX;BDRs (BDRX);Brasil;BDRX;;pontos
+^STOXX;STOXX600;Stoxx Europe 600;Europa;;;pontos
+^IBEX;IBEX;IBEX 35 (Espanha);Europa;;;pontos
+FTSEMIB.MI;FTSEMIB;FTSE MIB (Itália);Europa;;;pontos
+^AEX;AEX;AEX (Holanda);Europa;;;pontos
+^SSMI;SMI;SMI (Suíça);Europa;;;pontos
+^BSESN;SENSEX;Sensex (Índia);Ásia;;;pontos
+^KS11;KOSPI;Kospi (Coreia do Sul);Ásia;;;pontos
+^TWII;TAIEX;Taiex (Taiwan);Ásia;;;pontos
+^AXJO;ASX200;ASX 200 (Austrália);Ásia;;;pontos
+^GSPTSE;TSX;S&P/TSX (Canadá);América do Norte;;;pontos
+CADBRL=X;CAD;Dólar canadense;Moedas;;;R$
+CHFBRL=X;CHF;Franco suíço;Moedas;;;R$
+AUDBRL=X;AUD;Dólar australiano;Moedas;;;R$
+MXNBRL=X;MXN;Peso mexicano;Moedas;;;R$
+^IRX;US3M;Juros EUA 3 meses;Juros;;;%
+^FVX;US5Y;Juros EUA 5 anos;Juros;;;%
+^TYX;US30Y;Juros EUA 30 anos;Juros;;;%

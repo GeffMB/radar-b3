@@ -55,7 +55,10 @@ async function main() {
     }
     desenharTudo();
     document.addEventListener("radar:tema", desenharTudo);
-  } else $("p-preco").hidden = true;
+  } else {
+    $("p-preco").hidden = true;
+    if (A.desde) $("cards").insertAdjacentHTML("afterend", `<div class="msg">A B3 não publica o histórico deste índice. O site guarda o fechamento de cada dia desde ${A.desde.split("-").reverse().join("/")}, e o gráfico aparece a partir do segundo dia.</div>`);
+  }
   configurarAssistente();
 }
 

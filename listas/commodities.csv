@@ -22,3 +22,11 @@ OJ=F;SUCO;Suco de laranja;Agrícolas;US¢/libra-peso
 LE=F;BOI;Boi gordo (EUA);Pecuária;US¢/libra-peso
 GF=F;BEZERRO;Bezerro (EUA);Pecuária;US¢/libra-peso
 HE=F;SUINO;Suíno (EUA);Pecuária;US¢/libra-peso
+ZL=F;OLEOSOJA;Óleo de soja;Agrícolas;US¢/libra-peso
+ZM=F;FARELO;Farelo de soja;Agrícolas;US$/tonelada curta
+KE=F;TRIGOKC;Trigo (Kansas);Agrícolas;US¢/bushel
+ZO=F;AVEIA;Aveia;Agrícolas;US¢/bushel
+ZR=F;ARROZ;Arroz;Agrícolas;US$/cwt
+LBR=F;MADEIRA;Madeira;Agrícolas;US$/mil pés
+DC=F;LEITE;Leite (classe III);Pecuária;US$/cwt
+^SPGSCI;GSCI;S&P GSCI (cesta de commodities);Índices de commodities;pontos
