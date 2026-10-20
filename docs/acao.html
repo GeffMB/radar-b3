@@ -62,6 +62,34 @@ td{padding:8px 10px;border-bottom:1px solid var(--soft);font-size:14px;text-alig
 .ranges button:hover{color:var(--ink)}
 .ranges button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(34,48,46,.10)}
 .card .tag,.stats .tag{justify-self:start}
+/* painel do método Barsi */
+.bz .ph{align-items:flex-start}
+.bz .ph .note{margin-top:4px}
+.bz-alvo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;background:var(--surface-2);border-radius:12px;padding:6px 8px 6px 14px}
+.bz-alvo input{font:inherit;font-weight:800;width:56px;text-align:center;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:6px}
+.bz-wrap{display:grid;grid-template-columns:minmax(260px,.9fr) minmax(0,1.4fr);gap:20px}
+@media (max-width:820px){.bz-wrap{grid-template-columns:1fr}}
+.bz-teto{display:grid;gap:8px;align-content:start;background:var(--surface-2);border-radius:14px;padding:16px}
+.bz-teto .v{font-family:var(--font-display);font-size:34px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.bz-teto .tag{justify-self:start;font-size:12px}
+.bz-teto .cmp{font-size:12.5px;color:var(--muted)}
+.bz-teto .aviso{font-size:12.5px;color:var(--warn)}
+.bz-mini{display:grid;grid-template-columns:1fr 1fr;gap:10px;border-top:1px solid var(--line);padding-top:10px;margin-top:4px}
+.bz-mini div{display:grid;gap:2px}
+.bz-mini b{font-family:var(--font-display);font-size:20px}
+.bz-check{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.bz-check{grid-template-columns:1fr}}
+.bz-check li{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:12px}
+.bz-check .ic{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:13px;background:var(--soft);color:var(--muted)}
+.bz-check li.ok .ic{background:var(--good-bg);color:var(--good)}
+.bz-check li.no .ic{background:var(--bad-bg);color:var(--bad)}
+.bz-check b{display:block;font-size:14px}
+.bz-check span{font-size:12.5px;color:var(--muted)}
+.bz-anos{display:grid;grid-template-columns:repeat(10,1fr);gap:6px;height:90px;align-items:end;margin-top:4px}
+.bz-anos div{display:grid;grid-template-rows:1fr auto;height:100%;gap:4px;text-align:center}
+.bz-anos i{align-self:end;display:block;background:var(--accent);border-radius:5px 5px 2px 2px;min-height:4px}
+.bz-anos .zero i{background:var(--bad)}
+.bz-anos span{font-size:11px;color:var(--muted);font-family:var(--font-num)}
 </style>
 </head>
 <body>

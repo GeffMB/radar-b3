@@ -29,6 +29,12 @@ const LINHAS = [
   {l:"DY 12m", v:a=>a.dy, fmt:v=>pct(v), melhor:+1},
   {l:"DY médio 5 anos", v:(a,d)=>dyMedio(d), fmt:v=>pct(v), melhor:+1},
   {l:"Proventos 12m", sub:"R$ por ação", v:(a,d)=>d?.proventos_12m, fmt:brl},
+  {g:"Método Barsi"},
+  {l:"Preço-teto", sub:"média de 5 anos / DY desejado", v:a=>R.barsi(a).teto, fmt:brl},
+  {l:"Desconto até o teto", sub:"positivo = cotação abaixo do teto", v:a=>R.barsi(a).desconto, fmt:v=>(v>0?"+":"")+pct(v,0), sinal:true, melhor:+1},
+  {l:"Anos com proventos", sub:"dos últimos 10 completos", v:a=>a.regb? a.reg/a.regb : null, fmt:v=>pct(v,0), melhor:+1},
+  {l:"Payout", sub:"% do lucro distribuída", v:a=>a.payout, fmt:v=>pct(v,0)},
+  {l:"Setor perene (BEST)", v:a=>a.best? "Sim" : "Não", txt:true},
   {g:"Rentabilidade e dívida"},
   {l:"ROE", v:a=>a.roe, fmt:v=>pct(v), melhor:+1, sinal:true},
   {l:"Margem líquida", v:a=>a.ml, fmt:v=>pct(v), melhor:+1, sinal:true},
@@ -269,3 +275,4 @@ function desenharDY(){
 
 document.addEventListener("radar:tema", ()=>{ if(sel.length>=2) atualizar(); });
 main();
+document.addEventListener("radar:dy-alvo", ()=>{ if(sel.length>=2) render(); });

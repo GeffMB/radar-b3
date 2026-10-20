@@ -79,7 +79,7 @@ details[open] summary::before{content:"−"}
 .med .v{font-size:18px;font-weight:800;font-variant-numeric:tabular-nums}
 
 .tablebox{overflow-x:auto;min-width:0;border:1px solid var(--line);border-radius:12px}
-table{border-collapse:separate;border-spacing:0;width:100%;min-width:1240px;font-variant-numeric:tabular-nums}
+table{border-collapse:separate;border-spacing:0;width:100%;min-width:1420px;font-variant-numeric:tabular-nums}
 thead th{position:sticky;top:0;background:var(--surface-2);z-index:2;text-align:right;padding:0;white-space:nowrap;border-bottom:1px solid var(--line)}
 thead th:first-child{text-align:left;left:0;z-index:3}
 th button{font:inherit;font-size:12px;font-weight:700;color:var(--muted);background:none;border:0;padding:12px 12px 10px;cursor:pointer;width:100%;text-align:inherit;display:flex;gap:4px;justify-content:flex-end;align-items:center}
@@ -97,6 +97,35 @@ tbody tr.open td{background:var(--accent-soft)}
 .at a.tk:hover{color:var(--accent)}
 .at .nm{display:block;color:var(--muted);font-size:12px;max-width:190px;overflow:hidden;text-overflow:ellipsis}
 .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-weight:700}
+td .sub{display:block;font-size:11.5px;font-weight:600}
+.best{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:1px 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);vertical-align:2px;margin-left:4px}
+
+/* método Barsi */
+.bz .ph{align-items:flex-start}
+.bz .ph .note{margin-top:4px}
+.bz-alvo{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;background:var(--surface-2);border-radius:12px;padding:6px 8px 6px 14px}
+.bz-alvo input{font:inherit;font-weight:800;width:56px;text-align:center;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:6px}
+.bz-crit{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px}
+.bz-crit li{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;background:var(--soft);border-radius:999px;padding:5px 12px 5px 8px}
+.bz-crit li svg{width:16px;height:16px;color:var(--good)}
+.bz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.bz-card{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:14px;background:var(--surface);text-decoration:none;color:inherit;transition:box-shadow .2s,transform .2s,border-color .2s}
+.bz-card:hover{box-shadow:var(--shadow-hover);transform:translateY(-2px);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.bz-card .topo{display:flex;align-items:center;gap:10px;min-width:0}
+.bz-card .topo div{min-width:0}
+.bz-card .tk{font-family:var(--font-display);font-weight:800;font-size:16px}
+.bz-card .nm{display:block;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bz-card .desc{margin-left:auto;font-family:var(--font-num);font-weight:800;font-size:13px;color:var(--good);background:var(--good-bg);border-radius:999px;padding:3px 9px;white-space:nowrap}
+.bz-bar{position:relative;height:6px;border-radius:9px;background:linear-gradient(90deg,var(--good) 0 var(--t),var(--bad-bg) var(--t) 100%)}
+.bz-bar i{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;background:var(--ink);border:2px solid var(--surface);transform:translate(-50%,-50%)}
+.bz-num{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.bz-num b{font-family:var(--font-num);color:var(--ink)}
+.bz-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;border-top:1px solid var(--soft);padding-top:10px}
+.bz-stats span{display:grid;font-size:11px;color:var(--muted)}
+.bz-stats b{font-family:var(--font-num);font-size:14px;color:var(--ink)}
+.bz-aviso{font-size:11.5px;color:var(--warn)}
+.bz-pe{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;font-size:13px;color:var(--muted)}
+.bz-vazio{grid-column:1/-1;padding:18px;border:1px dashed var(--line);border-radius:14px;color:var(--muted);text-align:center}
 .pill.good{background:var(--good-bg);color:var(--good)} .pill.bad{background:var(--bad-bg);color:var(--bad)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
 td.sus{text-decoration:underline dotted var(--warn);text-underline-offset:4px;cursor:help}
 .spark{display:block;margin-left:auto}
@@ -129,6 +158,17 @@ tr.detail td{background:var(--accent-soft);cursor:default;padding:6px 14px 16px;
 
   <section class="resumo" id="resumo" aria-label="Resumo do dia"></section>
 
+  <section class="panel bz" id="barsi" aria-labelledby="t-barsi">
+    <div class="ph">
+      <div><h2 id="t-barsi">Candidatas pelo método Barsi</h2>
+        <p class="note">Ações que passam em todos os critérios abaixo. Ponto de partida para estudo, não recomendação.</p></div>
+      <label class="bz-alvo">DY desejado <input id="dy-alvo" inputmode="decimal" aria-label="Dividend yield desejado, em porcentagem"> %</label>
+    </div>
+    <ul class="bz-crit" id="bz-crit"></ul>
+    <div class="bz-grid" id="bz-grid"></div>
+    <div class="bz-pe" id="bz-pe"></div>
+  </section>
+
   <section aria-labelledby="t-dest" style="display:grid;gap:14px">
     <div class="ph"><h2 id="t-dest">Destaques</h2><span class="note">Toque numa ação para ver cotação, proventos e resultados</span></div>
     <div class="rk-grid" id="rk-grid"></div>
@@ -153,6 +193,7 @@ tr.detail td{background:var(--accent-soft);cursor:default;padding:6px 14px 16px;
           <label class="f"><span class="label">Dív. líq./EBITDA máx.</span><input id="f-dlmax" type="number" step="0.5" inputmode="decimal" placeholder="ex.: 2,5"></label>
         </div>
         <div class="row" style="margin-top:12px">
+          <label class="check"><input type="checkbox" id="f-best"> Só setores perenes (BEST)</label>
           <label class="check"><input type="checkbox" id="f-lucro"> Só empresas com lucro</label>
           <label class="check"><input type="checkbox" id="f-semfin"> Ocultar bancos e seguradoras</label>
           <label class="check"><input type="checkbox" id="f-semalerta"> Ocultar ações com dados para conferir</label>

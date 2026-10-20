@@ -115,11 +115,12 @@ function render(a, det, pares, dados){
     </div>
   </div>
   ${(a.alertas||[]).length? `<div class="alertas" role="note"><b>Dados para conferir</b><ul>${a.alertas.map(x=>`<li>${esc(x.m)}</li>`).join("")}</ul><span class="small">Os números vêm do Yahoo Finance. Antes de usar, compare com o RI da empresa ou com o balanço na CVM.</span></div>` : ""}
-  <div class="cards">${IND.map(i=>cardHTML(i,a,pares)).join("")}</div>`;
+  <div class="cards">${IND.map(i=>cardHTML(i,a,pares)).join("")}</div>
+  <section class="panel bz" id="bz" aria-labelledby="t-bz"></section>`;
 
   if (!det) {
     html += `<div class="msg">O histórico de cotação e proventos de ${a.t} ainda não foi coletado. Ele aparece depois da próxima coleta diária.</div>`;
-    $("conteudo").innerHTML = html; configurarAssistente(a, null, pares, quando); return;
+    $("conteudo").innerHTML = html; desenharBarsi(a, null); configurarAssistente(a, null, pares, quando); return;
   }
 
   // período da cotação
@@ -174,6 +175,8 @@ function render(a, det, pares, dados){
   </section>`;
 
   $("conteudo").innerHTML = html;
+  desenharBarsi(a, det);
+  document.addEventListener("radar:dy-alvo", () => desenharBarsi(a, det));
   configurarAssistente(a, det, pares, quando);
 
   if (!window.Chart) { document.querySelectorAll(".chart").forEach(c=>c.innerHTML='<div class="empty">Os gráficos não carregaram. Verifique a conexão e recarregue a página.</div>'); return; }
@@ -191,6 +194,50 @@ function render(a, det, pares, dados){
   document.addEventListener("radar:tema", ()=>desenharTudo(det));
 }
 
+// Painel do método Barsi: preço-teto, número mágico e checklist dos critérios
+function desenharBarsi(a, det){
+  const el = $("bz"); if (!el) return;
+  const alvo = R.dyAlvo(), b = R.barsi(a, alvo), c = b.crit;
+  const alvoTxt = R.nf(1).format(alvo*100).replace(",0","");
+  const item = (ok, titulo, detalhe) => `<li class="${ok===true?"ok":ok===false?"no":"nd"}"><span class="ic" aria-hidden="true">${ok===true?"✓":ok===false?"✕":"–"}</span><div><b>${titulo}</b><span>${detalhe}</span></div></li>`;
+  const anos = det?.dividendos?.anos || [];
+  const maxAno = Math.max(...anos.map(x=>x[1]), 0) || 1;
+  const prov = a.pm5 || a.prov12;
+  const magico = prov > 0 ? Math.ceil(a.preco / prov) : null;
+  const sinal1 = x => x==null? "–" : (x>0?"+":"")+f1.format(x*100)+"%";
+  el.innerHTML = `
+    <div class="ph"><div><h2 id="t-bz">Método Barsi</h2><p class="note">Critérios de quem investe para viver de proventos. Ponto de partida para estudo, não recomendação.</p></div>
+      <label class="bz-alvo">DY desejado <input id="bz-alvo" inputmode="decimal" value="${alvoTxt}" aria-label="Dividend yield desejado, em porcentagem"> %</label></div>
+    <div class="bz-wrap">
+      <div class="bz-teto">
+        <span class="label">Preço-teto</span>
+        <span class="v">${b.teto? brl(b.teto) : "–"}</span>
+        ${b.teto? `<span class="tag ${b.desconto>=0?"good":"bad"}">cotação ${pct(Math.abs(b.desconto),0)} ${b.desconto>=0?"abaixo":"acima"} do teto</span>` : ""}
+        <span class="cmp">${a.pm5? `Média dos proventos de 5 anos (${brl(a.pm5)} por ação) / ${alvoTxt}%` : "Precisa de 5 anos completos de histórico de proventos"}</span>
+        ${a.dist5? `<span class="aviso">⚠ Um dos 5 anos teve provento muito acima dos outros (possível extraordinário): o teto pode estar inflado.</span>` : ""}
+        <div class="bz-mini">
+          <div><span class="label">DY médio de 5 anos na cotação de hoje</span><b>${pct(b.dy5)}</b></div>
+          <div><span class="label">Número mágico</span><b>${magico? R.f0.format(magico)+" ações" : "–"}</b></div>
+        </div>
+        ${magico? `<span class="cmp">Com ${R.f0.format(magico)} ações (${brl(magico*a.preco)} hoje), os proventos de um ano compram uma ação nova, pela média de 5 anos.</span>` : ""}
+      </div>
+      <ul class="bz-check">
+        ${item(c.best, "Setor perene", c.best? `${esc(a.setor)}: está entre Bancos, Energia, Saneamento, Seguros e Telecom` : `${esc(a.setor)} não está entre os setores perenes do método`)}
+        ${item(c.reg, "Proventos regulares", a.regb? `Pagou em ${a.reg} dos últimos ${a.regb} anos completos${a.quedas5? ` · ${a.quedas5} ${a.quedas5===1?"ano":"anos"} de queda forte (mais de 25%) nos últimos 5` : ""}` : "Sem histórico suficiente")}
+        ${item(c.teto, "Abaixo do preço-teto", b.teto? `Cotação ${brl(a.preco)} · teto ${brl(b.teto)} para DY de ${alvoTxt}%` : "Sem 5 anos completos de proventos")}
+        ${item(c.lucro, "Lucro consistente", a.lucro_n? `Lucro em ${a.lucro_pos} de ${a.lucro_n} exercícios${a.lucro_cagr!=null? ` · crescimento de ${sinal1(a.lucro_cagr)} ao ano` : ""}` : a.pl!=null? (a.pl>0? "Lucro nos últimos 12 meses" : "Prejuízo nos últimos 12 meses") : "Sem dados de lucro")}
+        ${item(c.payout, "Payout sustentável", a.payout!=null? `Distribui ${pct(a.payout,0)} do lucro${a.payout>1? ": paga mais do que lucra" : ""}` : "Payout não informado pela fonte (comum em units)")}
+        ${item(c.divida, "Dívida controlada", a.fin? "Não se aplica a bancos e seguradoras" : a.dle!=null? `Dív. líq./EBITDA de ${f1.format(a.dle)}x (limite ${f1.format(b.limiteDiv)}x${b.limiteDiv>3? " para concessões reguladas" : ""})` : "Sem dados de dívida")}
+      </ul>
+    </div>
+    ${anos.length? `<div class="bz-anos" role="img" aria-label="Proventos por ano">${anos.map(([y,v])=>`<div class="${v>0?"":"zero"}" title="${y}: ${v>0? "R$ "+f4.format(v)+" por ação" : "sem proventos"}"><i style="height:${Math.max(4, v/maxAno*100)}%"></i><span>${String(y).slice(2)}</span></div>`).join("")}</div>
+      <p class="note small">Proventos por ano completo${a.cagr5!=null? ` · crescimento médio de ${sinal1(a.cagr5)} ao ano nos últimos 5 anos` : ""}. Dividendos e JCP somados, valores brutos.</p>` : ""}`;
+  $("bz-alvo").onchange = e => {
+    const v = parseFloat(String(e.target.value).replace(",", "."));
+    if (v>=1 && v<=30) R.definirDyAlvo(v/100); else e.target.value = alvoTxt;
+  };
+}
+
 function configurarAssistente(a, det, pares, quando){
   if (!window.Assistente) return;
   const sinal = x => x==null? "–" : (x>0?"+":"")+f1.format(x*100)+"%";
@@ -203,6 +250,7 @@ function configurarAssistente(a, det, pares, quando){
     pares.length>1? `Medianas do setor no radar (${pares.length-1} empresas): ${IND.map(med).join(" | ")}.` : "",
     r["1a"]? `Retorno total 12m ${sinal(r["1a"].t)} (só cotação ${sinal(r["1a"].p)})${r["5a"]? `; 5 anos ${sinal(r["5a"].t)} (só cotação ${sinal(r["5a"].p)})` : ""}.` : "",
     det? `Proventos 12m: ${brl(det.proventos_12m)} por ação. Faixa de 52 semanas: ${brl(det.min52)} a ${brl(det.max52)}.` : "",
+    a.pm5? `Método Barsi: média de proventos de 5 anos ${brl(a.pm5)} por ação; preço-teto ${brl(a.pm5/R.dyAlvo())} para DY desejado de ${pct(R.dyAlvo())}; pagou proventos em ${a.reg}/${a.regb} anos; payout ${a.payout==null?"–":pct(a.payout,0)}; setor ${a.best?"perene (BEST)":"fora do BEST"}.` : "",
     (a.alertas||[]).length? `Alertas de dados: ${a.alertas.map(x=>x.m).join(" ")}` : "",
   ].filter(Boolean);
   const r12 = r["1a"]? sinal(r["1a"].t) : null;
@@ -212,6 +260,7 @@ function configurarAssistente(a, det, pares, quando){
       `Quais as notícias mais recentes sobre ${a.t} e como podem afetar a ação?`,
       r12? `Por que ${a.t} teve retorno total de ${r12} em 12 meses?` : `O que explica o desempenho recente de ${a.t}?`,
       `${a.t} está cara ou barata frente ao próprio histórico e ao setor? Quais os riscos?`,
+      `${a.t} se encaixa no método Barsi? Analise setor, regularidade dos dividendos e preço-teto.`,
       `Os proventos de ${a.t} são sustentáveis? Explique a política de dividendos.`,
     ],
   });

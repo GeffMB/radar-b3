@@ -178,5 +178,28 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", montarMenu); else montarMenu();
   document.addEventListener("DOMContentLoaded", () => { if (!document.getElementById("jump")?.dataset.ligado) ligarBusca([]); });
 
-  window.R = { nf, f0, f1, f2, esc, pct, sinal, brl, big, numero, logo, spark, ligarBusca, tickerOk, idOk, icone, CATS, linkAtivo, carregar };
+  // ---------------------------------------------------------------- método Barsi: DY desejado e preço-teto
+  // DY desejado fica salvo neste navegador e vale para todas as páginas.
+  const dyAlvo = () => { try { const v = parseFloat(localStorage.getItem("radar-dy-alvo")); return v >= 1 && v <= 30 ? v / 100 : 0.06; } catch (e) { return 0.06; } };
+  const definirDyAlvo = v => { try { localStorage.setItem("radar-dy-alvo", String(v * 100)); } catch (e) {} document.dispatchEvent(new Event("radar:dy-alvo")); };
+  // teto = média dos proventos dos últimos 5 anos ÷ DY desejado; desconto > 0 quando a cotação está abaixo do teto
+  // concessões reguladas (energia e saneamento) têm receita previsível e operam com mais dívida
+  const limiteDivida = o => o.setor === "Energia Elétrica" || o.setor === "Saneamento" ? 4.5 : 3;
+  function barsi(o, alvo = dyAlvo()) {
+    const teto = o.pm5 > 0 ? o.pm5 / alvo : null;
+    const desconto = teto && o.preco ? 1 - o.preco / teto : null;
+    const crit = {
+      best: !!o.best,
+      reg: o.regb >= 5 ? o.reg >= o.regb - 1 : null,
+      teto: desconto == null ? null : desconto >= 0,
+      lucro: o.lucro_n ? o.lucro_pos === o.lucro_n : o.pl != null ? o.pl > 0 : null,
+      divida: o.fin ? true : o.dle == null ? null : o.dle <= limiteDivida(o),
+      payout: o.payout == null ? null : o.payout <= 1,
+    };
+    // setor, regularidade e teto precisam ser confirmados; lucro, dívida e payout só excluem quando o dado existe e reprova
+    const ok = crit.best && crit.reg === true && crit.teto === true && crit.lucro !== false && crit.divida !== false && crit.payout !== false;
+    return { teto, desconto, dy5: o.pm5 && o.preco ? o.pm5 / o.preco : null, crit, ok, limiteDiv: limiteDivida(o) };
+  }
+
+  window.R = { dyAlvo, definirDyAlvo, barsi, nf, f0, f1, f2, esc, pct, sinal, brl, big, numero, logo, spark, ligarBusca, tickerOk, idOk, icone, CATS, linkAtivo, carregar };
 })();

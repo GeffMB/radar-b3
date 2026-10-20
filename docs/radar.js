@@ -9,6 +9,13 @@ const median = a => { const s = a.filter(v => v != null && isFinite(v)).sort((x,
 const temAlerta = (o, k) => (o.alertas || []).some(a => !k || a.k === k);
 const CHEV = '<svg class="chev" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3l5 5-5 5"/></svg>';
 
+/* ---------- método Barsi: preço-teto e desconto de cada ação (dependem do DY desejado) ---------- */
+function calcBarsi() {
+  const alvo = R.dyAlvo();
+  DATA.forEach(o => { const b = R.barsi(o, alvo); o.teto = b.teto; o.desc = b.desconto; o.dy5 = b.dy5; o.bz = b; });
+}
+calcBarsi();
+
 /* ---------- cabeçalho e rodapé ---------- */
 let quando = "–";
 (function cabecalho() {
@@ -53,6 +60,53 @@ let quando = "–";
       <span class="note">Retorno mediano em 12 meses: <b class="${(median(DATA.map(o => o.rt12)) || 0) >= 0 ? "pos" : "neg"}">${sinal(median(DATA.map(o => o.rt12)))}</b></span>
     </div>`;
 })();
+
+/* ---------- candidatas pelo método Barsi ---------- */
+const OK_SVG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+function painelBarsi() {
+  if (!DATA.length) { $("barsi").hidden = true; return; }
+  const alvo = R.dyAlvo();
+  const el = $("dy-alvo");
+  if (document.activeElement !== el) el.value = R.nf(1).format(alvo * 100).replace(",0", "");
+  $("bz-crit").innerHTML = [
+    "Setor perene (Bancos, Energia, Saneamento, Seguros, Telecom)",
+    "Proventos em todos os anos (no máximo 1 falha em 10)",
+    `Cotação abaixo do preço-teto (média de 5 anos / ${R.nf(1).format(alvo * 100).replace(",0", "")}%)`,
+    "Lucro em todos os anos recentes",
+    "Payout até 100%, quando informado",
+    "Dív. líq./EBITDA até 3x (4,5x em energia e saneamento)",
+  ].map(c => `<li>${OK_SVG}${c}</li>`).join("");
+  const cand = DATA.filter(o => o.bz.ok).sort((a, b) => b.desc - a.desc);
+  const vistas = new Set();
+  const lista = cand.filter(o => { const e = o.t.slice(0, 4); if (vistas.has(e)) return false; vistas.add(e); return true; });
+  const card = o => {
+    const pos = Math.max(3, Math.min(97, o.preco / o.teto * 80));
+    return `<a class="bz-card" href="acao.html?t=${encodeURIComponent(o.t)}">
+      <div class="topo">${logo(o, 38)}<div><span class="tk">${esc(o.t)}</span><span class="nm">${esc(o.n)}</span></div><span class="desc" title="Quanto a cotação está abaixo do preço-teto">${pct(o.desc, 0)} abaixo</span></div>
+      <div class="bz-bar" style="--t:80%" role="img" aria-label="Cotação ${brl(o.preco)}, preço-teto ${brl(o.teto)}"><i style="left:${pos}%"></i></div>
+      <div class="bz-num"><span>Cotação <b>${brl(o.preco)}</b></span><span>Preço-teto <b>${brl(o.teto)}</b></span></div>
+      <div class="bz-stats"><span>DY médio 5a<b>${pct(o.dy5)}</b></span><span>Anos pagando<b>${o.reg}/${o.regb}</b></span><span>Payout<b>${o.payout == null ? "–" : pct(o.payout, 0)}</b></span></div>
+      ${o.dist5 ? '<span class="bz-aviso">⚠ Média puxada por um ano de provento extraordinário</span>' : ""}
+      ${temAlerta(o) ? '<span class="bz-aviso">⚠ Há dados para conferir nesta ação</span>' : ""}</a>`;
+  };
+  $("bz-grid").innerHTML = lista.length ? lista.slice(0, 8).map(card).join("")
+    : `<div class="bz-vazio">Nenhuma ação passa em todos os critérios com DY desejado de ${pct(alvo)}. Tente um DY menor.</div>`;
+  const quase = DATA.filter(o => o.best && o.bz.crit.reg && o.bz.crit.teto === false).length;
+  $("bz-pe").innerHTML = `<span><b>${lista.length}</b> ${lista.length === 1 ? "empresa passa" : "empresas passam"} em tudo${lista.length > 8 ? " (mostrando as 8 com maior desconto)" : ""}.</span>
+    ${quase ? `<span>${quase} do setor perene pagam com regularidade mas estão acima do teto.</span>` : ""}
+    <button type="button" class="btn" id="bz-tabela">Ver todas na tabela, por desconto até o teto</button>`;
+  $("bz-tabela").onclick = () => {
+    state.best = true; $("f-best").checked = true; $("avancado").open = true;
+    state.rank = "teto"; state.sort = "desc"; state.dir = -1; state.todas = false; render();
+    $("tabela").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
+}
+$("dy-alvo").addEventListener("change", e => {
+  const v = parseFloat(String(e.target.value).replace(",", "."));
+  if (v >= 1 && v <= 30) R.definirDyAlvo(v / 100); else e.target.value = R.nf(1).format(R.dyAlvo() * 100).replace(",0", "");
+});
+document.addEventListener("radar:dy-alvo", () => { calcBarsi(); painelBarsi(); render(); });
+painelBarsi();
 
 /* ---------- painéis de ranking ---------- */
 const ICONES = {
@@ -103,6 +157,8 @@ const COLS = [
   { k: "pl", l: "P/L", dir: 1 },
   { k: "pvp", l: "P/VP", dir: 1 },
   { k: "dy", l: "DY 12m", dir: -1 },
+  { k: "desc", l: "Preço-teto", dir: -1, t: "Média dos proventos de 5 anos ÷ DY desejado. Ordena pelo desconto da cotação até o teto." },
+  { k: "reg", l: "Anos c/ proventos", dir: -1, t: "Em quantos dos últimos 10 anos completos a ação pagou proventos" },
   { k: "roe", l: "ROE", dir: -1 },
   { k: "ml", l: "Mg. líquida", dir: -1 },
   { k: "dle", l: "Dív. líq./EBITDA", dir: 1 },
@@ -111,6 +167,7 @@ const COLS = [
   { k: "mc", l: "Valor de mercado", dir: -1 },
 ];
 const RANKS = [
+  { id: "teto", l: "Abaixo do preço-teto", sort: ["desc", -1], only: o => o.desc != null && o.desc >= 0 },
   { id: "dy", l: "Maiores DY", sort: ["dy", -1] },
   { id: "pl", l: "Menores P/L", sort: ["pl", 1], only: o => o.pl > 0 },
   { id: "pvp", l: "Menores P/VP", sort: ["pvp", 1], only: o => o.pvp > 0 },
@@ -123,7 +180,7 @@ const RANKS = [
 ];
 const LIMITE = 40;   // linhas iniciais; "Mostrar todas" exibe o resto
 
-let state = { q: "", setor: "", rank: null, sort: "mc", dir: -1, f: {}, lucro: false, semfin: false, semalerta: false, soalerta: false, open: null, todas: false };
+let state = { q: "", setor: "", rank: null, sort: "mc", dir: -1, f: {}, best: false, lucro: false, semfin: false, semalerta: false, soalerta: false, open: null, todas: false };
 try { const s = JSON.parse(localStorage.getItem("radar-b3") || "null"); if (s) state = { ...state, ...s, open: null, todas: false }; } catch (e) { }
 const save = () => { try { localStorage.setItem("radar-b3", JSON.stringify({ ...state, open: null, todas: false })); } catch (e) { } };
 
@@ -137,6 +194,7 @@ RANKS.forEach(r => {
 });
 COLS.forEach(c => {
   const th = document.createElement("th"); th.scope = "col"; th.dataset.k = c.k;
+  if (c.t) th.title = c.t;
   const b = document.createElement("button"); b.type = "button"; b.innerHTML = `<span>${c.l}</span><span class="arr"></span>`;
   b.onclick = () => { if (state.sort === c.k) state.dir *= -1; else { state.sort = c.k; state.dir = c.dir; } state.rank = null; render(); };
   th.append(b); $("thead").append(th);
@@ -147,7 +205,9 @@ Object.keys(FKEYS).forEach(id => {
   const el = $(id); if (state.f[id] != null) el.value = state.f[id];
   el.addEventListener("input", () => { const v = el.value.replace(",", "."); state.f[id] = v === "" ? null : +v; render(); });
 });
-if (Object.values(state.f).some(v => v != null) || state.lucro || state.semfin || state.semalerta) $("avancado").open = true;
+if (Object.values(state.f).some(v => v != null) || state.best || state.lucro || state.semfin || state.semalerta) $("avancado").open = true;
+$("f-best").checked = state.best;
+$("f-best").addEventListener("change", e => { state.best = e.target.checked; render(); });
 $("busca").value = state.q; $("setor").value = state.setor;
 $("f-lucro").checked = state.lucro; $("f-semfin").checked = state.semfin; $("f-semalerta").checked = state.semalerta;
 $("busca").addEventListener("input", e => { state.q = e.target.value; render(); });
@@ -156,8 +216,8 @@ $("f-lucro").addEventListener("change", e => { state.lucro = e.target.checked; r
 $("f-semfin").addEventListener("change", e => { state.semfin = e.target.checked; render(); });
 $("f-semalerta").addEventListener("change", e => { state.semalerta = e.target.checked; if (state.semalerta) state.soalerta = false; render(); });
 $("limpar").onclick = () => {
-  state = { ...state, f: {}, lucro: false, semfin: false, semalerta: false, soalerta: false, q: "", setor: "", rank: null };
-  Object.keys(FKEYS).forEach(id => $(id).value = ""); ["f-lucro", "f-semfin", "f-semalerta"].forEach(id => $(id).checked = false);
+  state = { ...state, f: {}, best: false, lucro: false, semfin: false, semalerta: false, soalerta: false, q: "", setor: "", rank: null };
+  Object.keys(FKEYS).forEach(id => $(id).value = ""); ["f-best", "f-lucro", "f-semfin", "f-semalerta"].forEach(id => $(id).checked = false);
   $("busca").value = ""; $("setor").value = ""; render();
 };
 $("mais").onclick = () => { state.todas = true; render(); };
@@ -169,6 +229,7 @@ function filtered() {
   return DATA.filter(o => {
     if (q && !norm(o.t + " " + o.n).includes(q)) return false;
     if (state.setor && o.setor !== state.setor) return false;
+    if (state.best && !o.best) return false;
     if (state.lucro && !(o.pl > 0)) return false;
     if (state.semfin && o.fin) return false;
     if (state.semalerta && temAlerta(o)) return false;
@@ -212,6 +273,10 @@ function cell(k, o) {
       return v > 3 ? `<span class="pill bad">${f1.format(v)}x</span>` : v > 2 ? `<span class="pill warn">${f1.format(v)}x</span>` : f1.format(v) + "x";
     case "rt12": return v == null ? '<span class="na">–</span>' : `<span class="${v > 0 ? "pos" : v < 0 ? "neg" : "na"}" title="Só cotação: ${sinal(o.var12)}">${sinal(v)}</span>`;
     case "receita12m": case "mc": return big(v);
+    case "desc": if (o.teto == null) return '<span class="na" title="Menos de 5 anos completos de histórico">–</span>';
+      return `${brl(o.teto)}<span class="sub ${v >= 0 ? "pos" : "neg"}">${v >= 0 ? pct(v, 0) + " abaixo" : pct(-v, 0) + " acima"}</span>`;
+    case "reg": if (o.regb == null) return '<span class="na">–</span>';
+      return o.reg >= o.regb - 1 && o.regb >= 5 ? `<span class="pill good">${o.reg}/${o.regb}</span>` : o.reg <= o.regb / 2 ? `<span class="pill bad">${o.reg}/${o.regb}</span>` : `${o.reg}/${o.regb}`;
   }
   return "";
 }
@@ -251,7 +316,7 @@ function render() {
     const tr = document.createElement("tr"); if (state.open === o.t) tr.className = "open";
     const al = o.alertas || [], ks = new Set(al.map(a => a.k));
     const pill = al.length ? ` <span class="conferir" title="${esc(al.map(a => a.m).join("\n"))}">conferir</span>` : "";
-    tr.innerHTML = `<td><div class="at">${logo(o, 32)}<div><a class="tk" href="acao.html?t=${encodeURIComponent(o.t)}">${esc(o.t)}</a>${pill}<span class="nm">${esc(o.n)}</span></div></div></td>` +
+    tr.innerHTML = `<td><div class="at">${logo(o, 32)}<div><a class="tk" href="acao.html?t=${encodeURIComponent(o.t)}">${esc(o.t)}</a>${o.best ? '<span class="best" title="Setor perene do método Barsi">BEST</span>' : ""}${pill}<span class="nm">${esc(o.n)}</span></div></div></td>` +
       COLS.slice(1).map(c => {
         const sus = ks.has(c.k);
         return `<td${sus ? ` class="sus" title="${esc(al.filter(a => a.k === c.k).map(a => a.m).join("\n"))}"` : ""}>${cell(c.k, o)}</td>`;
@@ -286,7 +351,7 @@ if (window.Assistente) Assistente.configurar({
   contexto: () => {
     const rows = sorted(filtered());
     const filtros = [state.setor && `setor ${state.setor}`, state.rank && `ranking "${(RANKS.find(r => r.id === state.rank) || {}).l}"`, state.q && `busca "${state.q}"`].filter(Boolean).join(", ");
-    const top = rows.slice(0, 12).map(o => `${o.t}: P/L ${o.pl == null ? "–" : f1.format(o.pl)}, P/VP ${o.pvp == null ? "–" : f2.format(o.pvp)}, DY ${pct(o.dy)}, ROE ${pct(o.roe)}, ret.12m ${sinal(o.rt12)}`).join("\n");
+    const top = rows.slice(0, 12).map(o => `${o.t}: P/L ${o.pl == null ? "–" : f1.format(o.pl)}, P/VP ${o.pvp == null ? "–" : f2.format(o.pvp)}, DY ${pct(o.dy)}, ROE ${pct(o.roe)}, ret.12m ${sinal(o.rt12)}${o.teto ? `, preço-teto ${brl(o.teto)} (DY desejado ${pct(R.dyAlvo())})` : ""}${o.regb ? `, pagou proventos em ${o.reg}/${o.regb} anos` : ""}`).join("\n");
     return `Lista do radar com ${rows.length} de ${DATA.length} ações${filtros ? " (filtros: " + filtros + ")" : ""}, atualizada em ${quando}.\nPrimeiras da lista:\n${top}`;
   },
   sugestoes: () => {
