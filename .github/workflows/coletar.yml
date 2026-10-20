@@ -55,7 +55,8 @@ jobs:
             echo "Nada novo para salvar."
           else
             git commit -m "Coleta $(TZ=America/Sao_Paulo date +'%d/%m/%Y %H:%M')"
-            git push
+            # se alguém enviou código durante a coleta, incorpora antes de salvar
+            for i in 1 2 3; do git pull --rebase -q && git push && break; sleep 5; done
           fi
 
       - name: Guardar o log da execução
