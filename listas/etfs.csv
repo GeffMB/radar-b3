@@ -38,3 +38,129 @@ NDIV11;Nu Dividendos;Dividendos;Dividendos
 BBSD11;BB ETF S&P Dividendos;Dividendos;S&P Dividendos Brasil
 MATB11;It Now Materiais Básicos;Setorial;Materiais básicos
 AGRI11;Agro;Setorial;Agronegócio
+SPXR11;IT NOW S&P 500 FUTURES QUANTO BRL;Renda fixa;IT NOW S&P 500 FUTURES QUANTO BRL
+BZEQ11;Btg Pactual Reference Msci Brazil 25/50;Ações Brasil;Btg Pactual Reference Msci Brazil 25/50
+BBOV11;BB ETF IBOVESPA;Renda fixa;BB ETF IBOVESPA
+UTLL11;Investo B3 Utilidade Pública;Renda fixa;Investo B3 Utilidade Pública
+GOLX11;TREND ETF B3 OURO;Renda fixa;TREND ETF B3 OURO
+CDII11;Sparta Infra Cdi Fd De Invest;Renda fixa;Sparta Infra Cdi Fd De Invest
+BISE11;Bradesco Isento 2031;Ações Brasil;Bradesco Isento 2031
+IBOB11;BTG PACTUAL B3 IBOVESPA;Ações Brasil;BTG PACTUAL B3 IBOVESPA
+ISNT11;Itau Isento Marco 28 E Cotas D F I D I F;Renda fixa;Itau Isento Marco 28 E Cotas D F I D I F
+HIGH11;NU IBOV SMART HIGH BETA B3;Renda fixa;NU IBOV SMART HIGH BETA B3
+GOLB11;BTG PACTUAL FUTURO DE OURO B3;Ouro;BTG PACTUAL FUTURO DE OURO B3
+KDIF11;Kinea Infra Fundo Investimento Cotas Fun;Outros;Kinea Infra Fundo Investimento Cotas Fun
+SPBZ11;BTG PACTUAL S&P 500 FUTURES QUANTO BRL;Exterior;BTG PACTUAL S&P 500 FUTURES QUANTO BRL
+DOLA11;BB ETF ÍNDICE FUTURO DE DOLAR S&P/B3;Renda fixa;BB ETF ÍNDICE FUTURO DE DOLAR S&P/B3
+SPXH11;TREND ETF S&P 500 QUANTO;Renda fixa;TREND ETF S&P 500 QUANTO
+ISEN11;ITAÚ ISENTO MARÇO 29;Fundos imobiliários;ITAÚ ISENTO MARÇO 29
+ISTT11;Itau Isento Setembro 29;Ações Brasil;Itau Isento Setembro 29
+JURO11;Sparta Infra Fundo Investimento Cotas Fu;Outros;Sparta Infra Fundo Investimento Cotas Fu
+UTLI11;It Now Utilidade Publica;Renda fixa;It Now Utilidade Publica
+FIND11;IT NOW IFNC;Renda fixa;IT NOW IFNC
+KNCA11;Kinea Credito Agro Fiagro-Imobiliario;Fundos imobiliários;Kinea Credito Agro Fiagro-Imobiliario
+CHIP11;INVESTO ETF US LISTED SEMICONDUCTOR 25 I;Setorial;INVESTO ETF US LISTED SEMICONDUCTOR 25 I
+SPYI11;Buena Vista Us High Income Etf Neos U.S ;Exterior;Buena Vista Us High Income Etf Neos U.S 
+IFRA11;Itau FDI;Renda fixa;Itau FDI
+NSDV11;NU IBOV SMART DIVIDENDOS;Renda fixa;NU IBOV SMART DIVIDENDOS
+VWRA11;Investo FTSE All-World;Exterior;Investo FTSE All-World
+RURA11;Itau Asset Rural Fiagro;Fundos imobiliários;Itau Asset Rural Fiagro
+UTEC11;TREND ETF BLOOMBERG US 3000 TECHNOLOGY;Renda fixa;TREND ETF BLOOMBERG US 3000 TECHNOLOGY
+GLDX11;CLASSE A DA INVESTO ETF SOLACTIVE GOLD S;Renda fixa;CLASSE A DA INVESTO ETF SOLACTIVE GOLD S
+QQQI11;BUENA VISTA NASDAQ-100 NEOS HIGH INCOME ;Renda fixa;BUENA VISTA NASDAQ-100 NEOS HIGH INCOME 
+ISNN11;Itau Isento Julho 28 Fic De Fundos Incen;Ações Brasil;Itau Isento Julho 28 Fic De Fundos Incen
+SNAG11;Suno Agro;Fundos imobiliários;Suno Agro
+SPXU11;TREND ETF CRSP U.S. LARGE CAP;Renda fixa;TREND ETF CRSP U.S. LARGE CAP
+GPUS11;INVESTO GP ETF S&P 500;Exterior;INVESTO GP ETF S&P 500
+BDIF11;Btg Pactual Divida Infra FICF Incentivad;Renda fixa;Btg Pactual Divida Infra FICF Incentivad
+CPTI11;Capitania Infra Fic Fi Infra Rf Cp;Outros;Capitania Infra Fic Fi Infra Rf Cp
+BDEF11;FI DE ÍNDICE;Renda fixa;FI DE ÍNDICE
+DIVS11;Sparta Infra Inflacao Longa In Fundo De ;Renda fixa;Sparta Infra Inflacao Longa In Fundo De 
+VGIA11;Valora Cra In Agroindustrial Production ;Fundos imobiliários;Valora Cra In Agroindustrial Production 
+IFRI11;Itau;Renda fixa;Itau
+AUVP11;BTG PACTUAL TEVA AUVP AÇÕES FUNDAMENTOS;Outros;BTG PACTUAL TEVA AUVP AÇÕES FUNDAMENTOS
+BINC11;Brad Fic Firf Invest Infra Cdi Cp Resp L;Renda fixa;Brad Fic Firf Invest Infra Cdi Cp Resp L
+KNDI11;Kinea Estrategia Infra Cdi Em Participac;Renda fixa;Kinea Estrategia Infra Cdi Em Participac
+EWBZ11;ISHARES BOVESPA BR+ EQUAL WEIGHT B3;Renda fixa;ISHARES BOVESPA BR+ EQUAL WEIGHT B3
+AZIN11;Az Quest Infra-Yield Ii Em Participacoes;Dividendos;Az Quest Infra-Yield Ii Em Participacoes
+BRZP11;Brz Infra Portos Em Participacoes Em Inf;Outros;Brz Infra Portos Em Participacoes Em Inf
+BCDI11;0jwo;Renda fixa;0jwo
+RZAG11;Nas Cadeias Produtivas Agroindustriais R;Fundos imobiliários;Nas Cadeias Produtivas Agroindustriais R
+VANG11;Icatu Vangurada Incentivado Em Infraestr;Outros;Icatu Vangurada Incentivado Em Infraestr
+BTER11;INVESTO BRAZIL BESST QUALITY ACUMULAÇÃO;Ações Brasil;INVESTO BRAZIL BESST QUALITY ACUMULAÇÃO
+PFIN11;Perfin Apollo Energia Em Participacoes E;Setorial;Perfin Apollo Energia Em Participacoes E
+BODB11;Bocaina Infra-;Outros;Bocaina Infra-
+JMBI11;Jivemaua Bossanova;Outros;Jivemaua Bossanova
+DOLX11;TREND ETF S&P / B3 DOLAR;Renda fixa;TREND ETF S&P / B3 DOLAR
+USDB11;INVESTO BLOOMBERG US BOND ETF;Renda fixa;INVESTO BLOOMBERG US BOND ETF
+SLVR11;TREND ETF LBMA PRATA;Renda fixa;TREND ETF LBMA PRATA
+QLBR11;RIO BRAVO INVESTO MARKETVECTOR BRAZIL MU;Ações Brasil;RIO BRAVO INVESTO MARKETVECTOR BRAZIL MU
+BDOM11;INVESTO MARKETVECTOR BRAZIL DOMESTIC EXP;Renda fixa;INVESTO MARKETVECTOR BRAZIL DOMESTIC EXP
+BCIC11;DE ÍNDICE;Ações Brasil;DE ÍNDICE
+DOLB11;BTG PACTUAL REFERENCE S&P/B3 CAMBIAL;Exterior;BTG PACTUAL REFERENCE S&P/B3 CAMBIAL
+EGAF11;Ecoagro I Nas Cadeias Produtivas Agroind;Fundos imobiliários;Ecoagro I Nas Cadeias Produtivas Agroind
+XPIE11;XP Infra Fund II Em Participacoes Infrae;Outros;XP Infra Fund II Em Participacoes Infrae
+FGAA11;FG/Agro Nas Cadeias Produtivas Agroindus;Fundos imobiliários;FG/Agro Nas Cadeias Produtivas Agroindus
+BEST11;INVESTO BRAZIL BESST QUALITY;Ações Brasil;INVESTO BRAZIL BESST QUALITY
+BTAG11;Btg Pactual Credito Agrocola Em Cotas Fi;Setorial;Btg Pactual Credito Agrocola Em Cotas Fi
+BRXC11;BTG PACTUAL TEVA IABR SELECTOR;Outros;BTG PACTUAL TEVA IABR SELECTOR
+CPDI11;Capitania Infra CDI FIC de Fundos Incent;Renda fixa;Capitania Infra CDI FIC de Fundos Incent
+BMMT11;FI DE ÍNDICE;Ações Brasil;FI DE ÍNDICE
+XPCA11;Xp Credito Agricola;Fundos imobiliários;Xp Credito Agricola
+BODI11;Bocaina Infra Cdi Fic De Fundos Incentiv;Renda fixa;Bocaina Infra Cdi Fic De Fundos Incentiv
+RBIF11;Rio Bravo Esg FICFI Em Infraestrutura Re;Renda fixa;Rio Bravo Esg FICFI Em Infraestrutura Re
+AURO11;BUENA VISTA NEOS GOLD HIGH INCOME INDEX ;Renda fixa;BUENA VISTA NEOS GOLD HIGH INCOME INDEX 
+BTAL11;FII Btg Pactual Agro Logistica;Fundos imobiliários;FII Btg Pactual Agro Logistica
+CRAA11;Sparta Fiagro Nas Cadeias Produtivas Agr;Fundos imobiliários;Sparta Fiagro Nas Cadeias Produtivas Agr
+JGPX11;Nas Cadeias Produtivas Agroindustriais J;Fundos imobiliários;Nas Cadeias Produtivas Agroindustriais J
+VCRA11;Vectis Datagro Crédito Agronegócio;Setorial;Vectis Datagro Crédito Agronegócio
+GLDI11;It Now Gold Brl;Renda fixa;It Now Gold Brl
+CMDB11;BTG PACTUAL TEVA AÇÕES COMMODITIES BRASI;Ações Brasil;BTG PACTUAL TEVA AÇÕES COMMODITIES BRASI
+RARA11;INVESTO MVIS GLOBAL RARE EARTH/STRATEGIC;Exterior;INVESTO MVIS GLOBAL RARE EARTH/STRATEGIC
+COPN11;Copernico Em Participacoes Em Infraestru;Outros;Copernico Em Participacoes Em Infraestru
+SVAL11;INVESTO ETF S&P SMALLCAP 600 VALUE;Renda fixa;INVESTO ETF S&P SMALLCAP 600 VALUE
+AAZQ11;Az Quest Sole Nas Cadeias Produtivas Do ;Fundos imobiliários;Az Quest Sole Nas Cadeias Produtivas Do 
+VIGT11;Vinci Energia Em Participacao Em Infraes;Setorial;Vinci Energia Em Participacao Em Infraes
+KNOX11;Fip Knox Debt Infraestrutura;Outros;Fip Knox Debt Infraestrutura
+XCAP11;Trend Etf Small Caps Smart Rebal B3;Renda fixa;Trend Etf Small Caps Smart Rebal B3
+BRIA11;B;Outros;B
+GCRA11;Galapagos Recebiveis Do Agronegocio Fiag;Fundos imobiliários;Galapagos Recebiveis Do Agronegocio Fiag
+BREW11;DE ÍNDICE;Ações Brasil;DE ÍNDICE
+AGRX11;Fiagro Agrx;Setorial;Fiagro Agrx
+PPEI11;Prisma Proton Energia Em Participacoes E;Setorial;Prisma Proton Energia Em Participacoes E
+SNFZ11;Suno Fazendas Fiagro;Fundos imobiliários;Suno Fazendas Fiagro
+BDIV11;Btg Pactual Infraestrutura Dividendos Em;Dividendos;Btg Pactual Infraestrutura Dividendos Em
+GXUS11;GALAPAGOS FTSE GLOBAL EQUITIES EX US;Exterior;GALAPAGOS FTSE GLOBAL EQUITIES EX US
+RIFF11;Riff;Renda fixa;Riff
+NUCL11;INVESTO MVIS GLOBAL URANIUM & NUCLEAR EN;Renda fixa;INVESTO MVIS GLOBAL URANIUM & NUCLEAR EN
+VINF11;Vinland Infraestrutura FIIF Em DICI Em C;Fundos imobiliários;Vinland Infraestrutura FIIF Em DICI Em C
+AGGX11;TREND US BNDCI;Outros;TREND US BNDCI
+OURO11;B-Index Etf Ouro Brl B3 Fundo De andice ;Renda fixa;B-Index Etf Ouro Brl B3 Fundo De andice 
+CPTR11;Capitania Agro Strategies;Fundos imobiliários;Capitania Agro Strategies
+BNDX11;INVESTO BLOOMBERG GLOBAL BOND ETF;Renda fixa;INVESTO BLOOMBERG GLOBAL BOND ETF
+GOAT11;IT NOW S&P IMA-B;Renda fixa;IT NOW S&P IMA-B
+CAPE11;ISHARES BOVESPA BR+ CAP 5% B3;Renda fixa;ISHARES BOVESPA BR+ CAP 5% B3
+BTRA11;Imobiliario Btg Pactual Terras Agricolas;Fundos imobiliários;Imobiliario Btg Pactual Terras Agricolas
+BRFT11;Bradesco Farmtech Nas Cadeias Produtivas;Exterior;Bradesco Farmtech Nas Cadeias Produtivas
+BBOI11;BB ETF ÍNDICE FUTURO DE BOI GORDO B3;Renda fixa;BB ETF ÍNDICE FUTURO DE BOI GORDO B3
+CASA11;Buena Vista Neos Real Estate High Income;Fundos imobiliários;Buena Vista Neos Real Estate High Income
+ENDD11;Endurance Debt Em Participacoes Em Infra;Outros;Endurance Debt Em Participacoes Em Infra
+BIDB11;Inter Infra FI Cotas Fundos Incentivados;Renda fixa;Inter Infra FI Cotas Fundos Incentivados
+BIZD11;INVESTO MVIS US BUSINESS DEVELOPMENT COM;Outros;INVESTO MVIS US BUSINESS DEVELOPMENT COM
+ISET11;Itaú Isento Setembro 28;Fundos imobiliários;Itaú Isento Setembro 28
+TECX11;B-INDEX ETF CONNECT CHINA AMC CHINEXT;Exterior;B-INDEX ETF CONNECT CHINA AMC CHINEXT
+XPID11;XP FIC De Fundos Incentivados De Investi;Renda fixa;XP FIC De Fundos Incentivados De Investi
+IWMI11;Buena Vista Gestora De Recursos Ltda- Ne;Outros;Buena Vista Gestora De Recursos Ltda- Ne
+DVER11;Bb Etf Indice Diversidade B3 Investiment;Renda fixa;Bb Etf Indice Diversidade B3 Investiment
+NEXG11;Nex Credito Agro Nas Cadeias Produtivas ;Fundos imobiliários;Nex Credito Agro Nas Cadeias Produtivas 
+FIXX11;BUENA VISTA NEOS ENCHANCED INCOME 1-3 MO;Outros;BUENA VISTA NEOS ENCHANCED INCOME 1-3 MO
+PIPE11;BUENA VISTA DEX VETTAFI NEOS ENERGY INFR;Setorial;BUENA VISTA DEX VETTAFI NEOS ENERGY INFR
+SPYR11;B-INDEX ETF S&P 500 BRL;Renda fixa;B-INDEX ETF S&P 500 BRL
+BXPO11;INVESTO MARKETVECTOR BRAZIL GLOBAL EXPOS;Renda fixa;INVESTO MARKETVECTOR BRAZIL GLOBAL EXPOS
+GDIV11;BUENA VISTA DEX NEOS INTERNATIONAL HIGH ;Renda fixa;BUENA VISTA DEX NEOS INTERNATIONAL HIGH 
+SNID11;Suno Infra Debentures FICFI De Investime;Renda fixa;Suno Infra Debentures FICFI De Investime
+HTEK11;IT NOW MORNINGSTAR XT US HEALTHCARE;Renda fixa;IT NOW MORNINGSTAR XT US HEALTHCARE
+ISUS11;IT NOW ISE INVESTIMENTO SUSTENTÁVEL;Renda fixa;IT NOW ISE INVESTIMENTO SUSTENTÁVEL
+KOPA11;Kinea Oportunidades Agro I Fiagro;Renda fixa;Kinea Oportunidades Agro I Fiagro
+OIAG11;Ourinvest Innovation;Fundos imobiliários;Ourinvest Innovation
+TRIG11;ETF TRÍGONO TEVA AÇÕES MICRO CAP / SMALL;Ações Brasil;ETF TRÍGONO TEVA AÇÕES MICRO CAP / SMALL
