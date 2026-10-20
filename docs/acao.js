@@ -24,6 +24,7 @@ const IND = [
 ];
 
 let charts = {};
+let B3PROV = null;   // proventos da B3: [data com, pagamento, valor, tipo]
 let precoRange = "1A", precoModo = "preco";
 
 // Índice de retorno total: proventos reinvestidos na data ex (mesma conta do coletor).
@@ -60,6 +61,8 @@ async function main(){
 
   let det = null;
   try { det = await fetch(`acoes/${a.t}.json`,{cache:"no-cache"}).then(r=> r.ok? r.json() : null); } catch(e){}
+  const pb3 = await R.carregar("mercado/proventos.json");
+  B3PROV = pb3?.itens?.[a.t] || null;
 
   const pares = acoes.filter(x=>x.setor===a.setor);
   render(a, det, pares, dados);
@@ -158,9 +161,7 @@ function render(a, det, pares, dados){
     </div>
     ${pagos.length? `<div class="two">
       <div class="chart short"><canvas id="c-prov" aria-label="Proventos por ano de ${a.t}"></canvas></div>
-      <div class="tablebox"><table><thead><tr><th>Data ex</th><th>R$ por ação</th></tr></thead><tbody>
-        ${det.proventos.slice(0,40).map(([d,v])=>`<tr><td>${dataBR(d)}</td><td>${f4.format(v)}</td></tr>`).join("")}
-      </tbody></table></div>
+      ${tabelaProventos(det)}
     </div>` : `<div class="empty">O Yahoo não registra proventos de ${a.t} nos últimos 10 anos.</div>`}
   </section>`;
 
@@ -192,6 +193,23 @@ function render(a, det, pares, dados){
   $("modo").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoModo=b.dataset.m; try{localStorage.setItem("radar-modo",precoModo);}catch(e){} desenharPreco(det); };
   $("ranges").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoRange=b.dataset.r; try{localStorage.setItem("radar-range",precoRange);}catch(e){} desenharPreco(det); };
   document.addEventListener("radar:tema", ()=>desenharTudo(det));
+}
+
+// Tabela de proventos: com data de pagamento e tipo quando a B3 informa; senão, pela data ex do Yahoo
+function tabelaProventos(det){
+  const hoje = new Date().toISOString().slice(0,10);
+  if (B3PROV?.length){
+    const futuros = B3PROV.filter(x=>x[1] && x[1]>=hoje);
+    return `<div style="display:grid;gap:10px;align-content:start">
+      ${futuros.length? `<div class="prox-pag"><span class="label">Já anunciado</span>${futuros.slice(0,4).map(([dc,dp,v,t])=>`<div><b>R$ ${f4.format(v)}</b> · ${esc(t)} · paga em <b>${dataBR(dp)}</b><small>data com ${dataBR(dc)}</small></div>`).join("")}</div>` : ""}
+      <div class="tablebox"><table><thead><tr><th>Data com</th><th>Pagamento</th><th>Tipo</th><th>R$ por ação</th></tr></thead><tbody>
+      ${B3PROV.slice(0,40).map(([dc,dp,v,t])=>`<tr${dp && dp>=hoje? ' class="futuro"' : ""}><td>${dataBR(dc)}</td><td>${dp? dataBR(dp) : "a definir"}</td><td>${esc(t)}</td><td>${f4.format(v)}</td></tr>`).join("")}
+      </tbody></table></div>
+      <p class="note small">Fonte: B3, últimos 12 meses e pagamentos já anunciados. JCP com valor bruto (antes do IR de 15%).</p></div>`;
+  }
+  return `<div class="tablebox"><table><thead><tr><th>Data ex</th><th>R$ por ação</th></tr></thead><tbody>
+    ${det.proventos.slice(0,40).map(([d,v])=>`<tr><td>${dataBR(d)}</td><td>${f4.format(v)}</td></tr>`).join("")}
+  </tbody></table></div>`;
 }
 
 // Painel do método Barsi: preço-teto, número mágico e checklist dos critérios

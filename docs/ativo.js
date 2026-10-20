@@ -22,7 +22,7 @@ const bigUSD = x => { if (x == null) return "–"; const a = Math.abs(x);
 const liq = x => x == null ? "–" : x >= 1e6 ? "R$ " + f1.format(x / 1e6) + " mi" : "R$ " + f1.format(x / 1e3) + " mil";
 const cls = x => x == null ? "" : x >= 0 ? "pos" : "neg";
 
-let A = null, DET = null, charts = {}, faixa = "1A", modo = "preco";
+let A = null, DET = null, B3PROV = null, charts = {}, faixa = "1A", modo = "preco";
 
 function moeda(v) {
   if (CLASSE === "stocks") return usd(v);
@@ -41,6 +41,7 @@ async function main() {
   A = lista?.itens?.find(x => x.t === ID);
   if (!A) return erro(`<b>${esc(ID)}</b> não está na lista de ${LISTA[CLASSE]}.`);
   DET = await R.carregar(`mercado/${CLASSE}/${ID}.json`);
+  if (CLASSE === "fiis") B3PROV = (await R.carregar("mercado/proventos.json"))?.itens?.[ID] || null;
   document.title = `${A.t} · ${A.n} · Radar B3`;
   R.ligarBusca([]);
   desenharHero();
@@ -231,6 +232,13 @@ function desenharProventos() {
       { type: "bar", label: "Proventos", data: Y.map(x => x.total), backgroundColor: Y.map(x => x.parcial ? acc + "66" : acc), borderRadius: 3, yAxisID: "y", order: 2 },
       { type: "line", label: "DY no ano", data: Y.map(x => x.dy == null ? null : x.dy * 100), borderColor: acc2, backgroundColor: acc2, borderWidth: 2, pointRadius: 3, yAxisID: "y2", order: 1, tension: 0 },
     ] }, options: o });
+  }
+  if (B3PROV?.length) {
+    const hoje = new Date().toISOString().slice(0, 10);
+    $("prov-tab").innerHTML = `<table><thead><tr><th>Data com</th><th>Pagamento</th><th>Valor</th><th>% da cotação</th></tr></thead><tbody>${B3PROV.slice(0, 14).map(([dc, dp, v]) => {
+      const i = DET.precos.d.findIndex(x => x >= dc), p = i >= 0 ? DET.precos.c[i] : A.preco;
+      return `<tr${dp && dp >= hoje ? ' class="futuro"' : ""}><td>${dataBR(dc)}</td><td>${dp ? dataBR(dp) : "a definir"}</td><td>R$ ${f4.format(v)}</td><td>${pct(v / p, 2)}</td></tr>`; }).join("")}</tbody></table>`;
+    return;
   }
   const ult = DET.proventos.slice(0, 12);
   const ref = d => { const i = DET.precos.d.findIndex(x => x >= d); return i >= 0 ? DET.precos.c[i] : null; };

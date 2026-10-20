@@ -60,6 +60,7 @@
     rendafixa: '<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9.5 9.5h.01M14.5 14.5h.01"/>',
     tesouro: '<path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-6 10 6z"/>',
     comparar: '<rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/>',
+    carteira: '<path d="M3 7h18v12H3z"/><path d="M3 7l2-3h14l2 3"/><path d="M16 13h2"/>',
     chev: '<path d="M6 9l6 6 6-6"/>',
     seta: '<path d="M9 6l6 6-6 6"/>',
   };
@@ -115,6 +116,7 @@
         <div class="mm-pan" id="mm-pan" hidden>
           <ul class="mm-cats">${cats}
             <li class="mm-sep" aria-hidden="true"></li>
+            <li><a href="carteira.html" data-cat="carteira"${atual === "carteira" ? ' aria-current="page"' : ""}>${icone("carteira", "mm-ic")}<span><b>Minha carteira</b><small>Renda passiva e simulador</small></span></a></li>
             <li><a href="comparar.html" data-cat="comparar"${atual === "comparar" ? ' aria-current="page"' : ""}>${icone("comparar", "mm-ic")}<span><b>Comparar ações</b><small>Até 4 lado a lado</small></span></a></li>
           </ul>
           <div class="mm-pop" aria-live="polite"><h3 id="mm-tit">Mais negociados</h3><div class="mm-list" id="mm-list"></div><a class="btn mm-ver" id="mm-ver" href="./">Ver todos ${icone("seta", "mm-seta")}</a></div>
@@ -122,6 +124,7 @@
       </div>
       <a class="nav-l" href="./"${atual === "acoes" ? ' aria-current="page"' : ""}>Ações</a>
       <a class="nav-l" href="mercado.html?c=fiis"${atual === "fiis" ? ' aria-current="page"' : ""}>FIIs</a>
+      <a class="nav-l" href="carteira.html"${atual === "carteira" ? ' aria-current="page"' : ""}>Carteira</a>
       <a class="nav-l" href="comparar.html"${atual === "comparar" ? ' aria-current="page"' : ""}>Comparar</a>`;
 
     const btn = nav.querySelector(".mm-btn"), pan = nav.querySelector(".mm-pan");
@@ -146,7 +149,7 @@
     nav.querySelector(".mm").addEventListener("pointerleave", () => { if (fino.matches && innerWidth > 760) { clearTimeout(t); t = setTimeout(fechar, 220); } });
     nav.querySelectorAll(".mm-cats a[data-cat]").forEach(a => {
       const c = a.dataset.cat;
-      if (c === "comparar") return;
+      if (c === "comparar" || c === "carteira") return;
       a.addEventListener("pointerenter", () => { if (innerWidth > 760) mostrar(c); });
       a.addEventListener("focus", () => { if (innerWidth > 760) mostrar(c); });
     });

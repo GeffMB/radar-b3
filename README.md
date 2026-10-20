@@ -37,6 +37,8 @@ Depois disso, abra `docs\index.html` quando quiser ver o radar. Para atualizar n
 | `docs/ativo.html` | Página de cada ativo dessas classes (`ativo.html?c=fiis&t=MXRF11`). |
 | `docs/renda-fixa.html` | Selic, CDI, IPCA, poupança, Focus e simulador com IR e custódia. |
 | `docs/tesouro.html` | Títulos do Tesouro Direto à venda e histórico das taxas. |
+| `docs/carteira.html` | Minha carteira (salva só no navegador, com exportar/importar), proventos previstos por mês e simulador bola de neve. |
+| `docs/mercado/proventos.json` | Proventos da B3 com data com, data de pagamento e tipo (dividendo, JCP, rendimento). |
 | `docs/mercado/` | Dados dessas páginas (JSON), gerados pelo `mercado.py`. |
 | `saida/historico.csv` | Uma linha por ação por dia. Base para gráficos de evolução no futuro. |
 | `saida/execucao.log` | Registro de cada execução e das ações que falharam. |
@@ -86,6 +88,14 @@ O botão **Assistente** abre um chat dentro do site. As perguntas, com os dados 
 | IPCA | IBGE (SIDRA) |
 | TR (poupança) | Ipeadata |
 | Títulos à venda e histórico das taxas | Tesouro Direto e Tesouro Transparente |
+
+## Método Barsi
+
+- **Preço-teto** = média dos proventos dos últimos 5 anos completos ÷ DY desejado (6% por padrão; o visitante muda no site e a escolha fica no navegador).
+- **Anos com proventos**: em quantos dos últimos 10 anos completos a ação pagou (só contam anos em que já era negociada desde janeiro).
+- **Setores perenes (BEST)**: Bancos, Energia Elétrica, Saneamento, Seguros e Telecom (B3SA3 e BRBI11 ficam de fora).
+- **Candidatas**: setor BEST, no máximo 1 ano sem proventos, cotação abaixo do teto, lucro em todos os exercícios disponíveis, payout até 100% e Dív. líq./EBITDA até 3x (4,5x em energia e saneamento). Payout e dívida só excluem quando o dado existe.
+- **Número mágico**: quantas ações são necessárias para que os proventos de um ano (média de 5 anos) comprem uma ação nova.
 
 ## Como os indicadores são calculados
 
