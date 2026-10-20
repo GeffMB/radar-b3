@@ -17,7 +17,7 @@ PG;PGCO34;Procter & Gamble;Consumo
 KO;COCA34;Coca-Cola;Consumo
 PEP;PEPB34;PepsiCo;Consumo
 HD;HOME34;Home Depot;Consumo
-COST;;Costco;Consumo
+COST;COWC34;Costco;Consumo
 WMT;WALM34;Walmart;Consumo
 NFLX;NFLX34;Netflix;Comunicação
 DIS;DISB34;Disney;Comunicação
@@ -28,7 +28,7 @@ CSCO;CSCO34;Cisco;Tecnologia
 ADBE;ADBE34;Adobe;Tecnologia
 CRM;SSFO34;Salesforce;Tecnologia
 AVGO;AVGO34;Broadcom;Tecnologia
-LLY;;Eli Lilly;Saúde
+LLY;LILY34;Eli Lilly;Saúde
 PFE;PFIZ34;Pfizer;Saúde
 MRK;MRCK34;Merck;Saúde
 ABBV;ABBV34;AbbVie;Saúde
@@ -40,8 +40,8 @@ BA;BOEI34;Boeing;Indústria
 CAT;CATP34;Caterpillar;Indústria
 T;ATTB34;AT&T;Comunicação
 VZ;VERZ34;Verizon;Comunicação
-O;;Realty Income;Imóveis (REIT)
-PLTR;;Palantir;Tecnologia
+O;R1IN34;Realty Income;Imóveis (REIT)
+PLTR;P2LT34;Palantir;Tecnologia
 TSM;TSMC34;TSMC;Tecnologia
 ASML;ASML34;ASML;Tecnologia
 BABA;BABA34;Alibaba;Consumo
@@ -50,7 +50,7 @@ NU;ROXO34;Nubank;Financeiro
 SPOT;S1PO34;Spotify;Comunicação
 UBER;U1BE34;Uber;Tecnologia
 ABNB;AIRB34;Airbnb;Consumo
-SHOP;;Shopify;Tecnologia
+SHOP;S2HO34;Shopify;Tecnologia
 SBUX;SBUB34;Starbucks;Consumo
 IBM;IBMB34;IBM;Tecnologia
 QCOM;QCOM34;Qualcomm;Tecnologia
@@ -69,17 +69,17 @@ SPGI;SPGI34;S&P Global;Financeiro
 MO;;Altria;Consumo
 PM;;Philip Morris;Consumo
 ABT;ABTT34;Abbott;Saúde
-TMO;;Thermo Fisher;Saúde
-DHR;;Danaher;Saúde
+TMO;TMOS34;Thermo Fisher;Saúde
+DHR;DHER34;Danaher;Saúde
 AMGN;;Amgen;Saúde
 GILD;;Gilead;Saúde
 BMY;;Bristol-Myers Squibb;Saúde
 CVS;;CVS Health;Saúde
 UPS;;UPS;Indústria
 FDX;;FedEx;Indústria
-LMT;;Lockheed Martin;Indústria
-RTX;;RTX;Indústria
-DE;;Deere;Indústria
+LMT;LMTB34;Lockheed Martin;Indústria
+RTX;RYTT34;RTX;Indústria
+DE;DEEC34;Deere;Indústria
 XP;XPBR31;XP Inc.;Financeiro
 INTR;INBR32;Inter&Co;Financeiro
 PYPL;PYPL34;PayPal;Financeiro
@@ -94,18 +94,18 @@ COIN;C2OI34;Coinbase;Financeiro
 NOW;N1OW34;ServiceNow;Tecnologia
 ACN;;Accenture;Tecnologia
 ADP;;ADP;Tecnologia
-AMAT;;Applied Materials;Tecnologia
+AMAT;A1MT34;Applied Materials;Tecnologia
 AMT;;American Tower;Imóveis (REIT)
-ANET;;Arista Networks;Tecnologia
+ANET;A1NE34;Arista Networks;Tecnologia
 APD;;Air Products;Química
-BKNG;;Booking;Consumo
+BKNG;BKNG34;Booking;Consumo
 BX;;Blackstone;Financeiro
-CB;;Chubb;Financeiro
+CB;C1BL34;Chubb;Financeiro
 CI;;Cigna;Saúde
-CL;;Colgate-Palmolive;Consumo
+CL;COLG34;Colgate-Palmolive;Consumo
 CME;;CME Group;Financeiro
-COP;;ConocoPhillips;Petróleo e gás
-CRWD;;CrowdStrike;Tecnologia
+COP;COPH34;ConocoPhillips;Petróleo e gás
+CRWD;C2RW34;CrowdStrike;Tecnologia
 CSX;;CSX;Indústria
 DUK;;Duke Energy;Energia
 ECL;;Ecolab;Química
@@ -113,37 +113,37 @@ ELV;;Elevance Health;Saúde
 EMR;;Emerson Electric;Indústria
 EOG;;EOG Resources;Petróleo e gás
 EQIX;;Equinix;Imóveis (REIT)
-ETN;;Eaton;Indústria
+ETN;E1TN34;Eaton;Indústria
 F;;Ford;Automóveis
-FCX;;Freeport-McMoRan;Mineração
-GM;;General Motors;Automóveis
+FCX;FCXO34;Freeport-McMoRan;Mineração
+GM;GMCO34;General Motors;Automóveis
 HCA;;HCA Healthcare;Saúde
 ICE;;Intercontinental Exchange;Financeiro
-INTU;;Intuit;Tecnologia
-ISRG;;Intuitive Surgical;Saúde
-KLAC;;KLA;Tecnologia
+INTU;INTU34;Intuit;Tecnologia
+ISRG;I1SR34;Intuitive Surgical;Saúde
+KLAC;K1LA34;KLA;Tecnologia
 KMB;;Kimberly-Clark;Consumo
 LIN;;Linde;Química
 LOW;;Lowe's;Consumo
-LRCX;;Lam Research;Tecnologia
+LRCX;L1RC34;Lam Research;Tecnologia
 MDT;;Medtronic;Saúde
 MDLZ;;Mondelez;Consumo
 MET;;MetLife;Financeiro
-MU;;Micron;Tecnologia
-NEE;;NextEra Energy;Energia
+MU;MUTC34;Micron;Tecnologia
+NEE;NEXT34;NextEra Energy;Energia
 NOC;;Northrop Grumman;Indústria
 OXY;;Occidental;Petróleo e gás
-PANW;;Palo Alto Networks;Tecnologia
+PANW;P2AN34;Palo Alto Networks;Tecnologia
 PGR;;Progressive;Financeiro
 PLD;;Prologis;Imóveis (REIT)
 PNC;;PNC Financial;Financeiro
 REGN;;Regeneron;Saúde
 SHW;;Sherwin-Williams;Química
 SLB;;SLB (Schlumberger);Petróleo e gás
-SNPS;;Synopsys;Tecnologia
-SO;;Southern Company;Energia
+SNPS;S1NP34;Synopsys;Tecnologia
+SO;T1SO34;Southern Company;Energia
 SPG;;Simon Property;Imóveis (REIT)
-SYK;;Stryker;Saúde
+SYK;S1YK34;Stryker;Saúde
 TGT;;Target;Consumo
 TJX;;TJX;Consumo
 TMUS;;T-Mobile US;Comunicação
@@ -152,25 +152,88 @@ VRTX;;Vertex;Saúde
 WM;;Waste Management;Indústria
 ZTS;;Zoetis;Saúde
 ADI;;Analog Devices;Tecnologia
-CDNS;;Cadence Design;Tecnologia
+CDNS;C1DN34;Cadence Design;Tecnologia
 MAR;;Marriott;Consumo
 HLT;;Hilton;Consumo
 KHC;;Kraft Heinz;Consumo
 GIS;;General Mills;Consumo
 HSY;;Hershey;Consumo
 DASH;;DoorDash;Tecnologia
-SNOW;;Snowflake;Tecnologia
-NET;;Cloudflare;Tecnologia
+SNOW;S2NW34;Snowflake;Tecnologia
+NET;N2ET34;Cloudflare;Tecnologia
 ARM;;Arm Holdings;Tecnologia
-MRVL;;Marvell;Tecnologia
+MRVL;M2RV34;Marvell;Tecnologia
 XYZ;;Block;Financeiro
-TM;;Toyota;Automóveis
-SONY;;Sony;Tecnologia
-NVO;;Novo Nordisk;Saúde
+TM;TMCO34;Toyota;Automóveis
+SONY;SNEC34;Sony;Tecnologia
+NVO;N1VO34;Novo Nordisk;Saúde
 AZN;;AstraZeneca;Saúde
 SAP;;SAP;Tecnologia
 BHP;;BHP;Mineração
-RIO;;Rio Tinto;Mineração
+RIO;RIOT34;Rio Tinto;Mineração
 SHEL;;Shell;Petróleo e gás
 BP;;BP;Petróleo e gás
 UL;;Unilever;Consumo
+;JBSS32;JBS;Consumo
+;SPCX34;Space Exploration Technologies;Indústria
+;M2ST34;Strategy;Tecnologia
+;STOC34;StoneCo;Tecnologia
+;D1EL34;Dell Technologies;Tecnologia
+;M1RN34;Moderna;Saúde
+;F1TN34;Fortinet;Tecnologia
+;W1DC34;Western Digital;Tecnologia
+;PAGS34;PagSeguro Digital;Tecnologia
+;A1KA34;Akamai Technologies;Tecnologia
+;SKHY34;SK hynix;Outros
+;O1KT34;Okta;Tecnologia
+;S1TX34;Seagate Technology;Tecnologia
+;Z2SC34;Zscaler;Tecnologia
+;S2GM34;Sigma Lithium;Mineração
+;S1YM34;Gen Digital;Tecnologia
+;G1LW34;Corning Incorporated;Tecnologia
+;N1EM34;Newmont;Mineração
+;V1ST34;Vistra;Energia
+;GOGL35;Alphabet;Tecnologia
+;C1HK34;Check Point Software Technologies;Tecnologia
+;A1PH34;Amphenol;Tecnologia
+;D1DG34;Datadog;Tecnologia
+;U1AL34;United Airlines;Indústria
+;T1TW34;Take-Two Interactive Software;Tecnologia
+;MOSC34;Mosaic;Indústria
+;RGTI34;Rigetti Computing;Tecnologia
+;S1BS34;Sibanye Stillwater;Mineração
+;N1TA34;NetApp;Tecnologia
+;V1RT34;Vertiv;Indústria
+;M1NS34;Monster Beverage;Consumo
+;V2TX34;VTEX;Tecnologia
+;P1DD34;PDD;Consumo
+;FSLR34;First Solar;Tecnologia
+;M2PM34;MP Materials;Mineração
+;S2EA34;Sea;Consumo
+;NOKI34;Nokia Oyj;Tecnologia
+;V2RN34;Varonis Systems;Tecnologia
+;RIGG34;Transocean;Petróleo e gás
+;R2PD34;Rapid7;Tecnologia
+;T1DG34;TransDigm Incorporated;Indústria
+;T1AM34;Atlassian;Tecnologia
+;EVEB31;Eve;Indústria
+;GPRO34;GoPro;Tecnologia
+;C2EM34;CEMEX;Indústria
+;Z1TA34;Zeta Global;Tecnologia
+;B1AM34;Brookfield;Financeiro
+;R2BL34;Roblox;Tecnologia
+;A1PP34;AppLovin;Consumo
+;ARMT34;ArcelorMittal;Mineração
+;H1PE34;Hewlett Packard Enterprise;Tecnologia
+;G2EV34;GE Vernova;Indústria
+;M2PR34;Monolithic Power Systems;Tecnologia
+;AALL34;American Airlines;Indústria
+;QUBT34;Quantum Computing;Tecnologia
+;A1UT34;Autodesk;Tecnologia
+;C1CL34;Carnival;Consumo
+;T1WL34;Twilio;Tecnologia
+;W1DA34;Workday;Tecnologia
+;V2EE34;Veeva Systems;Saúde
+;A1PO34;Apollo Global Management;Financeiro
+;BONY34;Bank of New York Mellon;Financeiro
+;G1FI34;Gold Fields;Mineração

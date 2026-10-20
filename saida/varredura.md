@@ -1,0 +1,242 @@
+# Varredura de ativos — 20/10/2026
+
+Base: arquivo de cotações da B3 de 09/2026. Mínimos de liquidez (média por dia): acoes R$ 250 mil, fiis R$ 150 mil, etfs R$ 100 mil, bdrs R$ 100 mil.
+
+## Ações: 53 incluídas
+
+- AXIA7 · Axia Energia (ex-Eletrobras) PNC · Energia Elétrica
+- SAUD3 · Bradsaúde ON · Saúde
+- GGPS3 · Gps ON · Indústria
+- PASS3 · Compass Gas e Energia ON · Petróleo e Gás
+- RIAA3 · Guararapes Confecções ON · Varejo
+- KLBN4 · Klabin PN · Papel e Celulose
+- MILS3 · Mills Locação ON · Transporte e Logística
+- VTRU3 · Vitru Educação ON · Educação
+- PINE4 · Banco Pine PN · Bancos
+- AZEV3 · Azevedo & Travassos ON · Construção
+- RENT4 · Localiza PN · Transporte e Logística
+- SAPR4 · Sanepar PN · Saneamento
+- POMO3 · Marcopolo ON · Indústria
+- CYRE4 · Cyrela PN · Construção
+- USIM3 · Usiminas ON · Mineração e Siderurgia
+- ARML3 · Armac Locação ON · Transporte e Logística
+- FIQE3 · Unifique ON · Telecom
+- AZEV4 · Azevedo & Travassos PN · Construção
+- SANB4 · Santander Brasil PN · Bancos
+- ALLD3 · Allied Tecnologia ON · Tecnologia
+- TAEE4 · Taesa PN · Energia Elétrica
+- AZUL3 · Azul ON · Transporte e Logística
+- ITSA3 · Itaúsa ON · Bancos
+- SANB3 · Santander Brasil ON · Bancos
+- AZTE3 · Azt Energia ON · Petróleo e Gás
+- SYNE3 · Syn Prop & Tech ON · Shoppings
+- BMEB4 · Mercantil PN · Bancos
+- EUCA4 · Eucatex PN · Indústria
+- RCSL4 · Recrusul PN · Indústria
+- GFSA3 · Gafisa ON · Construção
+- MELK3 · Melnick ON · Shoppings
+- SAPR3 · Sanepar ON · Saneamento
+- TAEE3 · Taesa ON · Energia Elétrica
+- HBRE3 · Hbr Realty ON · Shoppings
+- BRAP3 · Bradespar ON · Mineração e Siderurgia
+- CLSC4 · Celesc PN · Energia Elétrica
+- VITT3 · Vittia ON · Agronegócio
+- DOTZ3 · Dotz ON · Serviços e Lazer
+- DEXP3 · Dexxos Participações ON · Química e Petroquímica
+- TASA3 · Taurus ON · Indústria
+- LOGN3 · Log-in ON · Transporte e Logística
+- RSUL4 · Metalúrgica Riosulense PN · Indústria
+- ENJU3 · Enjoei ON · Varejo
+- GGBR3 · Gerdau ON · Mineração e Siderurgia
+- ALPK3 · Allpark Empreendimentos ON · Transporte e Logística
+- GOAU3 · Metalúrgica Gerdau ON · Mineração e Siderurgia
+- TECN3 · Technos ON · Varejo
+- RCSL3 · Recrusul ON · Indústria
+- RAPT3 · Randon ON · Indústria
+- LAND3 · Terrasantapa ON · Agronegócio
+- ESPA3 · MPM Corpóreos ON · Serviços e Lazer
+- BMEB3 · Mercantil ON · Bancos
+- AMOB3 · Automob Participações ON · Indústria
+
+## FIIs: 78 incluídos (segmento vem da CVM)
+
+CPOF11, VXXV11, HIRE11, TRXB11, SNEL11, ADSH11, TEPP11, HBCR11, PCIP11, IRIM11, PMLL11, RZLC11, RBRX11, MIDW11, TJKB11, CPUR11, AIEC11, CPLG11, IBBP11, HSLG11, ITRI11, CLIN11, INHF11, AURB11, CYCR11, VVCO11, MANA11, EIRA11, GSFI11, MFII11, ZAGH11, LSOP11, RBRL11, BBIG11, RPRI11, CXAG11, PQAG11, SPXS11, RINV11, LIFE11, VRTM11, REME11, KIVO11, HDOF11, OXRL11, WHGR11, JSCR11, GAME11, HTMX11, JCCJ11, FIGS11, RBHY11, CNES11, PQDP11, BCIA11, BTRU11, AJFI11, GRUL11, FIIP11, RBFM11, VGII11, EXES11, AZPL11, SAPI11, HREC11, TMPS11, ARRI11, VCRI11, MCLO11, BBFO11, CCME11, BTSI11, PLAG11, VGRI11, VPPR11, SMRE11, GCRI11, FCFL11
+
+## ETFs: 67 incluídos
+
+- SPXR11 · IT NOW S&P 500 FUTURES QUANTO BRL · Exterior
+- BZEQ11 · Btg Pactual Reference Msci Brazil 25/50 · Ações Brasil
+- BBOV11 · BB ETF IBOVESPA · Ações Brasil
+- UTLL11 · Investo B3 Utilidade Pública · Setorial
+- GOLX11 · TREND ETF B3 OURO · Ouro
+- IBOB11 · BTG PACTUAL B3 IBOVESPA · Ações Brasil
+- HIGH11 · NU IBOV SMART HIGH BETA B3 · Ações Brasil
+- GOLB11 · BTG PACTUAL FUTURO DE OURO B3 · Ouro
+- SPBZ11 · BTG PACTUAL S&P 500 FUTURES QUANTO BRL · Exterior
+- DOLA11 · BB ETF ÍNDICE FUTURO DE DOLAR S&P/B3 · Exterior
+- SPXH11 · TREND ETF S&P 500 QUANTO · Exterior
+- UTLI11 · It Now Utilidade Publica · Setorial
+- FIND11 · IT NOW IFNC · Setorial
+- CHIP11 · INVESTO ETF US LISTED SEMICONDUCTOR 25 I · Exterior
+- SPYI11 · Buena Vista Us High Income Etf Neos U.S  · Dividendos
+- NSDV11 · NU IBOV SMART DIVIDENDOS · Dividendos
+- VWRA11 · Investo FTSE All-World · Exterior
+- UTEC11 · TREND ETF BLOOMBERG US 3000 TECHNOLOGY · Exterior
+- GLDX11 · CLASSE A DA INVESTO ETF SOLACTIVE GOLD S · Ouro
+- QQQI11 · BUENA VISTA NASDAQ-100 NEOS HIGH INCOME  · Dividendos
+- SPXU11 · TREND ETF CRSP U.S. LARGE CAP · Exterior
+- GPUS11 · INVESTO GP ETF S&P 500 · Exterior
+- BDEF11 · FI DE ÍNDICE · Ações Brasil
+- IFRI11 · Itau · Outros
+- AUVP11 · BTG PACTUAL TEVA AUVP AÇÕES FUNDAMENTOS · Outros
+- EWBZ11 · ISHARES BOVESPA BR+ EQUAL WEIGHT B3 · Ações Brasil
+- BTER11 · INVESTO BRAZIL BESST QUALITY ACUMULAÇÃO · Ações Brasil
+- DOLX11 · TREND ETF S&P / B3 DOLAR · Exterior
+- USDB11 · INVESTO BLOOMBERG US BOND ETF · Renda fixa
+- SLVR11 · TREND ETF LBMA PRATA · Outros
+- QLBR11 · RIO BRAVO INVESTO MARKETVECTOR BRAZIL MU · Ações Brasil
+- BDOM11 · INVESTO MARKETVECTOR BRAZIL DOMESTIC EXP · Ações Brasil
+- BCIC11 · DE ÍNDICE · Ações Brasil
+- DOLB11 · BTG PACTUAL REFERENCE S&P/B3 CAMBIAL · Exterior
+- BEST11 · INVESTO BRAZIL BESST QUALITY · Ações Brasil
+- BRXC11 · BTG PACTUAL TEVA IABR SELECTOR · Outros
+- BMMT11 · FI DE ÍNDICE · Ações Brasil
+- AURO11 · BUENA VISTA NEOS GOLD HIGH INCOME INDEX  · Ouro
+- BTAL11 · FII Btg Pactual Agro Logistica · Setorial
+- GLDI11 · It Now Gold Brl · Ouro
+- CMDB11 · BTG PACTUAL TEVA AÇÕES COMMODITIES BRASI · Ações Brasil
+- RARA11 · INVESTO MVIS GLOBAL RARE EARTH/STRATEGIC · Exterior
+- SVAL11 · INVESTO ETF S&P SMALLCAP 600 VALUE · Exterior
+- XCAP11 · Trend Etf Small Caps Smart Rebal B3 · Ações Brasil
+- BRIA11 · B · Outros
+- BREW11 · DE ÍNDICE · Ações Brasil
+- GXUS11 · GALAPAGOS FTSE GLOBAL EQUITIES EX US · Exterior
+- NUCL11 · INVESTO MVIS GLOBAL URANIUM & NUCLEAR EN · Exterior
+- AGGX11 · TREND US BNDCI · Exterior
+- OURO11 · B-Index Etf Ouro Brl B3 Fundo De andice  · Ouro
+- BNDX11 · INVESTO BLOOMBERG GLOBAL BOND ETF · Renda fixa
+- GOAT11 · IT NOW S&P IMA-B · Renda fixa
+- CAPE11 · ISHARES BOVESPA BR+ CAP 5% B3 · Ações Brasil
+- BTRA11 · Imobiliario Btg Pactual Terras Agricolas · Fundos imobiliários
+- BBOI11 · BB ETF ÍNDICE FUTURO DE BOI GORDO B3 · Outros
+- CASA11 · Buena Vista Neos Real Estate High Income · Dividendos
+- BIZD11 · INVESTO MVIS US BUSINESS DEVELOPMENT COM · Exterior
+- TECX11 · B-INDEX ETF CONNECT CHINA AMC CHINEXT · Exterior
+- IWMI11 · Buena Vista Gestora De Recursos Ltda- Ne · Dividendos
+- DVER11 · Bb Etf Indice Diversidade B3 Investiment · Outros
+- FIXX11 · BUENA VISTA NEOS ENCHANCED INCOME 1-3 MO · Dividendos
+- SPYR11 · B-INDEX ETF S&P 500 BRL · Exterior
+- BXPO11 · INVESTO MARKETVECTOR BRAZIL GLOBAL EXPOS · Exterior
+- GDIV11 · BUENA VISTA DEX NEOS INTERNATIONAL HIGH  · Dividendos
+- HTEK11 · IT NOW MORNINGSTAR XT US HEALTHCARE · Exterior
+- ISUS11 · IT NOW ISE INVESTIMENTO SUSTENTÁVEL · Ações Brasil
+- TRIG11 · ETF TRÍGONO TEVA AÇÕES MICRO CAP / SMALL · Ações Brasil
+
+ETFs de cripto deixados de fora: HASH11, BITH11, ETHE11, QBTC11, COIN11, XBCI11, SOLH11, HODL11, XRPH11, DIGY11, DEFI11, QSOL11, QETH11, ETHY11, ABTC11, BITI11, BITC11, WEB311, XBIT11
+
+Fundos de infraestrutura, Fiagros e similares (não são ETFs) deixados de fora: CDII11, BISE11, ISNT11, KDIF11, ISEN11, ISTT11, JURO11, KNCA11, IFRA11, RURA11, ISNN11, SNAG11, BDIF11, CPTI11, DIVS11, VGIA11, BINC11, KNDI11, AZIN11, BRZP11, BCDI11, RZAG11, VANG11, PFIN11, BODB11, JMBI11, EGAF11, XPIE11, FGAA11, BTAG11, CPDI11, XPCA11, BODI11, RBIF11, CRAA11, JGPX11, VCRA11, COPN11, AAZQ11, VIGT11, KNOX11, GCRA11, AGRX11, PPEI11, SNFZ11, BDIV11, RIFF11, VINF11, CPTR11, BRFT11, ENDD11, BIDB11, ISET11, XPID11, NEXG11, PIPE11, SNID11, KOPA11, OIAG11
+
+## BDRs: 63 incluídos, 38 ligados a ações americanas já listadas
+
+- JBSS32 · JBS · Consumo
+- SPCX34 · Space Exploration Technologies · Indústria
+- M2ST34 · Strategy · Tecnologia
+- STOC34 · StoneCo · Tecnologia
+- D1EL34 · Dell Technologies · Tecnologia
+- M1RN34 · Moderna · Saúde
+- F1TN34 · Fortinet · Tecnologia
+- W1DC34 · Western Digital · Tecnologia
+- PAGS34 · PagSeguro Digital · Tecnologia
+- A1KA34 · Akamai Technologies · Tecnologia
+- SKHY34 · SK hynix · Outros
+- O1KT34 · Okta · Tecnologia
+- S1TX34 · Seagate Technology · Tecnologia
+- Z2SC34 · Zscaler · Tecnologia
+- S2GM34 · Sigma Lithium · Mineração
+- S1YM34 · Gen Digital · Tecnologia
+- G1LW34 · Corning Incorporated · Tecnologia
+- N1EM34 · Newmont · Mineração
+- V1ST34 · Vistra · Energia
+- GOGL35 · Alphabet · Tecnologia
+- C1HK34 · Check Point Software Technologies · Tecnologia
+- A1PH34 · Amphenol · Tecnologia
+- D1DG34 · Datadog · Tecnologia
+- U1AL34 · United Airlines · Indústria
+- T1TW34 · Take-Two Interactive Software · Tecnologia
+- MOSC34 · Mosaic · Indústria
+- RGTI34 · Rigetti Computing · Tecnologia
+- S1BS34 · Sibanye Stillwater · Mineração
+- N1TA34 · NetApp · Tecnologia
+- V1RT34 · Vertiv · Indústria
+- M1NS34 · Monster Beverage · Consumo
+- V2TX34 · VTEX · Tecnologia
+- P1DD34 · PDD · Consumo
+- FSLR34 · First Solar · Tecnologia
+- M2PM34 · MP Materials · Mineração
+- S2EA34 · Sea · Consumo
+- NOKI34 · Nokia Oyj · Tecnologia
+- V2RN34 · Varonis Systems · Tecnologia
+- RIGG34 · Transocean · Petróleo e gás
+- R2PD34 · Rapid7 · Tecnologia
+- T1DG34 · TransDigm Incorporated · Indústria
+- T1AM34 · Atlassian · Tecnologia
+- EVEB31 · Eve · Indústria
+- GPRO34 · GoPro · Tecnologia
+- C2EM34 · CEMEX · Indústria
+- Z1TA34 · Zeta Global · Tecnologia
+- B1AM34 · Brookfield · Financeiro
+- R2BL34 · Roblox · Tecnologia
+- A1PP34 · AppLovin · Consumo
+- ARMT34 · ArcelorMittal · Mineração
+- H1PE34 · Hewlett Packard Enterprise · Tecnologia
+- G2EV34 · GE Vernova · Indústria
+- M2PR34 · Monolithic Power Systems · Tecnologia
+- AALL34 · American Airlines · Indústria
+- QUBT34 · Quantum Computing · Tecnologia
+- A1UT34 · Autodesk · Tecnologia
+- C1CL34 · Carnival · Consumo
+- T1WL34 · Twilio · Tecnologia
+- W1DA34 · Workday · Tecnologia
+- V2EE34 · Veeva Systems · Saúde
+- A1PO34 · Apollo Global Management · Financeiro
+- BONY34 · Bank of New York Mellon · Financeiro
+- G1FI34 · Gold Fields · Mineração
+
+- MUTC34 → MU
+- P2LT34 → PLTR
+- LILY34 → LLY
+- C2RW34 → CRWD
+- M2RV34 → MRVL
+- P2AN34 → PANW
+- N2ET34 → NET
+- FCXO34 → FCX
+- A1MT34 → AMAT
+- S2NW34 → SNOW
+- BKNG34 → BKNG
+- N1VO34 → NVO
+- TMOS34 → TMO
+- L1RC34 → LRCX
+- S1NP34 → SNPS
+- A1NE34 → ANET
+- K1LA34 → KLAC
+- RIOT34 → RIO
+- C1DN34 → CDNS
+- RYTT34 → RTX
+- S2HO34 → SHOP
+- DEEC34 → DE
+- S1YK34 → SYK
+- COWC34 → COST
+- INTU34 → INTU
+- C1BL34 → CB
+- TMCO34 → TM
+- R1IN34 → O
+- NEXT34 → NEE
+- COPH34 → COP
+- GMCO34 → GM
+- T1SO34 → SO
+- E1TN34 → ETN
+- I1SR34 → ISRG
+- DHER34 → DHR
+- COLG34 → CL
+- LMTB34 → LMT
+- SNEC34 → SONY
