@@ -9,8 +9,10 @@
   --good:#1F6847; --good-bg:#DDF0E5; --bad:#A83F36; --bad-bg:#FAE7E3; --warn:#7C5715; --warn-bg:#F8EDD5;
   --gold:#C99A3E; --silver:#94A3A0; --bronze:#B98262;
   --s1:#29656A; --s2:#D39550; --s3:#7D8FC4; --s4:#B97A9B;
-  --shadow:0 1px 2px rgba(27,40,38,.06),0 6px 18px rgba(27,40,38,.07);
-  --shadow-hover:0 2px 4px rgba(27,40,38,.08),0 12px 30px rgba(27,40,38,.12);
+  /* sombra em camadas (sensação de relevo): contato junto à borda + sombra longa e difusa + brilho na borda de cima */
+  --shadow:0 1px 1px rgba(27,40,38,.07),0 2px 4px rgba(27,40,38,.06),0 8px 16px -2px rgba(27,40,38,.09),0 20px 36px -12px rgba(27,40,38,.18),inset 0 1px 0 rgba(255,255,255,.95);
+  --shadow-hover:0 2px 2px rgba(27,40,38,.07),0 6px 10px rgba(27,40,38,.08),0 16px 28px -4px rgba(27,40,38,.14),0 32px 56px -16px rgba(27,40,38,.26),inset 0 1px 0 rgba(255,255,255,.95);
+  --shadow-sm:0 1px 1px rgba(27,40,38,.06),0 3px 8px -2px rgba(27,40,38,.10),inset 0 1px 0 rgba(255,255,255,.9);
   --font-display:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,sans-serif;
   --font-body:"Manrope","Segoe UI",system-ui,-apple-system,sans-serif;
   --font-num:"Manrope","Segoe UI",system-ui,sans-serif;
@@ -23,7 +25,9 @@
   --good:#6FD1A6; --good-bg:#13281F; --bad:#F08A7E; --bad-bg:#33191A; --warn:#E9C072; --warn-bg:#2F2714;
   --gold:#E9C072; --silver:#B4C2BE; --bronze:#D9A07E;
   --s1:#86C7C1; --s2:#E8B884; --s3:#A3B2E8; --s4:#DDA3C2;
-  --shadow:0 1px 2px rgba(0,0,0,.22); --shadow-hover:0 6px 22px rgba(0,0,0,.32);
+  --shadow:0 1px 1px rgba(0,0,0,.3),0 4px 8px rgba(0,0,0,.25),0 18px 34px -10px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);
+  --shadow-hover:0 2px 3px rgba(0,0,0,.3),0 10px 18px rgba(0,0,0,.3),0 30px 52px -14px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.06);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.3),0 4px 10px -2px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05);
   color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -172,3 +176,12 @@ footer.site p{margin:0;max-width:95ch}
   .mm-sep{margin:4px 8px}
   .mm-it{padding:5px 6px}
 }
+
+/* relevo: painéis e cartões sobem um pouco ao passar o mouse */
+.panel,.tile,.rk,.card,.cartao,.msg{box-shadow:var(--shadow)}
+@media (hover:hover) and (prefers-reduced-motion:no-preference){
+  .rk,.card,.tile,.cartao{transition:box-shadow .25s ease,transform .25s ease}
+  .rk:hover,.card:hover,a.tile:hover,.cartao:hover{box-shadow:var(--shadow-hover);transform:translateY(-3px)}
+}
+.bz-card,.bz-check li,.s-tab div,.mm-ic,.btn{box-shadow:var(--shadow-sm)}
+.btn.primary{box-shadow:0 1px 1px rgba(0,0,0,.08),0 4px 10px -2px color-mix(in srgb,var(--accent) 45%,transparent)}
