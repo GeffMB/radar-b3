@@ -617,6 +617,105 @@ def coletar_tesouro(hoje: date) -> dict:
     return {"atualizado_em": datetime.now(FUSO_BR).isoformat(timespec="minutes"), "titulos": titulos}
 
 
+# ---------------------------------------------------------------- proventos com data de pagamento e tipo (B3)
+
+URL_B3_EMPRESA = "https://sistemaswebb3-listados.b3.com.br/listedCompaniesProxy/CompanyCall/GetListedSupplementCompany/"
+URL_B3_FUNDO = "https://sistemaswebb3-listados.b3.com.br/fundsProxy/fundsCall/GetListedSupplementFunds/"
+TIPOS_B3 = {"DIVIDENDO": "Dividendo", "JRS CAP PROPRIO": "JCP", "RENDIMENTO": "Rendimento", "AMORTIZACAO": "Amortização",
+            "AMORTIZAÇÃO": "Amortização", "RESTITUICAO DE CAPITAL": "Restituição", "RESTITUIÇÃO DE CAPITAL": "Restituição"}
+# composição das units (ações ON, ações PN) quando a B3 não informa o provento da unit
+UNITS = {"TAEE11": (1, 2), "SANB11": (1, 1), "SAPR11": (1, 4), "KLBN11": (1, 4), "ALUP11": (1, 2), "ENGI11": (1, 4),
+         "IGTI11": (1, 2), "BPAC11": (1, 2), "BRBI11": (1, 2), "TIET11": (1, 4), "SULA11": (1, 2), "CPLE11": (1, 4)}
+
+
+def _b64(o) -> str:
+    return base64.b64encode(json.dumps(o, separators=(",", ":")).encode()).decode()
+
+
+def _data_br(s: str):
+    try:
+        d = datetime.strptime((s or "").strip(), "%d/%m/%Y").date()
+        return None if d.year >= 9000 else d
+    except ValueError:
+        return None
+
+
+def _classe_isin(isin: str) -> str | None:
+    """Classe da ação pelo ISIN: OR=ON, PR=PN, PA=PNA, PB=PNB, CTF=cota de FII, UNIT=unit."""
+    if len(isin) != 12 or not isin.startswith("BR"):
+        return None
+    if isin[6:9] == "CTF":
+        return "CTF"
+    if isin[6:9] in ("CDA", "UNT", "CDB"):
+        return "UNIT"
+    return isin[9:11] if isin[9:11] in ("OR", "PR", "PA", "PB", "PC") else None
+
+
+SUFIXO_CLASSE = {"3": "OR", "4": "PR", "5": "PA", "6": "PB", "7": "PC", "8": "PC"}
+
+
+def proventos_b3(acoes: list[str], fiis: list[str], hoje: date, pausa=0.25) -> dict:
+    """{ticker: [[data com, data de pagamento, valor, tipo], ...]} dos últimos 2 anos e dos já anunciados."""
+    corte = hoje - timedelta(days=760)
+    por_codigo: dict[str, list] = {}
+    for t in acoes + fiis:
+        por_codigo.setdefault(t[:4], []).append(t)
+    out, falhas = {}, 0
+    for codigo, tickers in por_codigo.items():
+        eh_fii = all(t in fiis for t in tickers)
+        url = URL_B3_FUNDO + _b64({"cnpj": "0", "identifierFund": codigo, "typeFund": 7}) if eh_fii \
+            else URL_B3_EMPRESA + _b64({"issuingCompany": codigo, "language": "pt-br"})
+        try:
+            bruto = baixar(url, timeout=40).decode("utf-8")
+            d = json.loads(bruto)
+            if isinstance(d, str):                     # a B3 devolve o JSON dentro de uma string
+                d = json.loads(d) if d else {}
+            if isinstance(d, list):
+                d = d[0] if d else {}
+            lista = d.get("cashDividends") or []
+        except Exception as e:
+            falhas += 1
+            log.info("   B3 proventos %s: %s", codigo, e)
+            continue
+        por_classe: dict[str, list] = {}
+        for x in lista:
+            cls = _classe_isin(x.get("isinCode") or x.get("assetIssued") or "")
+            dc, dp = _data_br(x.get("lastDatePrior")), _data_br(x.get("paymentDate"))
+            v = br_num(x.get("rate"))
+            if not cls or not dc or not v:
+                continue
+            if dc < corte and not (dp and dp >= hoje):
+                continue
+            tipo = TIPOS_B3.get((x.get("label") or "").strip().upper(), (x.get("label") or "").strip().title())
+            por_classe.setdefault(cls, []).append([dc.isoformat(), dp.isoformat() if dp else None, round(v, 8), tipo])
+        for t in tickers:
+            if t in fiis:
+                linhas = por_classe.get("CTF", [])
+            elif t.endswith("11"):
+                linhas = por_classe.get("UNIT", [])
+                if not linhas and t in UNITS:
+                    on, pn = UNITS[t]
+                    # soma ON + PN de cada evento (mesma data com, pagamento e tipo)
+                    soma: dict[tuple, float] = {}
+                    for cls, mult in (("OR", on), ("PR", pn), ("PA", pn)):
+                        for dc, dp, v, tipo in por_classe.get(cls, []):
+                            k = (dc, dp, tipo)
+                            soma[k] = soma.get(k, 0) + v * mult
+                        if cls == "PR" and por_classe.get("PR"):
+                            break                              # PNA só entra se não houver PN
+                    linhas = [[dc, dp, round(v, 8), tipo] for (dc, dp, tipo), v in soma.items()]
+            else:
+                linhas = por_classe.get(SUFIXO_CLASSE.get(t[4:5], ""), [])
+            # a B3 repete o mesmo evento em ISINs antigos da mesma classe: tira duplicados
+            unicas = sorted({tuple(l) for l in linhas}, key=lambda l: (l[0], l[1] or ""), reverse=True)
+            if unicas:
+                out[t] = [list(l) for l in unicas]
+        if pausa:
+            time.sleep(pausa)
+    log.info("Proventos B3: %d ativos com dados, %d empresas/fundos sem resposta.", len(out), falhas)
+    return out
+
+
 # ---------------------------------------------------------------- saídas
 
 CLASSES = {
@@ -699,11 +798,11 @@ def configurar_log():
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Coleta as outras classes de ativos do Radar B3")
-    p.add_argument("--so", help="partes separadas por vírgula: fiis,etfs,exterior,indices,commodities,rendafixa,tesouro")
+    p.add_argument("--so", help="partes separadas por vírgula: fiis,etfs,exterior,indices,commodities,rendafixa,tesouro,proventos")
     p.add_argument("--sem-logos", action="store_true")
     args = p.parse_args(argv)
     configurar_log()
-    partes = set((args.so or "fiis,etfs,exterior,indices,commodities,rendafixa,tesouro").split(","))
+    partes = set((args.so or "fiis,etfs,exterior,indices,commodities,rendafixa,tesouro,proventos").split(","))
     agora = datetime.now(FUSO_BR)
     hoje = agora.date()
     erros = 0
@@ -718,6 +817,19 @@ def main(argv=None) -> int:
             erros += 1
             log.exception("== %s falhou", nome)
 
+    if "proventos" in partes:
+        def provs():
+            try:
+                acoes = [a["t"] for a in json.loads((PASTA_DOCS / "dados.json").read_text(encoding="utf-8"))["acoes"]]
+            except Exception:
+                acoes = []
+            fiis = [l["ticker"] for l in ler_lista("fiis.csv")]
+            itens = proventos_b3(acoes, fiis, hoje)
+            datas = [l[0] for v in itens.values() for l in v]
+            salvar_json(PASTA_MERCADO / "proventos.json", {"atualizado_em": agora.isoformat(timespec="minutes"),
+                                                           "fonte": "B3", "mais_antigo": min(datas) if datas else None,
+                                                           "itens": itens})
+        etapa("Proventos B3", provs)
     if "rendafixa" in partes:
         etapa("Renda fixa", lambda: salvar_json(PASTA_MERCADO / "rendafixa.json", coletar_renda_fixa(hoje)))
     if "tesouro" in partes:
