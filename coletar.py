@@ -25,7 +25,7 @@ import math
 import sys
 import time
 import webbrowser
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
@@ -39,6 +39,9 @@ FUSO_BR = timezone(timedelta(hours=-3))
 SETORES_SEM_ALAVANCAGEM = {"Bancos", "Seguros e Serviços Financeiros"}
 # Mas a B3 é empresa operacional comum e o indicador vale para ela
 EXCECOES_ALAVANCAGEM = {"B3SA3"}
+# Setores perenes do método Barsi ("BEST": Bancos, Energia, Saneamento, Seguros e Telecom)
+SETORES_BEST = {"Bancos", "Energia Elétrica", "Saneamento", "Seguros e Serviços Financeiros", "Telecom"}
+FORA_DO_BEST = {"B3SA3", "BRBI11"}      # bolsa e banco de investimento: não são seguradoras
 
 # Content-Security-Policy: o navegador só executa scripts e carrega fontes/estilos do próprio site.
 # Nada de terceiros (Google Fonts, CDNs, analytics), então nenhum outro serviço recebe o IP do visitante.
@@ -149,8 +152,15 @@ def montar_acao(base: dict, info: dict) -> dict | None:
         "moeda_dre": info.get("financialCurrency"),
         "receita12m": num(info.get("totalRevenue")),
         "banco": base.get("setor") == "Bancos",
+        "best": base.get("setor") in SETORES_BEST and t not in FORA_DO_BEST,
+        "payout": payout_ok(num(info.get("payoutRatio"))),
         "fin": sem_alav,
     }
+
+
+def payout_ok(p):
+    """Payout do Yahoo (proventos ÷ lucro, mesma base por ação). Fora de 0–500% é erro de dado."""
+    return p if p is not None and 0 <= p <= 5 else None
 
 
 def coletar(tickers: list[dict], buscar=buscar_info, pausa=PAUSA_ENTRE_ACOES):
@@ -182,7 +192,7 @@ def coletar(tickers: list[dict], buscar=buscar_info, pausa=PAUSA_ENTRE_ACOES):
 # ---------------------------------------------------------------- detalhe por ação
 
 ANOS_PRECO = 5          # cotação diária guardada na página da ação
-ANOS_PROVENTOS = 10     # proventos e DY anual
+ANOS_PROVENTOS = 11     # proventos e DY anual (10 anos completos + o ano corrente)
 
 
 def anos_atras(d, n):
@@ -297,7 +307,9 @@ def montar_detalhe(acao: dict, bruto: dict, hoje) -> dict | None:
     ]
 
     ult12 = [(d, v) for d, v in provs if d > anos_atras(hoje, 1)]
+    dividendos = indicadores_dividendos(precos[0][0], por_ano, hoje)
     return {
+        "dividendos": dividendos,
         "t": acao["t"],
         "precos": {
             "d": [d.isoformat() for d, _ in serie],
@@ -311,6 +323,44 @@ def montar_detalhe(acao: dict, bruto: dict, hoje) -> dict | None:
         "proventos_12m": round(sum(v for _, v in ult12), 4),
         "resultados": resultados,
     }
+
+
+def indicadores_dividendos(primeira_cotacao, por_ano: dict, hoje) -> dict:
+    """Regularidade e média dos proventos nos últimos anos completos (base do preço-teto do método Barsi/Bazin).
+
+    Só contam anos em que a ação já era negociada desde janeiro; o ano corrente (incompleto) fica de fora."""
+    anos_base = [a for a in range(hoje.year - 10, hoje.year) if primeira_cotacao <= date(a, 1, 31)]
+    pagos = [a for a in anos_base if por_ano.get(a, 0) > 0]
+    ult5 = list(range(hoje.year - 5, hoje.year))
+    out = {
+        "anos": [[a, round(por_ano.get(a, 0.0), 4)] for a in anos_base],
+        "pagos": len(pagos),
+        "base": len(anos_base),
+    }
+    if all(a in anos_base for a in ult5):
+        vals = [por_ano.get(a, 0.0) for a in ult5]
+        out["media5"] = round(sum(vals) / 5, 4)
+        ordenados = sorted(vals)
+        mediana = ordenados[2]
+        # um ano muito acima dos outros (provento extraordinário) puxa a média e o preço-teto para cima
+        out["distorcida"] = bool(mediana > 0 and max(vals) > 2 * mediana)
+        out["quedas"] = sum(1 for a in ult5[1:] if por_ano.get(a - 1, 0) > 0 and por_ano.get(a, 0) < 0.75 * por_ano[a - 1])
+        t0, t1 = por_ano.get(ult5[0], 0), por_ano.get(ult5[-1], 0)
+        if t0 > 0 and t1 > 0:
+            out["cagr5"] = round((t1 / t0) ** (1 / 4) - 1, 4)
+    return out
+
+
+def indicadores_lucro(resultados: list) -> dict:
+    """Lucro líquido dos exercícios disponíveis (o Yahoo traz até 4 ou 5 anos)."""
+    lucros = [(r["ano"], r["lucro"]) for r in resultados if r.get("lucro") is not None][-5:]
+    if not lucros:
+        return {}
+    out = {"lucro_n": len(lucros), "lucro_pos": sum(1 for _, l in lucros if l > 0)}
+    (a0, l0), (a1, l1) = lucros[0], lucros[-1]
+    if l0 > 0 and l1 > 0 and a1 > a0:
+        out["lucro_cagr"] = round((l1 / l0) ** (1 / (a1 - a0)) - 1, 4)
+    return out
 
 
 PRAZO_ANUAL = 90        # dias após o fim do exercício até o balanço anual ser publicado (DFP)
@@ -581,6 +631,7 @@ def coletar_detalhes(acoes: list[dict], hoje, buscar=buscar_detalhe, pausa=PAUSA
                 ano = anos_atras(hoje, 1).isoformat()
                 ult_ano = [c for d, c in zip(det["precos"]["d"], det["precos"]["c"]) if d >= ano]
                 extras[t] = {"prov12": det["proventos_12m"], "ret": det.get("retorno") or {},
+                             "divs": det.get("dividendos") or {}, "lucro": indicadores_lucro(det.get("resultados") or []),
                              "sp": ult_ano[::-5][::-1] if ult_ano else [],      # ~1 ponto por semana, termina hoje
                              "alertas": alertas_historico(acao, bruto, hoje)}
                 erro = None
@@ -794,6 +845,13 @@ def main(argv=None) -> int:
                 a["var12"], a["rt12"] = r1["p"], r1["t"]
             if x.get("sp"):
                 a["sp"] = x["sp"]
+            dv = x.get("divs") or {}
+            a["prov12"] = x["prov12"]
+            a["reg"], a["regb"] = dv.get("pagos"), dv.get("base")
+            for k_dst, k_src in (("pm5", "media5"), ("cagr5", "cagr5"), ("quedas5", "quedas"), ("dist5", "distorcida")):
+                if dv.get(k_src) is not None:
+                    a[k_dst] = dv[k_src]
+            a.update(x.get("lucro") or {})
         for a in acoes:
             a["alertas"] = alertas_indicadores(a) + (extras.get(a["t"], {}).get("alertas") or [])
         n_alerta = sum(1 for a in acoes if a["alertas"])
