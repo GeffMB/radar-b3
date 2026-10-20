@@ -2,7 +2,9 @@
    Layout: barra superior fixa com marca e navegação; conteúdo em painéis brancos sobre fundo azulado claro;
    números em Manrope com algarismos tabulares; títulos em Plus Jakarta Sans. */
 :root{
-  --bg:#EDF1EE; --surface:#FFFFFF; --surface-2:#F2F6F4; --ink:#1B2826; --muted:#4E5E5A; --line:#D3DDD8; --soft:#E7EEEA;
+  --bg:#E3E1E5; --surface:#FFFFFF; --surface-2:#F4F3F6; --ink:#1B2826; --muted:#464F4E; --line:#D0CDD3; --soft:#EAE8EC;
+  /* fundo em degradê no tom "Chuva Silenciosa" (#D5D3D6): mais claro no topo, o tom puro embaixo */
+  --grad:linear-gradient(180deg,#F3F2F5 0%,#E6E4E8 45%,#D5D3D6 100%);
   --accent:#29656A; --accent-ink:#FFFFFF; --accent-soft:#DCEBE9; --accent-2:#D39550;
   --good:#1F6847; --good-bg:#DDF0E5; --bad:#A83F36; --bad-bg:#FAE7E3; --warn:#7C5715; --warn-bg:#F8EDD5;
   --gold:#C99A3E; --silver:#94A3A0; --bronze:#B98262;
@@ -16,6 +18,7 @@
 }
 :root[data-theme="dark"]{
   --bg:#0F1614; --surface:#18221F; --surface-2:#1D2926; --ink:#EEF4F2; --muted:#B2C1BD; --line:#33433D; --soft:#22302C;
+  --grad:linear-gradient(180deg,#151C1F 0%,#111817 50%,#0D1312 100%);
   --accent:#86C7C1; --accent-ink:#0E1615; --accent-soft:#1E3533; --accent-2:#E8B884;
   --good:#6FD1A6; --good-bg:#13281F; --bad:#F08A7E; --bad-bg:#33191A; --warn:#E9C072; --warn-bg:#2F2714;
   --gold:#E9C072; --silver:#B4C2BE; --bronze:#D9A07E;
@@ -26,7 +29,8 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
-body{margin:0;background:radial-gradient(1100px 520px at 12% -8%,color-mix(in srgb,var(--accent-soft) 85%,transparent),transparent 70%),radial-gradient(900px 480px at 92% -12%,color-mix(in srgb,var(--accent-2) 10%,transparent),transparent 70%),var(--bg);background-repeat:no-repeat;color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
+html{min-height:100%;background-color:var(--bg);background-image:var(--grad);background-attachment:fixed}
+body{margin:0;background:transparent;color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5;
   font-feature-settings:"tnum" 1;-webkit-font-smoothing:antialiased}
 a{color:var(--accent)}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
