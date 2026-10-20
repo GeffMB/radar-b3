@@ -251,7 +251,8 @@ def dados_cvm(anos: list[int]) -> dict:
     for cnpj, g in geral.items():
         t = g["_isin"][2:6] + "11"
         out.setdefault(t, {"cnpj": cnpj, "nome": g.get("Nome_Fundo_Classe", "").strip(),
-                           "segmento_cvm": (g.get("Segmento_Atuacao") or "").strip(), "meses": {}})
+                           "segmento_cvm": (g.get("Segmento_Atuacao") or "").strip(),
+                           "mandato": (g.get("Mandato") or "").strip(), "meses": {}})
     por_cnpj = {v["cnpj"]: v for v in out.values()}
     for (cnpj, mes), (_, l) in compl.items():
         f = por_cnpj.get(cnpj)
@@ -264,6 +265,30 @@ def dados_cvm(anos: list[int]) -> dict:
         }
     log.info("CVM: %d FIIs com informe mensal.", len(out))
     return out
+
+
+def segmento_fii(nome: str, segmento_cvm: str, mandato: str) -> str:
+    """Segmento para FIIs sem classificação manual: nome do fundo, mandato e segmento informados à CVM."""
+    import re
+    n = f"{nome} {segmento_cvm}".upper()
+    regras = [
+        (r"FUNDO DE FUNDOS|\bFOF\b|FUNDOS IMOBILI", "Fundo de fundos"),
+        (r"\bCRI\b|RECEB|CR[EÉ]DITO|HIGH YIELD|\bHY\b|PAPEL|T[IÍ]TULOS E VAL|SECURIT|HIGH GRADE|\bRENDA FIXA", "Papel"),
+        (r"LOG[IÍ]ST|\bLOG\b|GALP[OÕ]|INDUSTRIA", "Logística"),
+        (r"SHOPPING|\bMALLS?\b|VAREJO", "Shoppings"),
+        (r"LAJE|ESCRIT|CORPORATE|OFFICE|\bCORP\b", "Lajes corporativas"),
+        (r"AGRO|TERRAS|RURAL", "Agro"),
+        (r"HOTEL", "Hotel"), (r"HOSPITAL|SA[UÚ]DE", "Hospitalar"), (r"EDUCA", "Educacional"),
+        (r"RESIDENC|RENDA RESID", "Residencial"), (r"RENDA URBANA|VAREJO|AG[EÊ]NCIAS", "Renda urbana"),
+        (r"DESENVOLV", "Desenvolvimento"),
+    ]
+    for padrao, seg in regras:
+        if re.search(padrao, n):
+            return seg
+    if "TÍTULOS" in mandato.upper() or "TITULOS" in mandato.upper():
+        return "Papel"
+    seg = segmento_cvm.strip()
+    return {"Multicategoria": "Híbrido", "Escritórios": "Lajes corporativas", "Outros": "Outros", "": "Outros"}.get(seg, seg)
 
 
 def nome_fii(nome_cvm: str, t: str) -> str:
@@ -320,7 +345,7 @@ def coletar_fiis(series, cvm) -> tuple[list, dict]:
         item = {
             "t": t,
             "n": nome,
-            "seg": l.get("segmento") or c.get("segmento_cvm") or "Outros",
+            "seg": l.get("segmento") or segmento_fii(nome or "", c.get("segmento_cvm", ""), c.get("mandato", "")),
             **base,
             "pvp": round(pvp, 3) if pvp else None,
             "vp": r4(vp),
