@@ -100,7 +100,7 @@ async function main() {
   if (!d || !d.itens?.length) { $("conteudo").innerHTML = `<div class="msg">Os dados de ${esc(cfg.titulo.toLowerCase())} ainda não foram coletados. Eles chegam na próxima atualização diária.</div>`; return; }
   DADOS = d.itens;
   const q = new Date(d.atualizado_em);
-  $("meta").innerHTML = `${DADOS.length} ativos · atualizado em <b>${q.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</b>`;
+  $("meta").innerHTML = `${DADOS.length} ${CLASSE === "moedas" ? "moedas" : "ativos"} · atualizado em <b>${q.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</b>`;
   if (cfg.cartoes) { desenharCartoes(); configurarAssistente(); return; }
   desenharResumo();
   desenharRanks();
@@ -198,7 +198,7 @@ function desenharTabela() {
 function desenharCartoes() {
   $("resumo").hidden = true; $("destaques").hidden = true; $("tabela").hidden = true;
   const grupos = [...new Set(DADOS.map(a => a.grupo))];
-  const valor = a => a.un === "R$" ? brl(a.preco) : a.un === "%" ? R.nf(2).format(a.preco) + "%" : numero(a.preco);
+  const valor = a => a.mult ? "R$ " + R.nf(a.preco < 1 ? 4 : 2).format(a.preco) : a.un === "R$" ? brl(a.preco) : a.un === "%" ? R.nf(2).format(a.preco) + "%" : numero(a.preco);
   const unidade = a => a.unid ? esc(a.unid) : a.un === "pontos" ? "pontos" : esc(a.un);
   if (cfg.conversor) desenharConversor();
   $("cartoes").innerHTML = grupos.map(g => `<section class="grupo"><h2>${esc(g)}</h2><div class="cartoes">${DADOS.filter(a => a.grupo === g).map(a => `
