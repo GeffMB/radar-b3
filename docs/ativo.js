@@ -22,7 +22,7 @@ const bigUSD = x => { if (x == null) return "–"; const a = Math.abs(x);
 const liq = x => x == null ? "–" : x >= 1e6 ? "R$ " + f1.format(x / 1e6) + " mi" : "R$ " + f1.format(x / 1e3) + " mil";
 const cls = x => x == null ? "" : x >= 0 ? "pos" : "neg";
 
-let A = null, DET = null, B3PROV = null, charts = {}, faixa = "1A", modo = "preco";
+let A = null, DET = null, B3PROV = null, charts = {}, faixa = "1A", modo = "preco", tipo = "linha", GRAF = null;
 
 function moeda(v) {
   if (CLASSE === "stocks") return usd(v);
@@ -46,10 +46,16 @@ async function main() {
   R.ligarBusca([]);
   desenharHero();
   desenharCards();
-  if (DET?.precos?.d?.length) {
+  const sym = simboloYahoo();
+  if (sym) {
+    $("tipo").hidden = false;
+    try { tipo = localStorage.getItem("radar-tipo-grafico") || tipo; } catch (e) {}
+    $("tipo").onclick = e => { const b = e.target.closest("button"); if (!b) return; tipo = b.dataset.t; try { localStorage.setItem("radar-tipo-grafico", tipo); } catch (e) {} desenharPreco(); };
+  } else document.querySelectorAll("#ranges [data-vivo]").forEach(b => b.remove());
+  if (DET?.precos?.d?.length || sym) {
     try { faixa = localStorage.getItem("radar-range") || faixa; } catch (e) {}
     $("ranges").onclick = e => { const b = e.target.closest("button"); if (!b) return; faixa = b.dataset.r; try { localStorage.setItem("radar-range", faixa); } catch (e) {} desenharPreco(); };
-    if (DET.proventos?.length) {
+    if (DET?.proventos?.length) {
       $("modo").hidden = false;
       $("modo").onclick = e => { const b = e.target.closest("button"); if (!b) return; modo = b.dataset.m; desenharPreco(); };
     }
@@ -152,7 +158,7 @@ function base() {
   };
 }
 
-function desenharTudo() { desenharPreco(); desenharProventos(); desenharPVP(); }
+function desenharTudo() { if (GRAF) { GRAF.parar(); GRAF = null; } desenharPreco(); if (DET) { desenharProventos(); desenharPVP(); } }
 
 function indiceRT(D, C, provs) {
   const P = [...provs].sort((a, b) => a[0] < b[0] ? -1 : 1);
@@ -165,8 +171,35 @@ function indiceRT(D, C, provs) {
   return idx;
 }
 
+// símbolo no Yahoo para os candles ao vivo (índices da B3 sem fonte de candles ficam só com a linha)
+function simboloYahoo() {
+  if (["fiis", "etfs", "bdrs"].includes(CLASSE)) return ID + ".SA";
+  if (CLASSE === "stocks") return ID;
+  return A.y || null;
+}
+
+function desenharCandles() {
+  $("cx-preco").hidden = true; $("lwc").hidden = false; $("modo").hidden = true; $("aprox").hidden = true;
+  const atualizar = info => {
+    if (info.erro) { $("var-periodo").innerHTML = `<span class="na">${info.erro}</span>`; return; }
+    const hora = info.quando.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    const v = info.varPeriodo;
+    $("var-periodo").innerHTML = `${info.aberto ? '<span class="vivo">ao vivo</span>' : ""}${v == null ? "" : `No período: <b class="${v >= 0 ? "pos" : "neg"}">${sinal(v)}</b> · `}<span title="Cotações da B3 têm até 15 minutos de atraso nas fontes gratuitas">último negócio ${hora}</span>`;
+  };
+  if (!GRAF) GRAF = Candles.montar($("lwc"), { simbolo: simboloYahoo(), tipo, faixa, formatar: v => eixo(v), aoAtualizar: atualizar });
+  else GRAF.mudar({ tipo, faixa });
+}
+
 function desenharPreco() {
   document.querySelectorAll("#ranges button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.r === faixa)));
+  document.querySelectorAll("#tipo button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.t === tipo)));
+  if (simboloYahoo() && window.Candles && (tipo === "candle" || faixa === "1D" || faixa === "5D" || !DET?.precos?.d?.length)) {
+    if (!DET?.precos?.d?.length && !["1D", "5D"].includes(faixa) && tipo !== "candle") tipo = "candle";
+    return desenharCandles();
+  }
+  GRAF?.parar(); GRAF = null;
+  $("cx-preco").hidden = false; $("lwc").hidden = true;
+  if (DET?.proventos?.length) $("modo").hidden = false;
   document.querySelectorAll("#modo button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.m === modo)));
   const meses = { "1M": 1, "6M": 6, "1A": 12, "2A": 24, "5A": 60 }[faixa] || 12;
   const P = DET.precos;

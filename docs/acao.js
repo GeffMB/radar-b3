@@ -25,7 +25,7 @@ const IND = [
 
 let charts = {};
 let B3PROV = null;   // proventos da B3: [data com, pagamento, valor, tipo]
-let precoRange = "1A", precoModo = "preco";
+let precoRange = "1A", precoModo = "preco", tipoGraf = "linha", GRAF = null;
 
 // Índice de retorno total: proventos reinvestidos na data ex (mesma conta do coletor).
 function indiceRT(D, C, provs){
@@ -133,9 +133,11 @@ function render(a, det, pares, dados){
       <h2>Cotação e retorno</h2>
       <div class="ranges" id="modo"><button type="button" data-m="preco">Preço</button><button type="button" data-m="retorno">Retorno total</button></div>
       <span class="note" id="var-periodo"></span>
-      <div class="ranges" id="ranges">${["1M","6M","1A","2A","5A"].map(r=>`<button type="button" data-r="${r}">${r}</button>`).join("")}</div>
+      <div class="ranges" id="tipo"><button type="button" data-t="linha">Linha</button><button type="button" data-t="candle">Candles</button></div>
+      <div class="ranges" id="ranges">${["1D","5D","1M","6M","1A","2A","5A"].map(r=>`<button type="button" data-r="${r}">${r}</button>`).join("")}</div>
     </div>
-    <div class="chart"><canvas id="c-preco" aria-label="Gráfico de cotação de ${a.t}"></canvas></div>
+    <div class="chart" id="cx-preco"><canvas id="c-preco" aria-label="Gráfico de cotação de ${a.t}"></canvas></div>
+    <div class="chart lwc" id="lwc" hidden aria-label="Gráfico de candles de ${a.t}"></div>
   </section>`;
 
   if (det.multiplos) html += `
@@ -192,7 +194,9 @@ function render(a, det, pares, dados){
   try { precoModo = localStorage.getItem("radar-modo") || precoModo; } catch(e){}
   $("modo").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoModo=b.dataset.m; try{localStorage.setItem("radar-modo",precoModo);}catch(e){} desenharPreco(det); };
   $("ranges").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoRange=b.dataset.r; try{localStorage.setItem("radar-range",precoRange);}catch(e){} desenharPreco(det); };
-  document.addEventListener("radar:tema", ()=>desenharTudo(det));
+  try { tipoGraf = localStorage.getItem("radar-tipo-grafico") || tipoGraf; } catch(e){}
+  $("tipo").onclick = e => { const b=e.target.closest("button"); if(!b) return; tipoGraf=b.dataset.t; try{localStorage.setItem("radar-tipo-grafico",tipoGraf);}catch(e){} desenharPreco(det); };
+  document.addEventListener("radar:tema", ()=>{ GRAF?.parar(); GRAF=null; desenharTudo(det); });
 }
 
 // Tabela de proventos: com data de pagamento e tipo quando a B3 informa; senão, pela data ex do Yahoo
@@ -345,9 +349,26 @@ function desenharMultiplos(det){
   ]},options:o});
 }
 
+// Candles e "ao vivo": dados do servidor do site (Yahoo), atualizados a cada minuto no 1D
+function desenharCandles(){
+  $("cx-preco").hidden = true; $("lwc").hidden = false; $("modo").hidden = true;
+  const atualizar = info => {
+    if (info.erro) { $("var-periodo").innerHTML = `<span class="na">${info.erro}</span>`; return; }
+    const hora = info.quando.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"});
+    const v = info.varPeriodo;
+    $("var-periodo").innerHTML = `${info.aberto? '<span class="vivo">ao vivo</span>' : ""}${v==null? "" : `No período: <b class="${v>=0?"pos":"neg"}">${v>0?"+":""}${f1.format(v*100)}%</b> · `}<span title="Cotações da B3 têm até 15 minutos de atraso nas fontes gratuitas">último negócio ${hora}</span>`;
+  };
+  if (!GRAF) GRAF = Candles.montar($("lwc"), { simbolo: ATUAL.t + ".SA", tipo: tipoGraf, faixa: precoRange, formatar: v => "R$ " + f2.format(v), aoAtualizar: atualizar });
+  else GRAF.mudar({ tipo: tipoGraf, faixa: precoRange });
+}
+
 function desenharPreco(det){
   document.querySelectorAll("#ranges button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.r===precoRange)));
   document.querySelectorAll("#modo button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.m===precoModo)));
+  document.querySelectorAll("#tipo button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.t===tipoGraf)));
+  if (window.Candles && (tipoGraf==="candle" || precoRange==="1D" || precoRange==="5D")) return desenharCandles();
+  GRAF?.parar(); GRAF = null;
+  $("cx-preco").hidden = false; $("lwc").hidden = true; $("modo").hidden = false;
   const meses = {"1M":1,"6M":6,"1A":12,"2A":24,"5A":60}[precoRange];
   const fim = new Date(det.precos.d[det.precos.d.length-1]+"T12:00:00");
   const ini = new Date(fim); ini.setMonth(ini.getMonth()-meses);

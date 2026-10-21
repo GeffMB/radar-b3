@@ -494,7 +494,8 @@ def coletar_indices(series) -> tuple[list, dict]:
         base = resumo_serie(precos, [], com_proventos=False)
         if proxy and q:
             base["preco"], base["var"] = r4(q["preco"]), round(q["var"], 5)
-        itens.append({"t": id_, "n": l["nome"], "grupo": l["grupo"], "un": l["unidade"], "aprox": aprox, **base})
+        y = None if (proxy or l["simbolo"].startswith("B3:")) else l["simbolo"]   # símbolo no Yahoo (gráfico de candles)
+        itens.append({"t": id_, "n": l["nome"], "grupo": l["grupo"], "un": l["unidade"], "aprox": aprox, "y": y, **base})
         detalhes[id_] = detalhe_serie(id_, precos, [], {"aprox": aprox, "un": l["unidade"]})
     salvar_json(ARQ_HIST_B3, hist)
     return itens, detalhes
@@ -508,7 +509,7 @@ def coletar_commodities(series) -> tuple[list, dict]:
             log.info("   commodity %s sem série", l["id"])
             continue
         base = resumo_serie(s["precos"], [], com_proventos=False)
-        itens.append({"t": l["id"], "n": l["nome"], "grupo": l["grupo"], "un": l["unidade"], **base})
+        itens.append({"t": l["id"], "n": l["nome"], "grupo": l["grupo"], "un": l["unidade"], "y": l["simbolo"], **base})
         detalhes[l["id"]] = detalhe_serie(l["id"], s["precos"], [], {"un": l["unidade"]})
     return itens, detalhes
 

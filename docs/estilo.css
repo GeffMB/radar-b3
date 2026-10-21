@@ -185,3 +185,12 @@ footer.site p{margin:0;max-width:95ch}
 }
 .bz-card,.bz-check li,.s-tab div,.mm-ic,.btn{box-shadow:var(--shadow-sm)}
 .btn.primary{box-shadow:0 1px 1px rgba(0,0,0,.08),0 4px 10px -2px color-mix(in srgb,var(--accent) 45%,transparent)}
+
+/* gráfico de candles (Lightweight Charts) e selo "ao vivo" */
+.lwc{position:relative;height:340px;min-width:0}
+.lwc-leg{position:absolute;top:6px;left:8px;z-index:3;display:flex;flex-wrap:wrap;gap:4px 12px;font-family:var(--font-num);font-size:12px;color:var(--muted);pointer-events:none;background:color-mix(in srgb,var(--surface) 80%,transparent);border-radius:8px;padding:2px 6px}
+.lwc-leg b{color:var(--ink);font-weight:700}
+.vivo{display:inline-flex;align-items:center;gap:6px;margin-right:10px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--bad);background:var(--bad-bg);border-radius:999px;padding:2px 9px 2px 7px}
+.vivo::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--bad);animation:pisca 1.4s ease-in-out infinite}
+@keyframes pisca{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.vivo::before{animation:none}}
