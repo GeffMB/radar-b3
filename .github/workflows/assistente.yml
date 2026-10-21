@@ -45,3 +45,7 @@ jobs:
         run: |
           sleep 5
           curl -sS -o /dev/null -w "Diagnóstico: HTTP %{http_code}\n" https://radar-assistente.gefersonmarques.workers.dev/diagnostico || true
+          for s in PETR4.SA BZ%3DF AAPL; do
+            r=$(curl -sS -H "Origin: https://geffmb.github.io" "https://radar-assistente.gefersonmarques.workers.dev/cotacao?s=$s&f=1D" | head -c 220)
+            echo "::notice::cotacao $s -> $r"
+          done

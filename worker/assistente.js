@@ -50,7 +50,7 @@ export default {
     if (req.method === "OPTIONS") {
       if (!cors["Access-Control-Allow-Origin"]) return new Response(null, { status: 403 });
       return new Response(null, { status: 204, headers: { ...cors,
-        "Access-Control-Allow-Methods": "POST", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Max-Age": "86400" } });
+        "Access-Control-Allow-Methods": "GET, POST", "Access-Control-Allow-Headers": "Content-Type", "Access-Control-Max-Age": "86400" } });
     }
     const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status,
       headers: { ...cors, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store",
@@ -64,6 +64,7 @@ export default {
         evitando_agora: [...BLOQUEADOS].filter(([, ate]) => ate > Date.now()).map(([m]) => m) });
     }
     if (!cors["Access-Control-Allow-Origin"]) return json({ erro: "Origem não permitida." }, 403);
+    if (req.method === "GET" && caminho === "/cotacao") return cotacao(req, ctx, cors);
     if (req.method !== "POST" || caminho !== "/perguntar") return json({ erro: "Não encontrado." }, 404);
     if (!env.GEMINI_API_KEY) return json({ erro: "Assistente ainda não configurado." }, 503);
 
@@ -265,3 +266,56 @@ async function verificarLimites(env, cfg, ip) {
   await Promise.all([contar(env, kDia, 172800), contar(env, kIpDia, 172800), contar(env, kIpHora, 7200)]);
   return null;
 }
+
+
+// ---------------------------------------------------------------- cotação em candles (gráfico do site)
+// Busca no Yahoo os candles de um ativo e guarda a resposta no cache da Cloudflare por pouco tempo,
+// para que muitos visitantes olhando o mesmo ativo gerem um único pedido à fonte.
+const MEMO_COT = new Map();
+const FAIXAS = {   // faixa do site: [intervalo do candle, período, segundos de cache]
+  "1D": ["5m", "1d", 60], "5D": ["15m", "5d", 120], "1M": ["60m", "1mo", 300],
+  "6M": ["1d", "6mo", 1800], "1A": ["1d", "1y", 1800], "2A": ["1wk", "2y", 3600], "5A": ["1wk", "5y", 3600],
+};
+async function cotacao(req, ctx, cors) {
+  const u = new URL(req.url);
+  const s = (u.searchParams.get("s") || "").toUpperCase();
+  const f = FAIXAS[u.searchParams.get("f") || "1D"];
+  const cabec = (ttl) => ({ ...cors, "Content-Type": "application/json; charset=utf-8", "Cache-Control": `public, max-age=${ttl}`,
+    "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" });
+  if (!/^[A-Z0-9^][A-Z0-9.=^-]{0,14}$/.test(s) || !f) return new Response(JSON.stringify({ erro: "Ativo ou período inválido." }), { status: 400, headers: cabec(60) });
+  const [intervalo, periodo, ttl] = f;
+  const id = `${s}|${intervalo}|${periodo}`;
+  // memória da instância (funciona no workers.dev) e cache da Cloudflare (quando houver domínio próprio)
+  const mem = MEMO_COT.get(id);
+  if (mem && mem.ate > Date.now()) return new Response(mem.corpo, { status: 200, headers: cabec(ttl) });
+  const chave = new Request(`https://cache.radar-b3/cotacao/${encodeURIComponent(id)}`);
+  const cache = caches.default;
+  const guardado = await cache.match(chave).catch(() => null);
+  if (guardado) return new Response(guardado.body, { status: 200, headers: cabec(ttl) });
+  let d;
+  try {
+    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(s)}?interval=${intervalo}&range=${periodo}&includePrePost=false`,
+      { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36", "Accept": "application/json" },
+        signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    d = (await r.json())?.chart?.result?.[0];
+    if (!d) throw new Error("sem dados");
+  } catch (e) {
+    console.log("cotacao: falha", s, String(e));
+    return new Response(JSON.stringify({ erro: "Cotação indisponível agora." }), { status: 502, headers: cabec(30) });
+  }
+  const q = d.indicators?.quote?.[0] || {}, ts = d.timestamp || [], m = d.meta || {};
+  const out = { s, cur: m.currency, tz: m.exchangeTimezoneName, p: m.regularMarketPrice, pc: m.chartPreviousClose ?? m.previousClose,
+    tm: m.regularMarketTime, ex: m.fullExchangeName || m.exchangeName, t: [], o: [], h: [], l: [], c: [], v: [] };
+  const r4 = x => Math.round(x * 1e4) / 1e4;
+  for (let i = 0; i < ts.length; i++) {
+    if (q.open?.[i] == null || q.close?.[i] == null || q.high?.[i] == null || q.low?.[i] == null) continue;
+    out.t.push(ts[i]); out.o.push(r4(q.open[i])); out.h.push(r4(q.high[i])); out.l.push(r4(q.low[i])); out.c.push(r4(q.close[i])); out.v.push(q.volume?.[i] || 0);
+  }
+  const corpo = JSON.stringify(out);
+  if (MEMO_COT.size > 500) MEMO_COT.clear();
+  MEMO_COT.set(id, { corpo, ate: Date.now() + ttl * 1000 });
+  ctx.waitUntil(cache.put(chave, new Response(corpo, { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttl}` } })).catch(() => {}));
+  return new Response(corpo, { status: 200, headers: cabec(ttl) });
+}
+
