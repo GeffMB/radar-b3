@@ -85,6 +85,7 @@ const CFG = {
     medianas: [["pl", "P/L", x => mult(x, 1)], ["dy", "DY 12m", pct]],
   },
   indices: { titulo: "Índices", sub: "Principais bolsas do mundo, moedas e juros americanos. Toque num índice para ver o histórico.", cartoes: true },
+  moedas: { titulo: "Moedas", sub: "Quanto vale cada moeda em reais. Moedas de valor baixo aparecem em lotes de 100 ou 1.000 para facilitar a leitura.", cartoes: true, conversor: true },
   commodities: { titulo: "Commodities", sub: "Contratos futuros negociados nos EUA, em dólar. Afetam diretamente empresas como Petrobras, Vale e o agronegócio brasileiro.", cartoes: true },
 };
 const cfg = CFG[CLASSE] || CFG.fiis;
@@ -198,12 +199,38 @@ function desenharCartoes() {
   $("resumo").hidden = true; $("destaques").hidden = true; $("tabela").hidden = true;
   const grupos = [...new Set(DADOS.map(a => a.grupo))];
   const valor = a => a.un === "R$" ? brl(a.preco) : a.un === "%" ? R.nf(2).format(a.preco) + "%" : numero(a.preco);
+  const unidade = a => a.unid ? esc(a.unid) : a.un === "pontos" ? "pontos" : esc(a.un);
+  if (cfg.conversor) desenharConversor();
   $("cartoes").innerHTML = grupos.map(g => `<section class="grupo"><h2>${esc(g)}</h2><div class="cartoes">${DADOS.filter(a => a.grupo === g).map(a => `
     <a class="cartao" href="${link(a)}">
-      <div class="topo"><div><div class="nome">${esc(a.n)}</div><div class="un">${a.un === "pontos" ? "pontos" : esc(a.un)}${a.aprox ? " · histórico pelo ETF " + esc(a.aprox) : a.desde ? " · histórico desde " + a.desde.split("-").reverse().join("/") : ""}</div></div>${pill(a.var)}</div>
-      <div class="valor">${valor(a)}</div>
+      <div class="topo"><div><div class="nome">${esc(a.n)}</div><div class="un">${unidade(a)}${a.aprox ? " · histórico pelo ETF " + esc(a.aprox) : a.desde ? " · histórico desde " + a.desde.split("-").reverse().join("/") : ""}</div></div>${pill(a.var)}</div>
+      <div class="valor">${valor(a)}</div>${a.brl ? `<div class="un">≈ ${brl(a.brl)} ${esc((a.un_brl || "").replace("R$", ""))}</div>` : ""}
       <div class="rodape"><span>No ano <b class="${cor(a.rytd)}">${sinal(a.rytd)}</b><br>12 meses <b class="${cor(a.r12)}">${sinal(a.r12)}</b></span>${spark(a.sp, 110, 36)}</div>
     </a>`).join("")}</div></section>`).join("");
+}
+
+// conversor: valor numa moeda → reais (ou o contrário), pela cotação do último fechamento
+function desenharConversor() {
+  const el = $("conversor"); el.hidden = false;
+  el.innerHTML = `<div class="ph"><h2>Conversor</h2><span class="note">Pela cotação de fechamento; casas de câmbio e cartões cobram spread e IOF</span></div>
+    <form class="conv" id="conv" autocomplete="off">
+      <label class="f"><span>Valor</span><input id="cv-v" inputmode="decimal" value="100"></label>
+      <label class="f"><span>De</span><select id="cv-de">${DADOS.map(a => `<option value="${esc(a.t)}">${esc(a.t)} · ${esc(a.n)}</option>`).join("")}<option value="BRL">BRL · Real</option></select></label>
+      <button class="btn" type="button" id="cv-troca" aria-label="Inverter moedas">⇄</button>
+      <label class="f"><span>Para</span><select id="cv-para"><option value="BRL">BRL · Real</option>${DADOS.map(a => `<option value="${esc(a.t)}">${esc(a.t)} · ${esc(a.n)}</option>`).join("")}</select></label>
+      <output class="cv-res" id="cv-res" for="cv-v cv-de cv-para"></output>
+    </form>`;
+  const porUnidade = c => c === "BRL" ? 1 : (DADOS.find(a => a.t === c)?.preco || 0) / (DADOS.find(a => a.t === c)?.mult || 1);
+  const calc = () => {
+    const t = $("cv-v").value.trim(); const v = parseFloat(t.includes(",") ? t.replace(/\./g, "").replace(",", ".") : t) || 0;
+    const de = $("cv-de").value, para = $("cv-para").value;
+    const r = v * porUnidade(de) / (porUnidade(para) || 1);
+    const f = x => R.nf(Math.abs(x) >= 1 ? 2 : 4).format(x);
+    $("cv-res").innerHTML = `<span>${f(v)} ${esc(de)} =</span><b>${f(r)} ${esc(para)}</b>`;
+  };
+  $("conv").addEventListener("input", calc); $("conv").addEventListener("submit", e => e.preventDefault());
+  $("cv-troca").onclick = () => { const a = $("cv-de").value; $("cv-de").value = $("cv-para").value; $("cv-para").value = a; calc(); };
+  calc();
 }
 
 function configurarAssistente() {
@@ -218,6 +245,7 @@ function configurarAssistente() {
       bdrs: ["Como funciona a tributação de dividendos de BDRs?", "BDR ou conta no exterior: prós e contras", "Como o dólar afeta o preço de um BDR?"],
       stocks: ["Quais as notícias que mais movimentam a bolsa americana nesta semana?", "Como investir em ações americanas morando no Brasil?", "O que explica a alta das big techs?"],
       indices: ["Por que o Ibovespa subiu ou caiu hoje?", "O que é o VIX e como interpretar?", "Como o dólar afeta a bolsa brasileira?"],
+      moedas: ["O que faz o dólar subir ou cair frente ao real?", "Vale a pena comprar dólar agora ou aos poucos?", "Como o câmbio afeta empresas exportadoras da B3?"],
       commodities: ["Como o petróleo afeta a Petrobras?", "O que explica o preço do minério de ferro?", "Por que o ouro sobe em crises?"],
     }[CLASSE] || []),
   });

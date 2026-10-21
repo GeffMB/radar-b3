@@ -10,8 +10,8 @@ const ID = (qs.get("t") || "").toUpperCase().replace(/[^A-Z0-9-]/g, "");
 const nav = document.querySelector(".topbar .nav");
 if (nav) nav.dataset.atual = CLASSE;
 
-const NOMES = { fiis: "Fundo Imobiliário", etfs: "ETF", bdrs: "BDR", stocks: "Stock (EUA)", indices: "Índice", commodities: "Commodity" };
-const LISTA = { fiis: "Fundos Imobiliários", etfs: "ETFs", bdrs: "BDRs", stocks: "Stocks", indices: "Índices", commodities: "Commodities" };
+const NOMES = { fiis: "Fundo Imobiliário", etfs: "ETF", bdrs: "BDR", stocks: "Stock (EUA)", indices: "Índice", commodities: "Commodity", moedas: "Moeda" };
+const LISTA = { fiis: "Fundos Imobiliários", etfs: "ETFs", bdrs: "BDRs", stocks: "Stocks", indices: "Índices", commodities: "Commodities", moedas: "Moedas" };
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const dataBR = s => { const [y, m, d] = s.split("-"); return `${d}/${m}/${y}`; };
 const mesBR = s => { const [y, m] = s.split("-"); return `${m}/${y}`; };
@@ -27,11 +27,13 @@ let A = null, DET = null, B3PROV = null, charts = {}, faixa = "1A", modo = "prec
 function moeda(v) {
   if (CLASSE === "stocks") return usd(v);
   if (CLASSE === "indices" || CLASSE === "commodities") return A.un === "R$" ? brl(v) : A.un === "%" ? R.nf(2).format(v) + "%" : numero(v);
+  if (CLASSE === "moedas") return "R$ " + R.nf(Math.abs(v) >= 10 ? 2 : 4).format(v);
   return brl(v);
 }
 function eixo(v) {
   if (CLASSE === "stocks") return "US$ " + R.f0.format(v);
   if (CLASSE === "indices" || CLASSE === "commodities") return A.un === "R$" ? "R$ " + f2.format(v) : numero(v);
+  if (CLASSE === "moedas") return "R$ " + R.nf(Math.abs(v) >= 10 ? 2 : 4).format(v);
   return "R$ " + f2.format(v);
 }
 
@@ -72,17 +74,18 @@ function erro(msg) { $("conteudo").innerHTML = `<div class="msg">${msg} Volte pa
 
 function desenharHero() {
   const grupo = A.seg || A.cat || A.setor || A.grupo;
-  const titulo = (CLASSE === "indices" || CLASSE === "commodities") ? esc(A.n) : esc(A.t);
-  const sub = (CLASSE === "indices" || CLASSE === "commodities") ? (A.un === "pontos" ? "Pontos" : esc(A.un)) : esc(A.n);
+  const semLogo = ["indices", "commodities", "moedas"].includes(CLASSE);
+  const titulo = semLogo ? esc(A.n) : esc(A.t);
+  const sub = CLASSE === "moedas" ? esc(A.unid || "R$") : semLogo ? (A.un === "pontos" ? "Pontos" : esc(A.un)) : esc(A.n);
   const pos = A.max52 && A.min52 && A.max52 > A.min52 ? (A.preco - A.min52) / (A.max52 - A.min52) * 100 : null;
   $("hero").innerHTML = `
-    <div class="hero-id">${(CLASSE === "indices" || CLASSE === "commodities") ? `<span class="logo mono hero-ic" style="--ls:64px;--h:170">${R.icone(CLASSE, "")}</span>` : logo(A, 64)}
+    <div class="hero-id">${semLogo ? `<span class="logo mono hero-ic" style="--ls:64px;--h:170">${R.icone(CLASSE, "")}</span>` : logo(A, 64)}
       <div><h1>${titulo}</h1>
         <div class="sub">${sub} · <a href="mercado.html?c=${CLASSE}">${NOMES[CLASSE]}</a>${grupo ? ` · <span class="badge">${esc(grupo)}</span>` : ""}</div>
         ${links()}</div></div>
     ${pos != null ? `<div class="range52"><span class="label">Faixa de 52 semanas</span><div class="bar"><span class="dot" style="left:${Math.max(0, Math.min(100, pos))}%"></span></div>
       <div class="ends"><span>${moeda(A.min52)}</span><span>${moeda(A.max52)}</span></div></div>` : ""}
-    <div class="price"><span class="v">${moeda(A.preco)}</span><span class="d ${cls(A.var)}">${sinal(A.var, 2)} no dia</span>
+    <div class="price"><span class="v">${moeda(A.preco)}</span>${A.brl ? `<span class="note">≈ ${brl(A.brl)}${A.un_brl ? " " + esc(A.un_brl.replace("R$", "")) : ""}</span>` : ""}<span class="d ${cls(A.var)}">${sinal(A.var, 2)} no dia</span>
       <span class="note">Fechamento de ${dataBR(A.data)}</span></div>`;
 }
 
@@ -316,7 +319,7 @@ function configurarAssistente() {
     A.pl != null ? `P/L ${mult(A.pl, 1)}; ROE ${pct(A.roe)}; margem líquida ${pct(A.ml)}.` : "",
     A.liq != null ? `Liquidez média diária ${liq(A.liq)}.` : "",
   ].filter(Boolean);
-  const nome = CLASSE === "indices" || CLASSE === "commodities" ? A.n : A.t;
+  const nome = ["indices", "commodities", "moedas"].includes(CLASSE) ? A.n : A.t;
   Assistente.configurar({
     contexto: () => linhas.join("\n"),
     sugestoes: () => ({
@@ -325,6 +328,7 @@ function configurarAssistente() {
       bdrs: [`Quais as notícias mais recentes sobre ${A.n}?`, `Como funciona a tributação de dividendos do ${A.t}?`, `O que explica o desempenho de ${A.n} em 12 meses?`],
       stocks: [`Quais as notícias mais recentes sobre ${A.n}?`, `${A.t} está cara frente ao histórico? Quais os riscos?`, `Como investir em ${A.t} a partir do Brasil?`],
       indices: [`O que movimentou o ${nome} recentemente?`, `O que compõe o ${nome}?`, `Como o ${nome} se compara com o Ibovespa em 5 anos?`],
+      moedas: [`O que explica a cotação do ${A.n.toLowerCase()} frente ao real?`, `Quais as perspectivas para o ${A.n.toLowerCase()}?`, `Como o ${A.n.toLowerCase()} afeta a economia brasileira?`],
       commodities: [`O que explica o preço do ${nome.toLowerCase()} recentemente?`, `Quais empresas da B3 são mais afetadas pelo ${nome.toLowerCase()}?`, `Quais as perspectivas para o ${nome.toLowerCase()}?`],
     }[CLASSE] || []),
   });

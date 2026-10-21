@@ -395,6 +395,8 @@ def fundamentos(info: dict, preco: float) -> dict:
 
 def coletar_exterior(series, com_info=True) -> tuple[list, dict, list, dict]:
     stocks, det_s, bdrs, det_b = [], {}, [], {}
+    usd = series.get("USDBRL=X")
+    dolar = sorted(usd["precos"])[-1][1] if usd else None
     for l in ler_lista("exterior.csv"):
         st, bdr = l.get("stock"), l.get("bdr")
         s_st = series.get(st) if st else None
@@ -403,7 +405,7 @@ def coletar_exterior(series, com_info=True) -> tuple[list, dict, list, dict]:
         if s_st:
             base = resumo_serie(s_st["precos"], s_st["provs"], s_st["vol"])
             stocks.append({"t": st, "n": l["nome"], "setor": l["setor"], "bdr": bdr if s_bdr else None,
-                           "moeda": "USD", **base, **fundamentos(inf, base["preco"])})
+                           "moeda": "USD", "brl": r4(base["preco"] * dolar) if dolar else None, **base, **fundamentos(inf, base["preco"])})
             det_s[st] = detalhe_serie(st, s_st["precos"], s_st["provs"])
             time.sleep(0.3)
         if s_bdr:
@@ -503,14 +505,57 @@ def coletar_indices(series) -> tuple[list, dict]:
 
 def coletar_commodities(series) -> tuple[list, dict]:
     itens, detalhes = [], {}
+    usd = series.get("USDBRL=X")
+    dolar = sorted(usd["precos"])[-1][1] if usd else None
     for l in ler_lista("commodities.csv"):
         s = series.get(l["simbolo"])
         if not s:
             log.info("   commodity %s sem série", l["id"])
             continue
         base = resumo_serie(s["precos"], [], com_proventos=False)
-        itens.append({"t": l["id"], "n": l["nome"], "grupo": l["grupo"], "un": l["unidade"], "y": l["simbolo"], **base})
+        un = l["unidade"]
+        brl = None
+        if dolar and un.startswith("US"):
+            brl = base["preco"] * dolar / (100 if un.startswith("US¢") else 1)       # centavos de dólar → dólar
+        itens.append({"t": l["id"], "n": l["nome"], "grupo": l["grupo"], "un": un, "y": l["simbolo"],
+                      "brl": r4(brl), "un_brl": "R$/" + un.split("/", 1)[1] if brl else None, **base})
         detalhes[l["id"]] = detalhe_serie(l["id"], s["precos"], [], {"un": l["unidade"]})
+    return itens, detalhes
+
+
+def coletar_moedas(series) -> tuple[list, dict]:
+    """Câmbio em reais: R$ por unidade = (R$ por dólar) ÷ (unidades da moeda por dólar), dia a dia."""
+    usd = series.get("USDBRL=X")
+    if not usd:
+        return [], {}
+    usd_dia = sorted(usd["precos"])
+    import bisect
+    datas = [d for d, _ in usd_dia]
+
+    def usd_em(d):
+        i = bisect.bisect_right(datas, d) - 1
+        return usd_dia[i][1] if i >= 0 and (d - usd_dia[i][0]).days <= 5 else None
+
+    itens, detalhes = [], {}
+    for l in ler_lista("moedas.csv"):
+        cod, mult = l["codigo"], float(l.get("mult") or 1)
+        if cod == "USD":
+            precos = usd_dia
+        else:
+            s = series.get(f"{cod}=X")
+            if not s:
+                log.info("   moeda %s sem série", cod)
+                continue
+            precos = [(d, u / x) for d, x in s["precos"] if x and (u := usd_em(d))]
+        precos = [(d, v * mult) for d, v in precos]
+        if len(precos) < 5:
+            continue
+        base = resumo_serie(precos, [], com_proventos=False)
+        rot = l["nome"].split()[0].lower()
+        un = f"R$ por {int(mult) if mult > 1 else 1} {rot}{'s' if mult > 1 and not rot.endswith('s') else ''}"
+        itens.append({"t": cod, "n": l["nome"], "grupo": l["grupo"], "un": "R$", "mult": int(mult), "unid": un,
+                      "y": (l.get("yahoo") or None) if mult == 1 else None, **base})   # candles do Yahoo são por 1 unidade
+        detalhes[cod] = detalhe_serie(cod, precos, [], {"un": "R$", "mult": int(mult)})
     return itens, detalhes
 
 
@@ -789,6 +834,7 @@ CLASSES = {
     "stocks": "Stocks",
     "indices": "Índices",
     "commodities": "Commodities",
+    "moedas": "Moedas",
 }
 POPULARES_ACOES = ["PETR4", "ITUB4", "VALE3", "BBAS3", "BBDC4", "WEGE3", "ABEV3", "ITSA4"]
 
@@ -823,7 +869,7 @@ def gravar_menu(agora) -> None:
         itens = json.loads(arq.read_text(encoding="utf-8"))["itens"]
         if classe in ("fiis", "etfs", "bdrs"):
             itens = sorted(itens, key=lambda x: -(x.get("liq") or 0))
-        menu[classe] = [{k: it.get(k) for k in ("t", "n", "preco", "var", "logo", "logo_de", "un", "moeda")} for it in itens[:8]]
+        menu[classe] = [{k: it.get(k) for k in ("t", "n", "preco", "var", "logo", "logo_de", "un", "moeda", "mult")} for it in itens[:8]]
     try:
         rf = json.loads((PASTA_MERCADO / "rendafixa.json").read_text(encoding="utf-8"))
         menu["rendafixa"] = {k: rf.get(k) for k in ("selic_meta", "cdi", "ipca12", "poupanca")}
@@ -862,11 +908,11 @@ def configurar_log():
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Coleta as outras classes de ativos do Radar B3")
-    p.add_argument("--so", help="partes separadas por vírgula: fiis,etfs,exterior,indices,commodities,rendafixa,tesouro,proventos")
+    p.add_argument("--so", help="partes separadas por vírgula: fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,proventos")
     p.add_argument("--sem-logos", action="store_true")
     args = p.parse_args(argv)
     configurar_log()
-    partes = set((args.so or "fiis,etfs,exterior,indices,commodities,rendafixa,tesouro,proventos").split(","))
+    partes = set((args.so or "fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,proventos").split(","))
     agora = datetime.now(FUSO_BR)
     hoje = agora.date()
     erros = 0
@@ -911,6 +957,10 @@ def main(argv=None) -> int:
         simbolos += [l.get("proxy") or l["simbolo"] for l in ler_lista("indices.csv") if not l["simbolo"].startswith("B3:") or l.get("proxy")]
     if "commodities" in partes:
         simbolos += [l["simbolo"] for l in ler_lista("commodities.csv")]
+    if "moedas" in partes:
+        simbolos += [f"{l['codigo']}=X" for l in ler_lista("moedas.csv") if l["codigo"] != "USD"]
+    if simbolos:
+        simbolos.append("USDBRL=X")       # dólar: câmbio das moedas e valor em reais de commodities e stocks
     series = {}
     if simbolos:
         t0 = time.time()
@@ -944,6 +994,8 @@ def main(argv=None) -> int:
         etapa("Stocks e BDRs", exterior)
     if "indices" in partes:
         etapa("Índices", lambda: gravar_classe("indices", *coletar_indices(series), agora))
+    if "moedas" in partes:
+        etapa("Moedas", lambda: gravar_classe("moedas", *coletar_moedas(series), agora))
     if "commodities" in partes:
         etapa("Commodities", lambda: gravar_classe("commodities", *coletar_commodities(series), agora))
     etapa("Menu", lambda: gravar_menu(agora))

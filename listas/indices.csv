@@ -17,10 +17,7 @@ IDIV;IDIV;Índice Dividendos (IDIV);Brasil;IDIV;DIVO11.SA;pontos
 000001.SS;SHANGHAI;Shanghai (China);Ásia;;;pontos
 ^MERV;MERVAL;Merval (Argentina);América Latina;;;pontos
 ^MXX;IPC;IPC (México);América Latina;;;pontos
-USDBRL=X;USD;Dólar;Moedas;;;R$
-EURBRL=X;EUR;Euro;Moedas;;;R$
-GBPBRL=X;GBP;Libra;Moedas;;;R$
-DX-Y.NYB;DXY;Índice do dólar (DXY);Moedas;;;pontos
+DX-Y.NYB;DXY;Índice do dólar (DXY);EUA;;;pontos
 ^TNX;US10Y;Juros EUA 10 anos;Juros;;;%
 B3:IBXX;IBXX;IBrX-100;Brasil;IBXX;BRAX11.SA;pontos
 B3:IBXL;IBXL;IBrX-50;Brasil;IBXL;PIBB11.SA;pontos
@@ -44,10 +41,6 @@ FTSEMIB.MI;FTSEMIB;FTSE MIB (Itália);Europa;;;pontos
 ^TWII;TAIEX;Taiex (Taiwan);Ásia;;;pontos
 ^AXJO;ASX200;ASX 200 (Austrália);Ásia;;;pontos
 ^GSPTSE;TSX;S&P/TSX (Canadá);América do Norte;;;pontos
-CADBRL=X;CAD;Dólar canadense;Moedas;;;R$
-CHFBRL=X;CHF;Franco suíço;Moedas;;;R$
-AUDBRL=X;AUD;Dólar australiano;Moedas;;;R$
-MXNBRL=X;MXN;Peso mexicano;Moedas;;;R$
 ^IRX;US3M;Juros EUA 3 meses;Juros;;;%
 ^FVX;US5Y;Juros EUA 5 anos;Juros;;;%
 ^TYX;US30Y;Juros EUA 30 anos;Juros;;;%

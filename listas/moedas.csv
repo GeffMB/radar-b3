@@ -1,0 +1,29 @@
+codigo;nome;grupo;mult;yahoo
+USD;Dólar americano;Principais;1;USDBRL=X
+EUR;Euro;Principais;1;EURBRL=X
+GBP;Libra esterlina;Principais;1;GBPBRL=X
+JPY;Iene japonês;Principais;100;JPYBRL=X
+CNY;Yuan chinês;Principais;1;
+CHF;Franco suíço;Principais;1;CHFBRL=X
+ARS;Peso argentino;América Latina;1000;
+CLP;Peso chileno;América Latina;1000;
+MXN;Peso mexicano;América Latina;1;MXNBRL=X
+COP;Peso colombiano;América Latina;1000;
+PEN;Sol peruano;América Latina;1;
+UYU;Peso uruguaio;América Latina;1;
+PYG;Guarani paraguaio;América Latina;1000;
+CAD;Dólar canadense;América do Norte e Oceania;1;CADBRL=X
+AUD;Dólar australiano;América do Norte e Oceania;1;AUDBRL=X
+NZD;Dólar neozelandês;América do Norte e Oceania;1;
+SEK;Coroa sueca;Europa;1;
+NOK;Coroa norueguesa;Europa;1;
+DKK;Coroa dinamarquesa;Europa;1;
+PLN;Zlóti polonês;Europa;1;
+TRY;Lira turca;Europa;1;
+HKD;Dólar de Hong Kong;Ásia e outros;1;
+SGD;Dólar de Singapura;Ásia e outros;1;
+INR;Rupia indiana;Ásia e outros;100;
+KRW;Won sul-coreano;Ásia e outros;1000;
+ILS;Shekel israelense;Ásia e outros;1;
+AED;Dirham dos Emirados;Ásia e outros;1;
+ZAR;Rand sul-africano;Ásia e outros;1;

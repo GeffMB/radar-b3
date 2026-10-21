@@ -56,6 +56,7 @@
     etfs: '<path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/>',
     bdrs: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M7 15h4"/>',
     indices: '<path d="M3 12h4l3-8 4 16 3-8h4"/>',
+    moedas: '<circle cx="9" cy="9" r="6"/><path d="M15.5 9.5a6 6 0 1 1-6 6"/><path d="M9 6.5v5M7.5 7.5h2.2a1.1 1.1 0 0 1 0 2.2H8.3a1.1 1.1 0 0 0 0 2.2h2.2"/>',
     commodities: '<path d="M7 3h10M8 3v4a6 6 0 0 0-2 4.5V19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-7.5A6 6 0 0 0 16 7V3"/><path d="M6 14h12"/>',
     rendafixa: '<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9.5 9.5h.01M14.5 14.5h.01"/>',
     tesouro: '<path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-6 10 6z"/>',
@@ -73,6 +74,7 @@
     { id: "bdrs", l: "BDRs", d: "Empresas de fora, negociadas em reais", href: "mercado.html?c=bdrs" },
     { id: "indices", l: "Índices", d: "Bolsas do mundo e moedas", href: "mercado.html?c=indices" },
     { id: "commodities", l: "Commodities", d: "Petróleo, ouro, soja, café…", href: "mercado.html?c=commodities" },
+    { id: "moedas", l: "Moedas", d: "Câmbio em reais e conversor", href: "mercado.html?c=moedas" },
     { id: "rendafixa", l: "Renda Fixa", d: "Selic, CDI, IPCA e simulador", href: "renda-fixa.html" },
     { id: "tesouro", l: "Tesouro Direto", d: "Títulos públicos à venda hoje", href: "tesouro.html" },
   ];
@@ -100,6 +102,7 @@
     return it.map(a => {
       const v = a.var, cls = v == null ? "" : v >= 0 ? "up" : "down";
       const preco = a.un && a.un !== "R$" ? numero(a.preco) : a.moeda === "USD" ? "US$ " + numero(a.preco) : "R$ " + numero(a.preco);
+      if (cat === "moedas") return `<a class="mm-it" href="${linkAtivo(cat, a.t)}"><span class="logo mono" style="--ls:26px;--h:150" aria-hidden="true">${esc(a.t)}</span><span class="mm-tk">${esc(a.n)}</span><span class="mm-pr">R$ ${numero(a.preco)}</span><span class="mm-var ${cls}">${sinal(v, 2)}</span></a>`;
       return `<a class="mm-it" href="${linkAtivo(cat, a.t)}">${logo(a, 26)}<span class="mm-tk">${esc(a.t)}</span><span class="mm-pr">${preco}</span><span class="mm-var ${cls}">${sinal(v, 2)}</span></a>`;
     }).join("");
   }
@@ -134,7 +137,7 @@
       catAtiva = cat;
       const c = CATS.find(x => x.id === cat);
       nav.querySelectorAll(".mm-cats a").forEach(a => a.classList.toggle("ativo", a.dataset.cat === cat));
-      tit.textContent = cat === "rendafixa" ? "Taxas de hoje" : cat === "tesouro" ? "Títulos à venda" : cat === "indices" || cat === "commodities" ? "Principais" : "Mais negociados";
+      tit.textContent = cat === "rendafixa" ? "Taxas de hoje" : cat === "tesouro" ? "Títulos à venda" : cat === "indices" || cat === "commodities" || cat === "moedas" ? "Principais" : "Mais negociados";
       ver.href = c.href; ver.firstChild.textContent = cat === "rendafixa" ? "Abrir renda fixa " : `Ver ${c.l.toLowerCase()} `;
       lista.innerHTML = listaPopulares(cat, null);
       const d = await menuDados();
