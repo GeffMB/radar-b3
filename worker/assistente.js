@@ -65,6 +65,7 @@ export default {
     }
     if (!cors["Access-Control-Allow-Origin"]) return json({ erro: "Origem não permitida." }, 403);
     if (req.method === "GET" && caminho === "/cotacao") return cotacao(req, ctx, cors);
+    if (req.method === "GET" && caminho === "/cotacoes") return cotacoes(req, cors);
     if (req.method !== "POST" || caminho !== "/perguntar") return json({ erro: "Não encontrado." }, 404);
     if (!env.GEMINI_API_KEY) return json({ erro: "Assistente ainda não configurado." }, 503);
 
@@ -317,5 +318,52 @@ async function cotacao(req, ctx, cors) {
   MEMO_COT.set(id, { corpo, ate: Date.now() + ttl * 1000 });
   ctx.waitUntil(cache.put(chave, new Response(corpo, { headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttl}` } })).catch(() => {}));
   return new Response(corpo, { status: 200, headers: cabec(ttl) });
+}
+
+
+// ---------------------------------------------------------------- cotações de muitos ativos (listas e tabelas do site)
+// Uma chamada do site pede até 200 símbolos; o servidor busca no Yahoo em lotes de 20 (endpoint "spark")
+// e guarda cada lote por 1 minuto na memória, para que muitos visitantes gerem poucos pedidos à fonte.
+const MEMO_LOTE = new Map();
+async function cotacoes(req, cors) {
+  const cabec = { ...cors, "Content-Type": "application/json; charset=utf-8", "Cache-Control": "public, max-age=60",
+    "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" };
+  const lista = [...new Set((new URL(req.url).searchParams.get("s") || "").toUpperCase().split(",").map(x => x.trim())
+    .filter(x => /^[A-Z0-9^][A-Z0-9.=^-]{0,14}$/.test(x)))].slice(0, 200);
+  if (!lista.length) return new Response(JSON.stringify({ erro: "Nenhum ativo." }), { status: 400, headers: cabec });
+  const lotes = [];
+  for (let i = 0; i < lista.length; i += 20) lotes.push(lista.slice(i, i + 20).sort());
+  const res = await Promise.all(lotes.map(lote => buscarLote(lote)));
+  const out = {};
+  res.forEach(r => Object.assign(out, r));
+  return new Response(JSON.stringify(out), { status: 200, headers: cabec });
+}
+async function buscarLote(lote) {
+  const id = lote.join(",");
+  const mem = MEMO_LOTE.get(id);
+  if (mem && mem.ate > Date.now()) return mem.dados;
+  const dados = {};
+  try {
+    const r = await fetch(`https://query1.finance.yahoo.com/v8/finance/spark?symbols=${encodeURIComponent(id)}&range=1d&interval=1d`,
+      { headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36", "Accept": "application/json" },
+        signal: AbortSignal.timeout(8000) });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    const j = await r.json();
+    // o Yahoo responde em dois formatos, conforme a versão: { "PETR4.SA": {...} } ou { spark: { result: [...] } }
+    const itens = j?.spark?.result ? j.spark.result.map(x => [x.symbol, x.response?.[0]]) : Object.entries(j || {});
+    for (const [sym, x] of itens) {
+      const m = x?.meta || x || {};
+      const p = m.regularMarketPrice ?? (x?.close ? x.close[x.close.length - 1] : null);
+      const pc = m.previousClose ?? m.chartPreviousClose;
+      if (p == null) continue;
+      dados[sym] = { p: Math.round(p * 1e4) / 1e4, pc: pc != null ? Math.round(pc * 1e4) / 1e4 : null, tm: m.regularMarketTime || null };
+    }
+  } catch (e) {
+    console.log("cotacoes: falha", id, String(e));
+    return {};
+  }
+  if (MEMO_LOTE.size > 300) MEMO_LOTE.clear();
+  MEMO_LOTE.set(id, { dados, ate: Date.now() + 60000 });
+  return dados;
 }
 
