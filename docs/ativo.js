@@ -86,7 +86,9 @@ function desenharHero() {
     ${pos != null ? `<div class="range52"><span class="label">Faixa de 52 semanas</span><div class="bar"><span class="dot" style="left:${Math.max(0, Math.min(100, pos))}%"></span></div>
       <div class="ends"><span>${moeda(A.min52)}</span><span>${moeda(A.max52)}</span></div></div>` : ""}
     <div class="price"><span class="v">${moeda(A.preco)}</span>${A.brl ? `<span class="note">≈ ${brl(A.brl)}${A.un_brl ? " " + esc(A.un_brl.replace("R$", "")) : ""}</span>` : ""}<span class="d ${cls(A.var)}">${sinal(A.var, 2)} no dia</span>
-      <span class="note">Fechamento de ${dataBR(A.data)}</span></div>`;
+      <span class="note quando">Fechamento de ${dataBR(A.data)}</span></div>`;
+  const sym = simboloYahoo();
+  if (sym && window.Candles) Candles.topoAoVivo($("hero").querySelector(".price"), sym, v => moeda(v), new Date(A.data + "T23:59:00"));
 }
 
 function links() {

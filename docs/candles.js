@@ -107,5 +107,32 @@
     };
   }
 
-  window.Candles = { montar };
+  // Cotação de agora (para o topo da página): preço, fechamento anterior e hora do último negócio.
+  async function agora(simbolo) {
+    try {
+      const r = await fetch(`${ENDPOINT}?s=${encodeURIComponent(simbolo)}&f=1D`, { referrerPolicy: "no-referrer" });
+      const d = await r.json();
+      if (!r.ok || d.p == null) return null;
+      return { preco: d.p, anterior: d.pc, quando: new Date(d.tm * 1000), aberto: (Date.now() / 1000 - d.tm) / 60 < 25 };
+    } catch (e) { return null; }
+  }
+
+  // Troca o preço do topo pelo de agora quando ele é mais novo que a coleta diária; repete a cada minuto.
+  function topoAoVivo(caixa, simbolo, formatar, dataColeta) {
+    if (!caixa) return;
+    const v = caixa.querySelector(".v"), d = caixa.querySelector(".d"), rot = caixa.querySelector(".quando");
+    const passo = async () => {
+      if (document.hidden) return;
+      const q = await agora(simbolo);
+      if (!q || (dataColeta && q.quando <= dataColeta)) return;
+      const varDia = q.anterior ? q.preco / q.anterior - 1 : null;
+      v.textContent = formatar(q.preco);
+      if (d && varDia != null) { d.className = "d " + (varDia >= 0 ? "pos" : "neg"); d.textContent = `${varDia > 0 ? "+" : ""}${R.nf(2).format(varDia * 100)}% no dia`; }
+      if (rot) rot.innerHTML = `${q.aberto ? '<span class="vivo">ao vivo</span>' : ""}<span title="Cotações da B3 têm até 15 minutos de atraso nas fontes gratuitas">${q.aberto ? "" : "Último negócio "}${q.quando.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</span>`;
+    };
+    passo();
+    setInterval(passo, 60e3);
+  }
+
+  window.Candles = { montar, agora, topoAoVivo };
 })();

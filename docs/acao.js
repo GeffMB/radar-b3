@@ -114,7 +114,7 @@ function render(a, det, pares, dados){
     <div class="price">
       <span class="v">${brl(a.preco)}</span>
       <span class="d ${varCls}">${a.var>0?"+":""}${a.var==null?"–":f2.format(a.var*100)+"%"} no dia</span>
-      <span class="label" style="text-transform:none;letter-spacing:0;font-weight:400">Atualizado em ${quando}</span>
+      <span class="label quando" style="text-transform:none;letter-spacing:0;font-weight:400">Atualizado em ${quando}</span>
     </div>
   </div>
   ${(a.alertas||[]).length? `<div class="alertas" role="note"><b>Dados para conferir</b><ul>${a.alertas.map(x=>`<li>${esc(x.m)}</li>`).join("")}</ul><span class="small">Os números vêm do Yahoo Finance. Antes de usar, compare com o RI da empresa ou com o balanço na CVM.</span></div>` : ""}
@@ -123,7 +123,7 @@ function render(a, det, pares, dados){
 
   if (!det) {
     html += `<div class="msg">O histórico de cotação e proventos de ${a.t} ainda não foi coletado. Ele aparece depois da próxima coleta diária.</div>`;
-    $("conteudo").innerHTML = html; desenharBarsi(a, null); configurarAssistente(a, null, pares, quando); return;
+    $("conteudo").innerHTML = html; if (window.Candles) Candles.topoAoVivo(document.querySelector(".hero .price"), a.t + ".SA", v => brl(v), at); desenharBarsi(a, null); configurarAssistente(a, null, pares, quando); return;
   }
 
   // período da cotação
@@ -178,6 +178,7 @@ function render(a, det, pares, dados){
   </section>`;
 
   $("conteudo").innerHTML = html;
+  if (window.Candles) Candles.topoAoVivo(document.querySelector(".hero .price"), a.t + ".SA", v => brl(v), at);
   desenharBarsi(a, det);
   document.addEventListener("radar:dy-alvo", () => desenharBarsi(a, det));
   configurarAssistente(a, det, pares, quando);
