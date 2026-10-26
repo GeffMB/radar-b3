@@ -17,19 +17,20 @@ function calcBarsi() {
 calcBarsi();
 
 /* ---------- cabeçalho e rodapé ---------- */
-let quando = "–";
+let quando = "–", quando_coleta = "–";
 (function cabecalho() {
   if (!PAYLOAD) { $("meta").textContent = "Sem dados ainda. Rode a coleta para gerar a página."; return; }
   const d = new Date(PAYLOAD.atualizado_em);
   quando = isNaN(d) ? PAYLOAD.atualizado_em : d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
   $("meta").innerHTML = `${DATA.length} ações · indicadores dos últimos 12 meses · atualizado em <b>${esc(quando)}</b>`;
+  quando_coleta = quando;
   const f = PAYLOAD.falhas || [];
   if (f.length) { const el = $("falhas"); el.hidden = false; el.textContent = "Sem dados hoje: " + f.map(x => x.t).join(", ") + "."; }
   R.ligarBusca(DATA);
 })();
 
 /* ---------- resumo do dia ---------- */
-(function resumo() {
+function resumo() {
   if (!DATA.length) return;
   const comVar = DATA.filter(o => o.var != null);
   const altas = comVar.filter(o => o.var > 0.0005).length, quedas = comVar.filter(o => o.var < -0.0005).length, est = comVar.length - altas - quedas;
@@ -59,7 +60,8 @@ let quando = "–";
       </div>
       <span class="note">Retorno mediano em 12 meses: <b class="${(median(DATA.map(o => o.rt12)) || 0) >= 0 ? "pos" : "neg"}">${sinal(median(DATA.map(o => o.rt12)))}</b></span>
     </div>`;
-})();
+}
+resumo();
 
 /* ---------- candidatas pelo método Barsi ---------- */
 const OK_SVG = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg>';
@@ -125,7 +127,7 @@ const PAINEIS = [
   { id: "roe", t: "Maiores ROE", k: "roe", dir: -1, fmt: v => pct(v), so: o => o.roe != null },
   { id: "rt12", t: "Maiores retornos em 12 meses", k: "rt12", dir: -1, fmt: v => sinal(v), so: o => o.rt12 != null },
 ];
-(function paineis() {
+function paineis() {
   if (!DATA.length) return;
   $("rk-grid").innerHTML = PAINEIS.map((p, i) => {
     let lista = DATA.filter(o => o[p.k] != null && (!p.so || p.so(o))).sort((a, b) => p.dir * (a[p.k] - b[p.k]));
@@ -146,7 +148,8 @@ const PAINEIS = [
     state.rank = r.id; state.sort = r.sort[0]; state.dir = r.sort[1]; state.todas = false; render();
     $("tabela").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   });
-})();
+}
+paineis();
 
 /* ---------- tabela ---------- */
 const COLS = [
@@ -360,4 +363,12 @@ if (window.Assistente) Assistente.configurar({
     if (state.rank) s.unshift("Analise as primeiras ações deste ranking: o que explica os números e quais cuidados ter?");
     return s;
   },
+});
+
+/* ---------- cotações ao vivo durante o pregão ---------- */
+setTimeout(() => document.body.classList.add("sem-anim"), 1500);
+R.aoVivo(DATA.map(o => [o, R.simbolo("acoes", o)]), quando => {
+  document.body.classList.add("sem-anim");
+  calcBarsi(); resumo(); painelBarsi(); paineis(); render();
+  $("meta").innerHTML = `${DATA.length} ações · ${R.rotuloVivo(quando)} · indicadores dos últimos 12 meses (coleta de ${esc(quando_coleta)})`;
 });

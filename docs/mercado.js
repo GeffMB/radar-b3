@@ -90,6 +90,7 @@ const CFG = {
 };
 const cfg = CFG[CLASSE] || CFG.fiis;
 
+let recalcularConversor = null;
 let DADOS = [], ordem = { k: null, dir: -1 }, filtroTxt = "", filtroGrupo = "", todos = false;
 
 async function main() {
@@ -101,11 +102,18 @@ async function main() {
   DADOS = d.itens;
   const q = new Date(d.atualizado_em);
   $("meta").innerHTML = `${DADOS.length} ${CLASSE === "moedas" ? "moedas" : "ativos"} · atualizado em <b>${q.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}</b>`;
-  if (cfg.cartoes) { desenharCartoes(); configurarAssistente(); return; }
+  const metaColeta = $("meta").innerHTML;
+  const vivo = quando => { $("meta").innerHTML = `${DADOS.length} ${CLASSE === "moedas" ? "moedas" : "ativos"} · ${R.rotuloVivo(quando)}`; };
+  if (cfg.cartoes) {
+    desenharCartoes(); configurarAssistente();
+    R.aoVivo(DADOS.map(a => [a, R.simbolo(CLASSE, a)]), q => { vivo(q); desenharCartoes(); });
+    return;
+  }
   desenharResumo();
   desenharRanks();
   montarTabela();
   configurarAssistente();
+  R.aoVivo(DADOS.map(a => [a, R.simbolo(CLASSE, a)]), q => { vivo(q); desenharResumo(); desenharRanks(); desenharTabela(); });
 }
 
 function link(a) { return `ativo.html?c=${CLASSE}&t=${encodeURIComponent(a.t)}`; }
@@ -200,7 +208,8 @@ function desenharCartoes() {
   const grupos = [...new Set(DADOS.map(a => a.grupo))];
   const valor = a => a.mult ? "R$ " + R.nf(a.preco < 1 ? 4 : 2).format(a.preco) : a.un === "R$" ? brl(a.preco) : a.un === "%" ? R.nf(2).format(a.preco) + "%" : numero(a.preco);
   const unidade = a => a.unid ? esc(a.unid) : a.un === "pontos" ? "pontos" : esc(a.un);
-  if (cfg.conversor) desenharConversor();
+  if (cfg.conversor && !$("conv")) desenharConversor();
+  else recalcularConversor?.();
   $("cartoes").innerHTML = grupos.map(g => `<section class="grupo"><h2>${esc(g)}</h2><div class="cartoes">${DADOS.filter(a => a.grupo === g).map(a => `
     <a class="cartao" href="${link(a)}">
       <div class="topo"><div><div class="nome">${esc(a.n)}</div><div class="un">${unidade(a)}${a.aprox ? " · histórico pelo ETF " + esc(a.aprox) : a.desde ? " · histórico desde " + a.desde.split("-").reverse().join("/") : ""}</div></div>${pill(a.var)}</div>
@@ -228,6 +237,7 @@ function desenharConversor() {
     const f = x => R.nf(Math.abs(x) >= 1 ? 2 : 4).format(x);
     $("cv-res").innerHTML = `<span>${f(v)} ${esc(de)} =</span><b>${f(r)} ${esc(para)}</b>`;
   };
+  recalcularConversor = calc;
   $("conv").addEventListener("input", calc); $("conv").addEventListener("submit", e => e.preventDefault());
   $("cv-troca").onclick = () => { const a = $("cv-de").value; $("cv-de").value = $("cv-para").value; $("cv-para").value = a; calc(); };
   calc();

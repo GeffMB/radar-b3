@@ -142,6 +142,13 @@
       lista.innerHTML = listaPopulares(cat, null);
       const d = await menuDados();
       if (catAtiva === cat) lista.innerHTML = listaPopulares(cat, d || {});
+      const itens = (d || {})[cat];
+      if (Array.isArray(itens) && itens.length && !itens._vivo) {
+        itens._vivo = true;
+        const q = await cotacoesAgora(itens.map(a => simbolo(cat, a)));
+        itens.forEach(a => { const s = simbolo(cat, a); if (q[s] && cat === "moedas" && a.mult > 1) q[s] = null; aplicarCotacao(a, q[s]); });
+        if (catAtiva === cat) lista.innerHTML = listaPopulares(cat, d);
+      }
     };
     const abrir = () => { if (!pan.hidden) return; const tb = document.querySelector(".topbar"); if (tb) pan.style.setProperty("--mm-top", Math.round(tb.getBoundingClientRect().bottom) + "px"); pan.hidden = false; btn.setAttribute("aria-expanded", "true"); document.body.classList.add("mm-aberto"); mostrar(catAtiva); };
     const fechar = () => { if (pan.hidden) return; pan.hidden = true; btn.setAttribute("aria-expanded", "false"); document.body.classList.remove("mm-aberto"); };
@@ -184,6 +191,55 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", montarMenu); else montarMenu();
   document.addEventListener("DOMContentLoaded", () => { if (!document.getElementById("jump")?.dataset.ligado) ligarBusca([]); });
 
+  // ---------------------------------------------------------------- cotações ao vivo para listas e tabelas
+  // Busca no servidor do site (que consulta o Yahoo e guarda por 1 minuto) e repete a cada minuto com a aba visível.
+  const URL_COTACOES = "https://radar-assistente.gefersonmarques.workers.dev/cotacoes";
+  function simbolo(classe, a) {
+    if (["acoes", "fiis", "etfs", "bdrs"].includes(classe)) return a.t + ".SA";
+    if (classe === "stocks") return a.t;
+    return a.y || null;
+  }
+  async function cotacoesAgora(simbolos) {
+    const lista = [...new Set(simbolos.filter(Boolean))];
+    const out = {};
+    for (let i = 0; i < lista.length; i += 200) {
+      try {
+        const r = await fetch(`${URL_COTACOES}?s=${encodeURIComponent(lista.slice(i, i + 200).join(","))}`, { referrerPolicy: "no-referrer" });
+        if (r.ok) Object.assign(out, await r.json());
+      } catch (e) { /* sem cotação ao vivo: a página segue com o último fechamento */ }
+    }
+    return out;
+  }
+  // Atualiza preço, variação do dia e indicadores que dependem do preço; devolve quantos itens mudaram.
+  function aplicarCotacao(a, q) {
+    if (!q || !(q.p > 0) || !(a.preco > 0)) return false;
+    const f = q.p / a.preco;
+    if (a._fech == null) a._fech = a.preco;          // fechamento da coleta, para referência
+    a.preco = q.p;
+    if (q.pc > 0) a.var = q.p / q.pc - 1;
+    if (Math.abs(f - 1) > 1e-9) {
+      for (const k of ["pl", "pvp", "mc"]) if (a[k] != null) a[k] *= f;
+      if (a.dy != null) a.dy /= f;
+    }
+    a._vivo = true;
+    return true;
+  }
+  // Liga a atualização periódica: itens = [[objeto, símbolo]], aoMudar() redesenha a página.
+  function aoVivo(itens, aoMudar, intervalo = 60e3) {
+    const pares = itens.filter(([, s]) => s);
+    if (!pares.length) return;
+    const passo = async () => {
+      if (document.hidden) return;
+      const q = await cotacoesAgora(pares.map(([, s]) => s));
+      let n = 0;
+      for (const [a, s] of pares) if (aplicarCotacao(a, q[s])) n++;
+      if (n) aoMudar(new Date(), n);
+    };
+    passo();
+    setInterval(passo, intervalo);
+  }
+  const rotuloVivo = (quando) => `<span class="vivo">ao vivo</span><span title="Cotações da B3 com até 15 minutos de atraso nas fontes gratuitas">cotações de ${quando.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</span>`;
+
   // ---------------------------------------------------------------- método Barsi: DY desejado e preço-teto
   // DY desejado fica salvo neste navegador e vale para todas as páginas.
   const dyAlvo = () => { try { const v = parseFloat(localStorage.getItem("radar-dy-alvo")); return v >= 1 && v <= 30 ? v / 100 : 0.06; } catch (e) { return 0.06; } };
@@ -207,5 +263,5 @@
     return { teto, desconto, dy5: o.pm5 && o.preco ? o.pm5 / o.preco : null, crit, ok, limiteDiv: limiteDivida(o) };
   }
 
-  window.R = { dyAlvo, definirDyAlvo, barsi, nf, f0, f1, f2, esc, pct, sinal, brl, big, numero, logo, spark, ligarBusca, tickerOk, idOk, icone, CATS, linkAtivo, carregar };
+  window.R = { simbolo, cotacoesAgora, aplicarCotacao, aoVivo, rotuloVivo, dyAlvo, definirDyAlvo, barsi, nf, f0, f1, f2, esc, pct, sinal, brl, big, numero, logo, spark, ligarBusca, tickerOk, idOk, icone, CATS, linkAtivo, carregar };
 })();

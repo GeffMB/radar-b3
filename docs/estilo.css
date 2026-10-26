@@ -194,3 +194,6 @@ footer.site p{margin:0;max-width:95ch}
 .vivo::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--bad);animation:pisca 1.4s ease-in-out infinite}
 @keyframes pisca{50%{opacity:.25}}
 @media (prefers-reduced-motion:reduce){.vivo::before{animation:none}}
+
+/* depois da primeira pintura, atualizações ao vivo não repetem a animação de entrada */
+.sem-anim .rise{animation:none!important}

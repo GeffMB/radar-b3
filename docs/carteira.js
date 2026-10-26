@@ -43,6 +43,16 @@ async function main() {
   document.addEventListener("radar:dy-alvo", desenhar);
   desenhar();
   configurarAssistente();
+  // cotações ao vivo dos ativos da carteira (a cada minuto, com a aba visível)
+  const vivo = async () => {
+    if (document.hidden || !POS.length) return;
+    const pares = POS.map(p => ATIVOS[p.t]).filter(Boolean).map(a => [a, R.simbolo(a.c, a)]);
+    const q = await R.cotacoesAgora(pares.map(([, s]) => s));
+    let n = 0;
+    for (const [a, s] of pares) if (R.aplicarCotacao(a, q[s])) n++;
+    if (n) { desenhar(); $("vivo").innerHTML = R.rotuloVivo(new Date()); }
+  };
+  vivo(); setInterval(vivo, 60e3);
 }
 
 function adicionar(e) {
