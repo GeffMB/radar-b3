@@ -869,7 +869,7 @@ def gravar_menu(agora) -> None:
         itens = json.loads(arq.read_text(encoding="utf-8"))["itens"]
         if classe in ("fiis", "etfs", "bdrs"):
             itens = sorted(itens, key=lambda x: -(x.get("liq") or 0))
-        menu[classe] = [{k: it.get(k) for k in ("t", "n", "preco", "var", "logo", "logo_de", "un", "moeda", "mult")} for it in itens[:8]]
+        menu[classe] = [{k: it.get(k) for k in ("t", "n", "preco", "var", "logo", "logo_de", "un", "moeda", "mult", "y")} for it in itens[:8]]
     try:
         rf = json.loads((PASTA_MERCADO / "rendafixa.json").read_text(encoding="utf-8"))
         menu["rendafixa"] = {k: rf.get(k) for k in ("selic_meta", "cdi", "ipca12", "poupanca")}

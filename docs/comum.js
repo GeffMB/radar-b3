@@ -142,14 +142,24 @@
       lista.innerHTML = listaPopulares(cat, null);
       const d = await menuDados();
       if (catAtiva === cat) lista.innerHTML = listaPopulares(cat, d || {});
-      const itens = (d || {})[cat];
-      if (Array.isArray(itens) && itens.length && !itens._vivo) {
-        itens._vivo = true;
-        const q = await cotacoesAgora(itens.map(a => simbolo(cat, a)));
-        itens.forEach(a => { const s = simbolo(cat, a); if (q[s] && cat === "moedas" && a.mult > 1) q[s] = null; aplicarCotacao(a, q[s]); });
-        if (catAtiva === cat) lista.innerHTML = listaPopulares(cat, d);
-      }
+      vivoMenu(cat, d);
     };
+    // cotações do menu: busca ao abrir/trocar de categoria e repete a cada minuto enquanto o menu está aberto
+    const quandoMenu = {};
+    const vivoMenu = async (cat, d, forcar) => {
+      const itens = (d || {})[cat];
+      if (!Array.isArray(itens) || !itens.length) return;
+      if (!forcar && quandoMenu[cat] && Date.now() - quandoMenu[cat] < 55e3) return mostrarQuando(cat);
+      quandoMenu[cat] = Date.now();
+      const q = await cotacoesAgora(itens.map(a => simbolo(cat, a)));
+      let n = 0;
+      itens.forEach(a => { if (aplicarCotacao(a, q[simbolo(cat, a)])) n++; });
+      if (!n) { delete quandoMenu[cat]; return; }
+      quandoMenu[cat] = Date.now();
+      if (catAtiva === cat && !pan.hidden) { lista.innerHTML = listaPopulares(cat, d); mostrarQuando(cat); }
+    };
+    const mostrarQuando = cat => { if (catAtiva === cat && quandoMenu[cat] && !lista.querySelector(".mm-quando")) lista.insertAdjacentHTML("beforeend", `<p class="mm-quando">${rotuloVivo(new Date(quandoMenu[cat]))}</p>`); };
+    setInterval(async () => { if (!pan.hidden && !document.hidden) vivoMenu(catAtiva, await menuDados(), true); }, 60e3);
     const abrir = () => { if (!pan.hidden) return; const tb = document.querySelector(".topbar"); if (tb) pan.style.setProperty("--mm-top", Math.round(tb.getBoundingClientRect().bottom) + "px"); pan.hidden = false; btn.setAttribute("aria-expanded", "true"); document.body.classList.add("mm-aberto"); mostrar(catAtiva); };
     const fechar = () => { if (pan.hidden) return; pan.hidden = true; btn.setAttribute("aria-expanded", "false"); document.body.classList.remove("mm-aberto"); };
     btn.addEventListener("click", () => pan.hidden ? abrir() : fechar());
@@ -197,16 +207,27 @@
   function simbolo(classe, a) {
     if (["acoes", "fiis", "etfs", "bdrs"].includes(classe)) return a.t + ".SA";
     if (classe === "stocks") return a.t;
-    return a.y || null;
+    if (a.y) return a.y;
+    // moedas sem par direto com o real: cruza pelo dólar (R$ por US$ ÷ moeda por US$) × unidades
+    if (classe === "moedas" && /^[A-Z]{3}$/.test(a.t || "") && a.t !== "USD") return `USDBRL=X/${a.t}=X*${a.mult || 1}`;
+    return null;
   }
+  // "A/B*m" = cotação cruzada; demais são símbolos simples
+  const partes = s => { const m = /^([^/]+)\/([^*]+)\*(\d+)$/.exec(s); return m ? { a: m[1], b: m[2], m: +m[3] } : null; };
   async function cotacoesAgora(simbolos) {
-    const lista = [...new Set(simbolos.filter(Boolean))];
+    const pedidos = [...new Set(simbolos.filter(Boolean))];
+    const lista = [...new Set(pedidos.flatMap(s => { const x = partes(s); return x ? [x.a, x.b] : [s]; }))];
     const out = {};
     for (let i = 0; i < lista.length; i += 200) {
       try {
         const r = await fetch(`${URL_COTACOES}?s=${encodeURIComponent(lista.slice(i, i + 200).join(","))}`, { referrerPolicy: "no-referrer" });
         if (r.ok) Object.assign(out, await r.json());
       } catch (e) { /* sem cotação ao vivo: a página segue com o último fechamento */ }
+    }
+    for (const s of pedidos) {
+      const x = partes(s); if (!x) continue;
+      const A = out[x.a], B = out[x.b];
+      if (A?.p > 0 && B?.p > 0) out[s] = { p: A.p / B.p * x.m, pc: A.pc > 0 && B.pc > 0 ? A.pc / B.pc * x.m : null, tm: Math.min(A.tm || 0, B.tm || 0) || null };
     }
     return out;
   }
