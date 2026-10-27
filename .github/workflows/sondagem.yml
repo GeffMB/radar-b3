@@ -1,8 +1,0 @@
-name: sondagem
-on: { workflow_dispatch: {}, push: { paths: [ferramentas/**] } }
-jobs:
-  s:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: python3 ferramentas/sondar_divida.py
