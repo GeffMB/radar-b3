@@ -9,7 +9,7 @@ on:
       parte:
         description: "O que coletar"
         type: choice
-        options: [tudo, acoes, mercado]
+        options: [tudo, acoes, mercado, divida]
         default: tudo
 
 # Permissão mínima: só gravar no próprio repositório. O token expira ao fim de cada execução.
@@ -37,13 +37,17 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Coletar ações
-        if: ${{ github.event_name == 'schedule' || inputs.parte != 'mercado' }}
+        if: ${{ github.event_name == 'schedule' || inputs.parte == 'tudo' || inputs.parte == 'acoes' }}
         run: python coletar.py
 
       - name: Coletar FIIs, ETFs, BDRs, stocks, índices, commodities, renda fixa e Tesouro
-        if: ${{ github.event_name == 'schedule' || inputs.parte != 'acoes' }}
+        if: ${{ github.event_name == 'schedule' || (inputs.parte != 'acoes' && inputs.parte != 'divida') }}
         continue-on-error: true      # uma fonte fora do ar não impede salvar as ações
         run: python mercado.py
+
+      - name: Coletar só a dívida pública
+        if: ${{ inputs.parte == 'divida' }}
+        run: python mercado.py --so divida --sem-logos
 
       - name: Salvar resultado no repositório
         if: always()

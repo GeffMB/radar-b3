@@ -6,6 +6,7 @@ Gera em docs/mercado/:
   <classe>/<ID>.json        cotação de 5 anos, proventos e retornos de cada ativo
   rendafixa.json            Selic, CDI, IPCA, poupança e projeções do Focus
   tesouro.json              títulos do Tesouro Direto à venda e histórico das taxas
+  divida.json               dívida bruta (governo geral) e líquida (setor público), em R$ e % do PIB
   menu.json                 ativos populares de cada classe (menu do topo)
 
 Fontes: Yahoo Finance (yfinance), CVM (patrimônio dos FIIs), B3 (IFIX, SMLL, IDIV, CDI e Selic),
@@ -839,6 +840,68 @@ CLASSES = {
 POPULARES_ACOES = ["PETR4", "ITUB4", "VALE3", "BBAS3", "BBDC4", "WEGE3", "ABEV3", "ITSA4"]
 
 
+# ---------------------------------------------------------------- dívida pública (Banco Central, SGS)
+SERIES_DIVIDA = {   # código SGS: (indicador, campo)
+    13762: ("dbgg", "pib"),   # Dívida Bruta do Governo Geral, % do PIB (metodologia de 2008)
+    13761: ("dbgg", "brl"),   # Dívida Bruta do Governo Geral, R$ milhões
+    4513: ("dlsp", "pib"),    # Dívida Líquida do Setor Público consolidado, % do PIB
+    4478: ("dlsp", "brl"),    # Dívida Líquida do Setor Público consolidado, R$ milhões
+}
+
+
+def serie_sgs(codigo: int, hoje: date, antiga=None) -> list:
+    """Série mensal do SGS como [["AAAA-MM", valor], ...]. A API às vezes devolve 502 ou uma página de erro:
+    tenta o período inteiro, depois em janelas de 5 anos e, por fim, só os últimos 20 meses somados ao que já tínhamos."""
+    base = f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.{codigo}/dados"
+    conv = lambda d: [[f"{x['data'][6:10]}-{x['data'][3:5]}", float(x["valor"])] for x in d if x.get("valor") not in (None, "")]
+
+    def pegar(url):
+        for tentativa in range(3):
+            try:
+                d = conv(baixar_json(url, timeout=60))
+                if d:
+                    return d
+            except Exception as e:
+                log.info("SGS %s, tentativa %d: %s", codigo, tentativa + 1, e)
+            time.sleep(3 + tentativa * 4)
+        return None
+
+    fim = hoje.strftime("%d/%m/%Y")
+    tudo = pegar(f"{base}?formato=json&dataInicial=01/01/2000&dataFinal={fim}")
+    if tudo:
+        return tudo
+    janelas, ok = {}, True
+    for a in range(2000, hoje.year + 1, 5):
+        d = pegar(f"{base}?formato=json&dataInicial=01/01/{a}&dataFinal={min(date(a + 4, 12, 31), hoje).strftime('%d/%m/%Y')}")
+        if d is None and a + 4 >= 2006:       # séries do governo geral começam em dez/2006
+            ok = False
+        janelas.update(dict(d or []))
+    if ok and janelas:
+        return sorted([k, v] for k, v in janelas.items())
+    ult = pegar(f"{base}/ultimos/20?formato=json")
+    if ult and antiga:
+        m = dict(antiga); m.update(dict(ult))
+        return sorted([k, v] for k, v in m.items())
+    raise RuntimeError(f"SGS {codigo} indisponível")
+
+
+def coletar_divida(hoje: date, agora) -> dict:
+    arq = PASTA_MERCADO / "divida.json"
+    antigo = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
+    out = {"atualizado_em": agora.isoformat(timespec="minutes"), "fonte": "Banco Central (SGS)", "dbgg": {}, "dlsp": {}}
+    falhas = 0
+    for cod, (ind, campo) in SERIES_DIVIDA.items():
+        try:
+            out[ind][campo] = serie_sgs(cod, hoje, (antigo.get(ind) or {}).get(campo))
+        except Exception as e:
+            falhas += 1
+            out[ind][campo] = (antigo.get(ind) or {}).get(campo, [])     # mantém o que já tínhamos
+            log.warning("dívida: %s", e)
+    if falhas == len(SERIES_DIVIDA) and antigo:
+        raise RuntimeError("SGS fora do ar; divida.json mantido")
+    return out
+
+
 def gravar_classe(classe: str, itens: list, detalhes: dict, agora) -> None:
     logos = PASTA_DOCS / "logos"
     for it in itens:
@@ -876,6 +939,11 @@ def gravar_menu(agora) -> None:
     except Exception:
         pass
     try:
+        dv = json.loads((PASTA_MERCADO / "divida.json").read_text(encoding="utf-8"))
+        menu["divida"] = {f"{i}_{c}": (dv[i][c][-1] if dv[i].get(c) else None) for i in ("dbgg", "dlsp") for c in ("pib", "brl")}
+    except Exception:
+        pass
+    try:
         td = json.loads((PASTA_MERCADO / "tesouro.json").read_text(encoding="utf-8"))
         menu["tesouro"] = [{"nome": t["nome"], "taxa": t["taxa"], "tipo": t["tipo"]} for t in td["titulos"]
                            if t["tipo"] in ("Selic", "Prefixado", "IPCA+")][:8]
@@ -908,11 +976,11 @@ def configurar_log():
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Coleta as outras classes de ativos do Radar B3")
-    p.add_argument("--so", help="partes separadas por vírgula: fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,proventos")
+    p.add_argument("--so", help="partes separadas por vírgula: fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,divida,proventos")
     p.add_argument("--sem-logos", action="store_true")
     args = p.parse_args(argv)
     configurar_log()
-    partes = set((args.so or "fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,proventos").split(","))
+    partes = set((args.so or "fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,divida,proventos").split(","))
     agora = datetime.now(FUSO_BR)
     hoje = agora.date()
     erros = 0
@@ -944,6 +1012,8 @@ def main(argv=None) -> int:
         etapa("Renda fixa", lambda: salvar_json(PASTA_MERCADO / "rendafixa.json", coletar_renda_fixa(hoje)))
     if "tesouro" in partes:
         etapa("Tesouro", lambda: salvar_json(PASTA_MERCADO / "tesouro.json", coletar_tesouro(hoje)))
+    if "divida" in partes:
+        etapa("Dívida pública", lambda: salvar_json(PASTA_MERCADO / "divida.json", coletar_divida(hoje, agora)))
 
     simbolos = []
     if "fiis" in partes:
