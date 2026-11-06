@@ -92,7 +92,7 @@ BTI;B1TI34;British American Tobacco;Consumo
 GD;GDBR34;General Dynamics;Indústria
 COIN;C2OI34;Coinbase;Financeiro
 NOW;N1OW34;ServiceNow;Tecnologia
-ACN;;Accenture;Tecnologia
+ACN;ACNB34;Accenture;Tecnologia
 ADP;;ADP;Tecnologia
 AMAT;A1MT34;Applied Materials;Tecnologia
 AMT;;American Tower;Imóveis (REIT)
@@ -112,13 +112,13 @@ ECL;;Ecolab;Química
 ELV;;Elevance Health;Saúde
 EMR;;Emerson Electric;Indústria
 EOG;;EOG Resources;Petróleo e gás
-EQIX;;Equinix;Imóveis (REIT)
+EQIX;EQIX34;Equinix;Imóveis (REIT)
 ETN;E1TN34;Eaton;Indústria
 F;;Ford;Automóveis
 FCX;FCXO34;Freeport-McMoRan;Mineração
 GM;GMCO34;General Motors;Automóveis
 HCA;;HCA Healthcare;Saúde
-ICE;;Intercontinental Exchange;Financeiro
+ICE;INBR34;Intercontinental Exchange;Financeiro
 INTU;INTU34;Intuit;Tecnologia
 ISRG;I1SR34;Intuitive Surgical;Saúde
 KLAC;K1LA34;KLA;Tecnologia
@@ -132,12 +132,12 @@ MET;;MetLife;Financeiro
 MU;MUTC34;Micron;Tecnologia
 NEE;NEXT34;NextEra Energy;Energia
 NOC;;Northrop Grumman;Indústria
-OXY;;Occidental;Petróleo e gás
+OXY;OXYP34;Occidental;Petróleo e gás
 PANW;P2AN34;Palo Alto Networks;Tecnologia
 PGR;;Progressive;Financeiro
 PLD;;Prologis;Imóveis (REIT)
 PNC;;PNC Financial;Financeiro
-REGN;;Regeneron;Saúde
+REGN;REGN34;Regeneron;Saúde
 SHW;;Sherwin-Williams;Química
 SLB;;SLB (Schlumberger);Petróleo e gás
 SNPS;S1NP34;Synopsys;Tecnologia
@@ -167,7 +167,7 @@ XYZ;;Block;Financeiro
 TM;TMCO34;Toyota;Automóveis
 SONY;SNEC34;Sony;Tecnologia
 NVO;N1VO34;Novo Nordisk;Saúde
-AZN;;AstraZeneca;Saúde
+AZN;A1ZN34;AstraZeneca;Saúde
 SAP;;SAP;Tecnologia
 BHP;;BHP;Mineração
 RIO;RIOT34;Rio Tinto;Mineração
@@ -237,3 +237,21 @@ UL;;Unilever;Consumo
 ;A1PO34;Apollo Global Management;Financeiro
 ;BONY34;Bank of New York Mellon;Financeiro
 ;G1FI34;Gold Fields;Mineração
+;F1MC34;FMC;Indústria
+;A2FY34;Afya;Consumo
+;BCSA34;Banco Santander;Financeiro
+;TEXA34;Texas Instruments Incorporated;Tecnologia
+;G2DI33;G2D Investments;Financeiro
+;F2IC34;Fair Isaac;Tecnologia
+;A1PL34;Applied Digital;Tecnologia
+;CHCM34;Charter Communications;Comunicação
+;C1CJ34;Cameco;Petróleo e gás
+;T2ER34;Teradyne;Tecnologia
+;C1AB34;Cable One;Comunicação
+;C1FI34;CF Industries;Indústria
+;G1DS34;GDS;Tecnologia
+;C1CI34;Crown Castle;Imóveis (REIT)
+;DUOL34;Duolingo;Tecnologia
+;N1DA34;Nasdaq;Financeiro
+;STZB34;Constellation Brands;Consumo
+;Q1UA34;Quanta Services;Indústria
