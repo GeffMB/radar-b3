@@ -39,6 +39,18 @@
 .ed{font:inherit;font-size:14px;font-weight:600;width:96px;text-align:right;color:var(--ink);background:var(--soft);border:1px solid transparent;border-radius:8px;padding:6px 8px;font-variant-numeric:tabular-nums}
 .rm{font:inherit;font-size:18px;line-height:1;width:30px;height:30px;border-radius:50%;border:0;background:none;color:var(--muted);cursor:pointer}
 .rm:hover{background:var(--bad-bg);color:var(--bad)}
+.rm-cel{display:none}
+.aviso-rm{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:14px;background:var(--ink);color:var(--bg);padding:10px 10px 10px 16px;border-radius:12px;box-shadow:var(--shadow);font-size:14px;max-width:calc(100% - 32px)}
+.aviso-rm[hidden]{display:none}
+.aviso-rm span{white-space:nowrap}
+.aviso-rm button{font:inherit;font-weight:700;color:var(--bg);background:color-mix(in srgb,var(--bg) 18%,transparent);border:0;border-radius:8px;padding:7px 12px;cursor:pointer}
+@media (max-width:700px){
+  .rm-cel{display:inline-grid;place-items:center;margin-left:auto;flex:none;width:36px;height:36px;color:var(--bad);background:var(--bad-bg)}
+  .ctab .at{gap:10px}
+  .ctab th.c-rm,.ctab td.c-rm,.ctab thead th:last-child{display:none}
+  .ctab thead th:first-child{background:var(--surface-2);z-index:3}
+  .ctab td:first-child{position:sticky;left:0;z-index:1;background:var(--surface);min-width:250px;box-shadow:6px 0 8px -6px rgba(34,48,46,.18)}
+}
 .best{display:inline-block;font-size:9.5px;font-weight:800;letter-spacing:.06em;padding:1px 6px;border-radius:999px;background:var(--accent-soft);color:var(--accent);vertical-align:2px;margin-left:4px}
 .mg{display:grid;gap:4px;justify-items:end;font-size:12px}
 .mg i{display:block;width:90px;height:6px;border-radius:9px;background:linear-gradient(90deg,var(--good) var(--p),var(--soft) var(--p))}

@@ -36,7 +36,7 @@ async function main() {
   $("exemplo").onclick = () => { POS = [{ t: "BBAS3", q: 200, pm: 21 }, { t: "TAEE11", q: 100, pm: 36 }, { t: "BBSE3", q: 80, pm: 33 }, { t: "CMIG4", q: 300, pm: 10.5 }, { t: "MXRF11", q: 500, pm: 9.8 }, { t: "HGLG11", q: 20, pm: 160 }].filter(p => ATIVOS[p.t]); gravar(); desenhar(); };
   $("limpar").onclick = () => { if (!POS.length) return; POS = []; gravar(); desenhar(); aviso("Carteira apagada deste navegador. Se exportou antes, pode importar de volta."); };
   $("tbody").addEventListener("change", editar);
-  $("tbody").addEventListener("click", e => { const b = e.target.closest("button[data-rm]"); if (b) { POS = POS.filter(p => p.t !== b.dataset.rm); gravar(); desenhar(); } });
+  $("tbody").addEventListener("click", e => { const b = e.target.closest("button[data-rm]"); if (b) remover(b.dataset.rm); });
   $("sim").addEventListener("input", () => { simEditado = true; simular(); });
   $("sim").addEventListener("submit", e => e.preventDefault());
   document.addEventListener("radar:tema", desenhar);
@@ -146,6 +146,25 @@ function previsao() {
 }
 
 // ---------------------------------------------------------------- telas
+// tira o ativo e mostra "Desfazer" por alguns segundos (no celular é fácil tocar sem querer)
+let desfazerTimer = null;
+function remover(t) {
+  const i = POS.findIndex(p => p.t === t);
+  if (i < 0) return;
+  const [tirado] = POS.splice(i, 1);
+  gravar(); desenhar();
+  let av = $("aviso-rm");
+  if (!av) { av = document.createElement("div"); av.id = "aviso-rm"; av.className = "aviso-rm"; av.setAttribute("role", "status"); document.body.append(av); }
+  av.innerHTML = `<span><b>${esc(tirado.t)}</b> saiu da carteira</span><button type="button">Desfazer</button>`;
+  av.hidden = false;
+  av.querySelector("button").onclick = () => {
+    if (!POS.some(p => p.t === tirado.t)) POS.splice(Math.min(i, POS.length), 0, tirado);
+    gravar(); desenhar(); av.hidden = true; clearTimeout(desfazerTimer);
+  };
+  clearTimeout(desfazerTimer);
+  desfazerTimer = setTimeout(() => { av.hidden = true; }, 7000);
+}
+
 function desenhar() {
   const L = linhas().filter(l => l.a);
   const vazio = !L.length;
@@ -163,7 +182,7 @@ function desenhar() {
     const teto = l.bz?.teto;
     const prog = l.magico ? Math.min(1, p.q / l.magico) : null;
     return `<tr data-t="${esc(p.t)}">
-      <td><div class="at">${logo(a, 32)}<div><a class="tk" href="${R.linkAtivo(a.c, a.t)}">${esc(a.t)}</a>${a.best ? '<span class="best">BEST</span>' : ""}<span class="nm">${esc(a.n)} · ${CLASSES[a.c]}</span></div></div></td>
+      <td><div class="at">${logo(a, 32)}<div><a class="tk" href="${R.linkAtivo(a.c, a.t)}">${esc(a.t)}</a>${a.best ? '<span class="best">BEST</span>' : ""}<span class="nm">${esc(a.n)} · ${CLASSES[a.c]}</span></div><button type="button" class="rm rm-cel" data-rm="${esc(p.t)}" aria-label="Tirar ${esc(a.t)} da carteira"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/></svg></button></div></td>
       <td><input class="ed" data-k="q" inputmode="decimal" value="${R.nf(0).format(p.q)}" aria-label="Quantidade de ${esc(a.t)}"></td>
       <td><input class="ed" data-k="pm" inputmode="decimal" value="${f2.format(p.pm)}" aria-label="Preço médio de ${esc(a.t)}"></td>
       <td>${brl(a.preco)}<span class="sub ${a.var >= 0 ? "pos" : "neg"}">${sinal(a.var, 2)}</span></td>
@@ -172,7 +191,7 @@ function desenhar() {
       <td>${l.yoc == null ? "–" : pct(l.yoc)}<span class="sub">DY hoje ${pct(l.dy)}</span></td>
       <td>${teto ? `${brl(teto)}<span class="sub ${l.bz.desconto >= 0 ? "pos" : "neg"}">${l.bz.desconto >= 0 ? pct(l.bz.desconto, 0) + " abaixo" : pct(-l.bz.desconto, 0) + " acima"}</span>` : '<span class="na">–</span>'}</td>
       <td>${l.magico ? `<span class="mg"><span>${f0.format(p.q)} de ${f0.format(l.magico)}</span><i style="--p:${prog * 100}%"></i></span>` : '<span class="na">–</span>'}</td>
-      <td><button type="button" class="rm" data-rm="${esc(p.t)}" aria-label="Tirar ${esc(a.t)} da carteira">×</button></td></tr>`;
+      <td class="c-rm"><button type="button" class="rm" data-rm="${esc(p.t)}" aria-label="Tirar ${esc(a.t)} da carteira">×</button></td></tr>`;
   }).join("");
   const { meses, proximos } = previsao();
   desenharMeses(meses);
