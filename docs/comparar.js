@@ -72,11 +72,12 @@ async function main(){
   try { const dados = await fetch("dados.json",{cache:"no-cache"}).then(r=>{ if(!r.ok) throw 0; return r.json(); });
         ACOES = dados.acoes; ACOES.forEach(a=>MAPA[a.t]=a); }
   catch(e){ $("conteudo").innerHTML='<div class="msg">Não foi possível carregar os dados do radar.</div>'; return; }
-  $("lista").innerHTML = ACOES.map(a=>`<option value="${esc(a.t)}">${esc(a.n)}</option>`).join("");
+  const indiceAcoes = ACOES.map(a=>[a.t,a.n,"acoes"]);
+  const resolver = R.sugerir($("add-t"), { indice: () => indiceAcoes.filter(x=>!sel.includes(x[0])), escolher: it => { adicionar(it[0]); $("add-t").value=""; } });
   R.ligarBusca(ACOES);
   const q = (new URLSearchParams(location.search).get("t")||"").toUpperCase().split(",").map(s=>s.replace(/[^A-Z0-9]/g,"")).filter(t=>MAPA[t]);
   sel = [...new Set(q)].slice(0,MAX);
-  $("add").onsubmit = e => { e.preventDefault(); adicionar($("add-t").value.trim().toUpperCase()); $("add-t").value=""; };
+  $("add").onsubmit = e => { e.preventDefault(); const v=$("add-t").value.trim().toUpperCase().replace(/[^A-Z0-9]/g,""); const it = MAPA[v] ? [v] : resolver(); adicionar(it ? it[0] : v); $("add-t").value=""; };
   try { perfModo = localStorage.getItem("radar-cmp-modo") || perfModo; perfPer = localStorage.getItem("radar-cmp-per") || perfPer; multK = localStorage.getItem("radar-cmp-mult") || multK; } catch(e){}
   atualizar();
 }

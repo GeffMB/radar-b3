@@ -7,6 +7,7 @@ const nav = document.querySelector(".topbar .nav");
 if (nav) nav.dataset.atual = "carteira";
 const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const CHAVE = "radar-carteira";
+let resolverTicker = null;
 const CLASSES = { acoes: "Ação", fiis: "FII", etfs: "ETF", bdrs: "BDR" };
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 // aceita "1.234,56", "1234,56", "1234.56" e "23.830" (ponto como separador de milhar)
@@ -26,7 +27,8 @@ async function main() {
   (dados?.acoes || []).forEach(a => ATIVOS[a.t] = { ...a, c: "acoes" });
   [["fiis", fiis], ["etfs", etfs], ["bdrs", bdrs]].forEach(([c, d]) => (d?.itens || []).forEach(a => { if (!ATIVOS[a.t]) ATIVOS[a.t] = { ...a, c }; }));
   PROV = prov?.itens || {};
-  $("lista-ativos").innerHTML = Object.values(ATIVOS).map(a => `<option value="${esc(a.t)}">${esc(a.n)} · ${CLASSES[a.c]}</option>`).join("");
+  const indiceAtivos = Object.values(ATIVOS).map(a => [a.t, a.n, a.c]);
+  resolverTicker = R.sugerir($("f-t"), { indice: () => indiceAtivos, escolher: it => { $("f-t").value = it[0]; $("f-q").focus(); } });
   R.ligarBusca(dados?.acoes || []);
   POS = ler();
   $("form").addEventListener("submit", adicionar);
@@ -57,7 +59,8 @@ async function main() {
 
 function adicionar(e) {
   e.preventDefault();
-  const t = $("f-t").value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  let t = $("f-t").value.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!ATIVOS[t] && resolverTicker) { const it = resolverTicker(); if (it) { t = it[0]; $("f-t").value = t; } }   // aceita nome ("taesa") ou parte do código
   const q = num($("f-q").value), pm = num($("f-pm").value);
   if (!ATIVOS[t]) return aviso(`${t || "Ticker"} não está no site. Use ações, FIIs, ETFs ou BDRs da lista.`);
   if (!(q > 0)) return aviso("Informe a quantidade.");

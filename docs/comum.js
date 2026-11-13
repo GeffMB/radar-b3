@@ -210,44 +210,63 @@
     }
     return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, max).map(x => x[2]);
   }
-  function ligarBusca(acoes) {
-    const f = document.getElementById("jump"), i = document.getElementById("jump-t");
-    if (!f || !i) return;
-    let indice = (acoes || []).map(a => [a.t, a.n, "acoes"]);
-    buscaDados().then(b => { if (Array.isArray(b) && b.length) indice = b; });
-    if (f.dataset.ligado) return;
-    f.dataset.ligado = "1";
-    i.removeAttribute("list"); document.getElementById("jump-lista")?.remove();
-    i.setAttribute("role", "combobox"); i.setAttribute("aria-autocomplete", "list"); i.setAttribute("aria-expanded", "false"); i.setAttribute("aria-controls", "jump-sug");
-    const ul = document.createElement("ul"); ul.id = "jump-sug"; ul.className = "jump-sug"; ul.setAttribute("role", "listbox"); ul.hidden = true;
-    f.append(ul);
+  // Liga uma lista de sugestões a um campo. op: { indice: () => [[ticker, nome, classe]], escolher(item), max }
+  // Devolve resolver(texto) -> melhor item (ou null), para usar ao enviar o formulário.
+  let nSug = 0;
+  function sugerir(i, op) {
+    const caixa = i.parentElement;
+    if (getComputedStyle(caixa).position === "static") caixa.style.position = "relative";
+    const dl = i.getAttribute("list"); i.removeAttribute("list"); if (dl) document.getElementById(dl)?.remove();
+    i.setAttribute("autocomplete", "off"); i.setAttribute("autocorrect", "off"); i.setAttribute("autocapitalize", "characters"); i.setAttribute("spellcheck", "false");
+    const id = "sug-" + (++nSug);
+    i.setAttribute("role", "combobox"); i.setAttribute("aria-autocomplete", "list"); i.setAttribute("aria-expanded", "false"); i.setAttribute("aria-controls", id);
+    const ul = document.createElement("ul"); ul.id = id; ul.className = "jump-sug"; ul.setAttribute("role", "listbox"); ul.hidden = true;
+    i.after(ul);
     let itens = [], sel = -1;
-    const ir = it => { location.href = linkAtivo(it[2], it[0]); };
     const fechar = () => { ul.hidden = true; i.setAttribute("aria-expanded", "false"); sel = -1; };
-    const marcar = () => ul.querySelectorAll("li").forEach((li, k) => li.setAttribute("aria-selected", String(k === sel)));
+    const marcar = () => ul.querySelectorAll("li[data-k]").forEach((li, k) => { li.setAttribute("aria-selected", String(k === sel)); if (k === sel) li.scrollIntoView({ block: "nearest" }); });
+    const escolher = it => { fechar(); op.escolher(it); };
     const desenhar = () => {
-      itens = procurar(indice, i.value); sel = itens.length ? 0 : -1;
       if (!i.value.trim()) return fechar();
+      itens = procurar(op.indice(), i.value, op.max || 8); sel = itens.length ? 0 : -1;
       ul.innerHTML = itens.length
-        ? itens.map((it, k) => `<li role="option" id="jump-o${k}" data-k="${k}" aria-selected="${k === 0}"><b>${esc(it[0])}</b><span>${esc(it[1])}</span><em>${ROT_CLASSE[it[2]] || ""}</em></li>`).join("")
-        : '<li class="nada">Nenhum ativo encontrado</li>';
+        ? itens.map((it, k) => `<li role="option" data-k="${k}" aria-selected="${k === 0}"><b>${esc(it[0])}</b><span>${esc(it[1])}</span><em>${ROT_CLASSE[it[2]] || ""}</em></li>`).join("")
+        : `<li class="nada">Nada encontrado para “${esc(i.value.trim())}”</li>`;
       ul.hidden = false; i.setAttribute("aria-expanded", "true");
     };
-    i.addEventListener("input", async () => { if (indice.length < 50) { const b = await buscaDados(); if (Array.isArray(b) && b.length) indice = b; } desenhar(); });
+    i.addEventListener("input", desenhar);
     i.addEventListener("focus", () => { if (i.value.trim()) desenhar(); });
     i.addEventListener("keydown", e => {
       if (ul.hidden || !itens.length) return;
       if (e.key === "ArrowDown") { e.preventDefault(); sel = (sel + 1) % itens.length; marcar(); }
       else if (e.key === "ArrowUp") { e.preventDefault(); sel = (sel - 1 + itens.length) % itens.length; marcar(); }
       else if (e.key === "Escape") fechar();
+      else if (e.key === "Tab" && sel >= 0) escolher(itens[sel]);
     });
-    ul.addEventListener("pointerdown", e => e.preventDefault());       // não perde o foco antes do clique
-    ul.addEventListener("click", e => { const li = e.target.closest("li[data-k]"); if (li) ir(itens[+li.dataset.k]); });
-    i.addEventListener("blur", () => setTimeout(fechar, 120));
-    f.addEventListener("submit", e => {
+    // mousedown/touchstart: escolhe antes de o campo perder o foco (no iPhone o blur pode chegar antes do clique)
+    let toque = null;
+    ul.addEventListener("mousedown", e => { e.preventDefault(); const li = e.target.closest("li[data-k]"); if (li) escolher(itens[+li.dataset.k]); });
+    ul.addEventListener("touchstart", e => { toque = { y: e.touches[0].clientY, li: e.target.closest("li[data-k]") }; }, { passive: true });
+    ul.addEventListener("touchend", e => { const y = e.changedTouches[0].clientY; if (toque?.li && Math.abs(y - toque.y) < 10) { e.preventDefault(); escolher(itens[+toque.li.dataset.k]); } toque = null; });
+    i.addEventListener("blur", () => setTimeout(fechar, 200));
+    return texto => { const t = texto ?? i.value; if (!ul.hidden && sel >= 0 && itens[sel]) return itens[sel]; return procurar(op.indice(), t, 1)[0] || null; };
+  }
+
+  function ligarBusca(acoes) {
+    const f = document.getElementById("jump"), i = document.getElementById("jump-t");
+    if (!f || !i) return;
+    if (!ligarBusca.indice || (acoes || []).length > ligarBusca.indice.length && ligarBusca.indice.length < 300) ligarBusca.indice = (acoes || []).map(a => [a.t, a.n, "acoes"]);
+    buscaDados().then(b => { if (Array.isArray(b) && b.length) ligarBusca.indice = b; });
+    if (f.dataset.ligado) return;
+    f.dataset.ligado = "1";
+    const ir = it => { location.href = linkAtivo(it[2], it[0]); };
+    const resolver = sugerir(i, { indice: () => ligarBusca.indice || [], escolher: ir });
+    f.addEventListener("submit", async e => {
       e.preventDefault();
-      const lista = itens.length && !ul.hidden ? itens : procurar(indice, i.value);
-      if (lista.length) return ir(lista[Math.max(sel, 0)]);
+      if (!i.value.trim()) return;
+      if ((ligarBusca.indice || []).length < 300) { const b = await buscaDados(); if (Array.isArray(b) && b.length) ligarBusca.indice = b; }
+      const it = resolver();
+      if (it) return ir(it);
       const t = sem(i.value).replace(/[^A-Z0-9-]/g, "");
       if (t) location.href = "acao.html?t=" + encodeURIComponent(t);
     });
@@ -339,5 +358,5 @@
     return { teto, desconto, dy5: o.pm5 && o.preco ? o.pm5 / o.preco : null, crit, ok, limiteDiv: limiteDivida(o) };
   }
 
-  window.R = { simbolo, cotacoesAgora, aplicarCotacao, aoVivo, rotuloVivo, dyAlvo, definirDyAlvo, barsi, nf, f0, f1, f2, esc, pct, sinal, brl, big, numero, logo, spark, ligarBusca, tickerOk, idOk, icone, CATS, linkAtivo, carregar };
+  window.R = { sugerir, procurar, sem, buscaDados, simbolo, cotacoesAgora, aplicarCotacao, aoVivo, rotuloVivo, dyAlvo, definirDyAlvo, barsi, nf, f0, f1, f2, esc, pct, sinal, brl, big, numero, logo, spark, ligarBusca, tickerOk, idOk, icone, CATS, linkAtivo, carregar };
 })();
