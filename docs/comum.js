@@ -189,23 +189,67 @@
   }
 
   // ---------------------------------------------------------------- busca do topo (todas as classes)
+  // Lista própria de sugestões (a <datalist> do navegador quase não funciona no iPhone e diferencia acentos).
+  // Ignora acentos e maiúsculas: "itausa", "Itaúsa" e "ITSA" acham a Itaúsa.
+  const sem = x => String(x || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  const ROT_CLASSE = { acoes: "Ação", fiis: "FII", etfs: "ETF", bdrs: "BDR", stocks: "Stock", indices: "Índice", commodities: "Commodity", moedas: "Moeda" };
+  function procurar(indice, texto, max = 8) {
+    const q = sem(texto).trim(); if (!q) return [];
+    const qt = q.replace(/[^A-Z0-9^=.-]/g, "");
+    const out = [], ORD = { acoes: 0, fiis: 1, moedas: 2, indices: 3, commodities: 4, etfs: 5, bdrs: 6, stocks: 7 };
+    for (const [pos, it] of indice.entries()) {
+      const t = sem(it[0]), n = sem(it[1]);
+      let p = -1;
+      if (qt && t === qt) p = 0;
+      else if (qt && t.startsWith(qt)) p = 1 + (t.length - qt.length) / 100;
+      else if (n.startsWith(q)) p = 2;
+      else if ((" " + n).includes(" " + q)) p = 3;
+      else if (n.includes(q)) p = 4;
+      else if (qt.length >= 3 && t.includes(qt)) p = 5;
+      if (p >= 0) out.push([Math.floor(p) === 1 ? p : p + (ORD[it[2]] ?? 8) / 10, pos, it]);   // empate: ações antes, depois a ordem da lista (mais negociados primeiro)
+    }
+    return out.sort((a, b) => a[0] - b[0] || a[1] - b[1]).slice(0, max).map(x => x[2]);
+  }
   function ligarBusca(acoes) {
-    const f = document.getElementById("jump"), i = document.getElementById("jump-t"), dl = document.getElementById("jump-lista");
+    const f = document.getElementById("jump"), i = document.getElementById("jump-t");
     if (!f || !i) return;
     let indice = (acoes || []).map(a => [a.t, a.n, "acoes"]);
-    const preencher = () => { if (dl) dl.innerHTML = indice.map(([t, n]) => `<option value="${esc(t)}">${esc(n)}</option>`).join(""); };
-    preencher();
-    buscaDados().then(b => { if (Array.isArray(b) && b.length) { indice = b; preencher(); } });
+    buscaDados().then(b => { if (Array.isArray(b) && b.length) indice = b; });
     if (f.dataset.ligado) return;
     f.dataset.ligado = "1";
+    i.removeAttribute("list"); document.getElementById("jump-lista")?.remove();
+    i.setAttribute("role", "combobox"); i.setAttribute("aria-autocomplete", "list"); i.setAttribute("aria-expanded", "false"); i.setAttribute("aria-controls", "jump-sug");
+    const ul = document.createElement("ul"); ul.id = "jump-sug"; ul.className = "jump-sug"; ul.setAttribute("role", "listbox"); ul.hidden = true;
+    f.append(ul);
+    let itens = [], sel = -1;
+    const ir = it => { location.href = linkAtivo(it[2], it[0]); };
+    const fechar = () => { ul.hidden = true; i.setAttribute("aria-expanded", "false"); sel = -1; };
+    const marcar = () => ul.querySelectorAll("li").forEach((li, k) => li.setAttribute("aria-selected", String(k === sel)));
+    const desenhar = () => {
+      itens = procurar(indice, i.value); sel = itens.length ? 0 : -1;
+      if (!i.value.trim()) return fechar();
+      ul.innerHTML = itens.length
+        ? itens.map((it, k) => `<li role="option" id="jump-o${k}" data-k="${k}" aria-selected="${k === 0}"><b>${esc(it[0])}</b><span>${esc(it[1])}</span><em>${ROT_CLASSE[it[2]] || ""}</em></li>`).join("")
+        : '<li class="nada">Nenhum ativo encontrado</li>';
+      ul.hidden = false; i.setAttribute("aria-expanded", "true");
+    };
+    i.addEventListener("input", async () => { if (indice.length < 50) { const b = await buscaDados(); if (Array.isArray(b) && b.length) indice = b; } desenhar(); });
+    i.addEventListener("focus", () => { if (i.value.trim()) desenhar(); });
+    i.addEventListener("keydown", e => {
+      if (ul.hidden || !itens.length) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); sel = (sel + 1) % itens.length; marcar(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); sel = (sel - 1 + itens.length) % itens.length; marcar(); }
+      else if (e.key === "Escape") fechar();
+    });
+    ul.addEventListener("pointerdown", e => e.preventDefault());       // não perde o foco antes do clique
+    ul.addEventListener("click", e => { const li = e.target.closest("li[data-k]"); if (li) ir(itens[+li.dataset.k]); });
+    i.addEventListener("blur", () => setTimeout(fechar, 120));
     f.addEventListener("submit", e => {
       e.preventDefault();
-      const q = i.value.trim().toUpperCase();
-      const t = q.replace(/[^A-Z0-9-]/g, "");
-      if (!t) return;
-      const achado = indice.find(([x]) => x === t) || indice.find(([, n]) => String(n).toUpperCase() === q)
-        || indice.find(([x, n]) => x.startsWith(t) || String(n).toUpperCase().includes(q));
-      location.href = achado ? linkAtivo(achado[2], achado[0]) : "acao.html?t=" + encodeURIComponent(t);
+      const lista = itens.length && !ul.hidden ? itens : procurar(indice, i.value);
+      if (lista.length) return ir(lista[Math.max(sel, 0)]);
+      const t = sem(i.value).replace(/[^A-Z0-9-]/g, "");
+      if (t) location.href = "acao.html?t=" + encodeURIComponent(t);
     });
   }
 
