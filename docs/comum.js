@@ -61,7 +61,7 @@
     rendafixa: '<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9.5 9.5h.01M14.5 14.5h.01"/>',
     tesouro: '<path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-6 10 6z"/>',
     divida: '<path d="M3 20h18"/><path d="M5 20V9l7-5 7 5v11"/><path d="M12 10v6M9.5 12.2c0-1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.6-1.1 1.4-2.5 1.4-2.5.6-2.5 1.5 1.1 1.6 2.5 1.6 2.5-.7 2.5-1.7"/>',
-    reservas: '<path d="M4 10h16M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18M12 3l9 5H3z"/>',
+    reservas: '<rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.5"/><path d="M12 8v1.2M12 13.8V15M8.5 11.5h1.2M14.3 11.5h1.2M6 19v2M18 19v2"/>',
     comparar: '<rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/>',
     carteira: '<path d="M3 7h18v12H3z"/><path d="M3 7l2-3h14l2 3"/><path d="M16 13h2"/>',
     chev: '<path d="M6 9l6 6 6-6"/>',

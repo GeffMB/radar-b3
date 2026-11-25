@@ -87,7 +87,7 @@ function base() {
   Chart.defaults.font.size = 11;
   Chart.defaults.color = css("--muted");
 }
-const dica = { backgroundColor: () => css("--ink"), titleColor: () => css("--bg"), bodyColor: () => css("--bg"), padding: 10 };
+const dica = () => ({ backgroundColor: css("--ink"), titleColor: css("--bg"), bodyColor: css("--bg"), padding: 10 });
 
 function graficoReservas() {
   base();
@@ -105,7 +105,7 @@ function graficoReservas() {
   cRes?.destroy();
   cRes = new Chart($("c-res"), { type: "line", data: { labels: pts.map(x => x[0]), datasets: [{ data: pts.map(x => x[1] / 1e3), borderColor: cor, backgroundColor: cor + "22", fill: true, borderWidth: 2, pointRadius: 0, tension: 0 }] }, options: {
     responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
-    plugins: { legend: { display: false }, tooltip: { ...Object.fromEntries(Object.entries(dica).map(([k, f]) => [k, f()])), displayColors: false,
+    plugins: { legend: { display: false }, tooltip: { ...dica(), displayColors: false,
       callbacks: { title: it => diario ? diaBR(it[0].label) : mesBR(it[0].label), label: it => ` Reservas: US$ ${f1.format(it.parsed.y)} bi` } } },
     scales: {
       x: { grid: { display: false }, border: { color: css("--line") }, ticks: { maxRotation: 0, autoSkip: false, callback: function (v) {
@@ -144,7 +144,7 @@ function graficoBC() {
   cBc?.destroy();
   cBc = new Chart($("c-bc"), { type: "bar", data: { labels: ks, datasets: ds }, options: {
     responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
-    plugins: { legend: { display: false }, tooltip: { ...Object.fromEntries(Object.entries(dica).map(([k, f]) => [k, f()])), boxHeight: 8,
+    plugins: { legend: { display: false }, tooltip: { ...dica(), boxHeight: 8,
       filter: it => it.parsed.y !== 0,
       callbacks: { title: it => mesBR(it[0].label), label: it => ` ${it.dataset.label}: ${biS(it.parsed.y * 1e3)} bi` } } },
     scales: {
