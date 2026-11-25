@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://radar-assistente.gefersonmarques.workers.dev; object-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests">
+<meta name="referrer" content="no-referrer">
+<title>Reservas Internacionais · Radar B3</title>
+<link rel="stylesheet" href="vendor/fonts.css">
+<link rel="icon" href="icones/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="icones/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="icones/apple-touch-icon.png">
+<meta name="theme-color" content="#2F6F74">
+<link rel="stylesheet" href="estilo.css">
+<script src="tema.js"></script>
+<link rel="stylesheet" href="componentes.css">
+<style>
+/* Reservas internacionais: saldo diário, gráfico do saldo e barras das compras/vendas de dólar do Banco Central */
+.taxas{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.tile.destaque{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 70%,var(--good)));color:var(--accent-ink);border:0}
+.tile.destaque .label,.tile.destaque .note{color:color-mix(in srgb,var(--accent-ink) 80%,transparent)}
+.tile .delta{display:block;font-size:12.5px;font-weight:600;margin-top:2px}
+.tile .delta.up{color:var(--bad)}.tile .delta.down{color:var(--good)}
+.tile.destaque .delta{color:var(--accent-ink)}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px}
+.chart{position:relative;height:320px;min-width:0}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:18px;align-items:start}
+@media (max-width:900px){.two{grid-template-columns:1fr}}
+.expl{display:grid;gap:14px;font-size:14.5px;line-height:1.55}
+.expl h3{margin:0 0 4px;font-size:15px}
+.expl p{margin:0;color:var(--muted)}
+.dtab{--tmin:560px}
+.dtab thead th{padding:10px 12px;font-size:12px;font-weight:700;color:var(--muted)}
+.dtab td,.dtab th{white-space:nowrap;text-align:right}
+.dtab td:first-child,.dtab th:first-child{text-align:left}
+.dtab tbody tr{cursor:default}
+.tile .delta.pos{color:var(--good)}.tile .delta.neg{color:var(--bad)}
+.legenda-cores{display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:var(--muted);margin-top:10px}
+.legenda-cores i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.dtab td.pos{color:var(--good)}.dtab td.neg{color:var(--bad)}
+.aviso-dado{font-size:12.5px;color:var(--muted);margin:10px 0 0}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="in">
+  <a class="brand" href="./" aria-label="Radar B3, início">
+    <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="var(--accent)"/><path d="M9 23a10 10 0 0 1 14-14" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round" opacity=".55"/><path d="M12.5 21a5.5 5.5 0 0 1 8-8" fill="none" stroke="var(--accent-ink)" stroke-width="2.2" stroke-linecap="round"/><circle cx="21.5" cy="10.5" r="2.4" fill="var(--accent-2)"/><circle cx="10" cy="22" r="1.8" fill="var(--accent-ink)"/></svg>
+    <span>Radar <b>B3</b></span></a>
+  <nav class="nav" data-atual="reservas" aria-label="Principal"><a href="./">Ações</a><a href="mercado.html?c=fiis">FIIs</a><a href="comparar.html">Comparar</a></nav>
+  <form class="jump" id="jump" role="search"><input id="jump-t" list="jump-lista" placeholder="Buscar: PETR4, MXRF11, AAPL…" aria-label="Buscar ativo" autocomplete="off"><datalist id="jump-lista"></datalist></form>
+  <button class="tema" id="tema" type="button" aria-label="Usar modo escuro"><svg class="lua" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg><svg class="sol" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4L6 18M18 6l1.4-1.4"/></svg></button>
+</div></header>
+<main class="wrap" id="main">
+  <section class="intro">
+    <span class="eyebrow">Mercados</span>
+    <h1>Reservas Internacionais</h1>
+    <p class="sub">Os dólares (e outras moedas fortes) que o Banco Central guarda, e quando ele compra ou vende dólar no mercado.</p>
+  </section>
+  <div id="conteudo" style="display:grid;gap:22px">
+  <section class="taxas" id="numeros" aria-label="Resumo das reservas"></section>
+  <section class="panel" aria-labelledby="t-res">
+    <div class="ph"><h2 id="t-res">Reservas ao longo do tempo</h2><span class="note" id="ref-res"></span></div>
+    <div class="ctl"><div class="seg" id="per-res"><button type="button" data-v="12">1 ano</button><button type="button" data-v="60">5 anos</button><button type="button" data-v="0">Tudo</button></div></div>
+    <div class="chart"><canvas id="c-res" aria-label="Gráfico das reservas internacionais"></canvas></div>
+  </section>
+  <section class="panel" aria-labelledby="t-bc">
+    <div class="ph"><h2 id="t-bc">O Banco Central está comprando ou vendendo dólar?</h2><span class="note" id="ref-bc"></span></div>
+    <div class="ctl">
+      <div class="seg" id="tipo-bc"><button type="button" data-v="caixa">Dólar à vista e linhas</button><button type="button" data-v="swap">Swaps cambiais</button></div>
+      <div class="seg" id="per-bc"><button type="button" data-v="24">2 anos</button><button type="button" data-v="120">10 anos</button><button type="button" data-v="0">Tudo</button></div>
+    </div>
+    <div class="chart"><canvas id="c-bc" aria-label="Compras e vendas de dólar do Banco Central por mês"></canvas></div>
+    <div class="legenda-cores" id="leg-bc"></div>
+    <p class="aviso-dado" id="aviso-bc"></p>
+  </section>
+  <section class="two">
+    <div class="panel"><div class="ph"><h2>Como ler</h2></div>
+      <div class="expl">
+        <div><h3>Reservas internacionais</h3><p>Dinheiro em moeda estrangeira, a maior parte em títulos do governo americano, que o Banco Central guarda para pagar compromissos externos e acalmar o mercado em momentos de pânico. Mudam todo dia também por juros recebidos e pela variação de outras moedas e do ouro, não só por compra e venda.</p></div>
+        <div><h3>Dólar à vista</h3><p>O BC compra (barra verde) ou vende (barra vermelha) dólar de verdade. Vender reduz as reservas e ajuda a segurar a alta do dólar; comprar aumenta as reservas.</p></div>
+        <div><h3>Linhas</h3><p>O BC vende dólar com o compromisso de comprar de volta meses depois. Dá liquidez quando falta dólar no mercado, mas o dinheiro volta às reservas.</p></div>
+        <div><h3>Swaps cambiais</h3><p>Contratos que funcionam como vender (tradicional) ou comprar (reverso) dólar no mercado futuro, sem mexer nas reservas. Os números incluem as renovações de contratos que vencem, então mostram quanto o BC atuou, não a posição total.</p></div>
+      </div></div>
+    <div class="panel"><div class="ph"><h2>Últimos 12 meses</h2><span class="note">US$ bilhões</span></div>
+      <div class="tablebox" id="tab"></div></div>
+  </section>
+  </div>
+</main>
+<footer class="site">
+  <p>Dados: Banco Central (reservas, conceito liquidez, e histórico de atuações no câmbio) · Material de estudo, não é recomendação de investimento.</p>
+</footer>
+
+<script src="vendor/chart.umd.js"></script>
+<script src="assistente.js"></script>
+<script src="comum.js"></script>
+<script src="reservas.js"></script>
+</body>
+</html>

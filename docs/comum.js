@@ -61,6 +61,7 @@
     rendafixa: '<circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9.5 9.5h.01M14.5 14.5h.01"/>',
     tesouro: '<path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-6 10 6z"/>',
     divida: '<path d="M3 20h18"/><path d="M5 20V9l7-5 7 5v11"/><path d="M12 10v6M9.5 12.2c0-1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.6-1.1 1.4-2.5 1.4-2.5.6-2.5 1.5 1.1 1.6 2.5 1.6 2.5-.7 2.5-1.7"/>',
+    reservas: '<path d="M4 10h16M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18M12 3l9 5H3z"/>',
     comparar: '<rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/>',
     carteira: '<path d="M3 7h18v12H3z"/><path d="M3 7l2-3h14l2 3"/><path d="M16 13h2"/>',
     chev: '<path d="M6 9l6 6 6-6"/>',
@@ -79,6 +80,7 @@
     { id: "rendafixa", l: "Renda Fixa", d: "Selic, CDI, IPCA e simulador", href: "renda-fixa.html" },
     { id: "tesouro", l: "Tesouro Direto", d: "Títulos públicos à venda hoje", href: "tesouro.html" },
     { id: "divida", l: "Dívida Pública", d: "Bruta e líquida, em R$ e % do PIB", href: "divida.html" },
+    { id: "reservas", l: "Reservas Internacionais", d: "Dólares do BC e se ele compra ou vende", href: "reservas.html" },
   ];
   const linkAtivo = (classe, t) => classe === "acoes" ? `acao.html?t=${encodeURIComponent(t)}` : `ativo.html?c=${classe}&t=${encodeURIComponent(t)}`;
 
@@ -93,6 +95,18 @@
       const rf = dados.rendafixa || {};
       const lin = (n, v) => `<div class="mm-rate"><span>${n}</span><b>${v == null ? "–" : f2.format(v) + "% a.a."}</b></div>`;
       return lin("Selic (meta)", rf.selic_meta) + lin("CDI", rf.cdi) + lin("IPCA 12 meses", rf.ipca12) + lin("Poupança", rf.poupanca);
+    }
+    if (cat === "reservas") {
+      const rv = dados.reservas || {};
+      const bi = v => v == null ? "–" : `US$ ${f1.format(Math.abs(v) / 1e3)} bi`;
+      const mes = rv.mes ? ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"][+rv.mes.slice(5) - 1] + "/" + rv.mes.slice(0, 4) : "";
+      const lin = (n, v, c = "") => `<div class="mm-rate"><span>${n}</span><b${c ? ` class="${c}"` : ""}>${v}</b></div>`;
+      const acao = v => v == null ? "–" : v > 0 ? "Comprou " + bi(v) : v < 0 ? "Vendeu " + bi(v) : "Não atuou";
+      const dia = rv.hoje ? rv.hoje[0].split("-").reverse().join("/") : "";
+      return lin("Reservas" + (dia ? ` em ${dia}` : ""), rv.hoje ? bi(rv.hoje[1]) : "–")
+        + (mes ? lin(`BC à vista em ${mes}`, acao(rv.vista_mes), rv.vista_mes > 0 ? "pos" : rv.vista_mes < 0 ? "neg" : "") : "")
+        + (rv.linhas_mes ? lin(`Linhas em ${mes}`, bi(rv.linhas_mes)) : "")
+        + (rv.vista_12m != null ? lin("BC à vista em 12 meses", (rv.vista_12m > 0 ? "+" : rv.vista_12m < 0 ? "−" : "") + bi(rv.vista_12m), rv.vista_12m > 0 ? "pos" : rv.vista_12m < 0 ? "neg" : "") : "");
     }
     if (cat === "divida") {
       const dv = dados.divida || {};
@@ -148,8 +162,8 @@
       catAtiva = cat;
       const c = CATS.find(x => x.id === cat);
       nav.querySelectorAll(".mm-cats a").forEach(a => a.classList.toggle("ativo", a.dataset.cat === cat));
-      tit.textContent = cat === "rendafixa" ? "Taxas de hoje" : cat === "divida" ? "Último mês divulgado" : cat === "tesouro" ? "Títulos à venda" : cat === "indices" || cat === "commodities" || cat === "moedas" ? "Principais" : "Mais negociados";
-      ver.href = c.href; ver.firstChild.textContent = cat === "rendafixa" ? "Abrir renda fixa " : cat === "divida" ? "Abrir dívida pública " : `Ver ${c.l.toLowerCase()} `;
+      tit.textContent = cat === "rendafixa" ? "Taxas de hoje" : cat === "divida" ? "Último mês divulgado" : cat === "reservas" ? "Banco Central" : cat === "tesouro" ? "Títulos à venda" : cat === "indices" || cat === "commodities" || cat === "moedas" ? "Principais" : "Mais negociados";
+      ver.href = c.href; ver.firstChild.textContent = cat === "rendafixa" ? "Abrir renda fixa " : cat === "divida" ? "Abrir dívida pública " : cat === "reservas" ? "Abrir reservas " : `Ver ${c.l.toLowerCase()} `;
       lista.innerHTML = listaPopulares(cat, null);
       const d = await menuDados();
       if (catAtiva === cat) lista.innerHTML = listaPopulares(cat, d || {});

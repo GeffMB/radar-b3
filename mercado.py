@@ -7,6 +7,7 @@ Gera em docs/mercado/:
   rendafixa.json            Selic, CDI, IPCA, poupança e projeções do Focus
   tesouro.json              títulos do Tesouro Direto à venda e histórico das taxas
   divida.json               dívida bruta (governo geral) e líquida (setor público), em R$ e % do PIB
+  reservas.json             reservas internacionais (diária e mensal) e atuações do BC no câmbio por mês
   menu.json                 ativos populares de cada classe (menu do topo)
 
 Fontes: Yahoo Finance (yfinance), CVM (patrimônio dos FIIs), B3 (IFIX, SMLL, IDIV, CDI e Selic),
@@ -902,6 +903,76 @@ def coletar_divida(hoje: date, agora) -> dict:
     return out
 
 
+# ---------------------------------------------------------------- reservas internacionais e atuações do BC no câmbio
+URL_ATUACOES = "https://www.bcb.gov.br/conteudo/dadosabertos/BCBDepin/historico-atuacoes-mercado-cambio.csv"
+
+
+def reservas_diarias(hoje: date, anos=3) -> list:
+    """Reservas internacionais, conceito liquidez (SGS 13982), diárias, US$ milhões: [["AAAA-MM-DD", valor], ...].
+    O SGS limita séries diárias a 10 anos por consulta."""
+    ini = hoje.replace(year=hoje.year - anos)
+    url = (f"https://api.bcb.gov.br/dados/serie/bcdata.sgs.13982/dados?formato=json"
+           f"&dataInicial={ini.strftime('%d/%m/%Y')}&dataFinal={hoje.strftime('%d/%m/%Y')}")
+    for tentativa in range(3):
+        try:
+            d = baixar_json(url, timeout=60)
+            out = [[f"{x['data'][6:10]}-{x['data'][3:5]}-{x['data'][0:2]}", float(x["valor"])] for x in d if x.get("valor") not in (None, "")]
+            if out:
+                return out
+        except Exception as e:
+            log.info("SGS 13982, tentativa %d: %s", tentativa + 1, e)
+        time.sleep(4 + tentativa * 4)
+    raise RuntimeError("SGS 13982 indisponível")
+
+
+def atuacoes_cambio() -> dict:
+    """Soma por mês (US$ milhões) das atuações do BC no câmbio, do histórico oficial (atualizado uma vez por mês).
+    vista: compras (+) e vendas (−) definitivas de dólar, que mexem nas reservas;
+    linhas: vendas com compromisso de recompra e empréstimos em dólar (−), que voltam às reservas depois;
+    swap_venda / swap_compra: leilões de swap cambial tradicional (equivale a vender dólar no mercado futuro) e reverso
+    (equivale a comprar); incluem as rolagens de contratos que vencem, então medem atividade, não posição."""
+    texto = baixar(URL_ATUACOES, timeout=120).decode("utf-8-sig")
+    meses: dict[str, dict] = {}
+    for r in csv.DictReader(io.StringIO(texto)):
+        d, ins, mod = (r.get("Data") or "")[:7], (r.get("Instrumento") or "").strip(), (r.get("Modalidade") or "").strip()
+        v = num((r.get("Volume USD Aceito") or "").replace(".", "").replace(",", "."))
+        if len(d) != 7 or not v:
+            continue
+        v /= 1e6
+        m = meses.setdefault(d, {"vista": 0.0, "linhas": 0.0, "swap_venda": 0.0, "swap_compra": 0.0})
+        if ins in ("Compra a Vista", "Compra a Termo"):
+            m["vista"] += v
+        elif ins == "Venda a Vista":
+            m["vista"] -= v
+        elif ins in ("Venda com Recompra", "Empréstimo", "Operação Compromissada"):
+            m["linhas"] -= v
+        elif ins == "Swap Cambial":
+            m["swap_compra" if mod == "Reverso" else "swap_venda"] += v
+    if not meses:
+        raise RuntimeError("histórico de atuações vazio")
+    return {k: {c: round(x, 1) for c, x in v.items()} for k, v in sorted(meses.items())}
+
+
+def coletar_reservas(hoje: date, agora) -> dict:
+    arq = PASTA_MERCADO / "reservas.json"
+    antigo = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
+    out = {"atualizado_em": agora.isoformat(timespec="minutes"), "fonte": "Banco Central (SGS e histórico de atuações no câmbio)"}
+    partes = (("diaria", lambda: reservas_diarias(hoje)),
+              ("mensal", lambda: serie_sgs(3546, hoje, antigo.get("mensal"))),
+              ("atuacoes", atuacoes_cambio))
+    falhas = 0
+    for chave, f in partes:
+        try:
+            out[chave] = f()
+        except Exception as e:
+            falhas += 1
+            out[chave] = antigo.get(chave) or ([] if chave != "atuacoes" else {})
+            log.warning("reservas (%s): %s", chave, e)
+    if falhas == len(partes) and antigo:
+        raise RuntimeError("fontes do BC fora do ar; reservas.json mantido")
+    return out
+
+
 def gravar_classe(classe: str, itens: list, detalhes: dict, agora) -> None:
     logos = PASTA_DOCS / "logos"
     for it in itens:
@@ -936,6 +1007,17 @@ def gravar_menu(agora) -> None:
     try:
         rf = json.loads((PASTA_MERCADO / "rendafixa.json").read_text(encoding="utf-8"))
         menu["rendafixa"] = {k: rf.get(k) for k in ("selic_meta", "cdi", "ipca12", "poupanca")}
+    except Exception:
+        pass
+    try:
+        rv = json.loads((PASTA_MERCADO / "reservas.json").read_text(encoding="utf-8"))
+        at = rv.get("atuacoes") or {}
+        ult_mes = max(at) if at else None
+        doze = sorted(at)[-12:]
+        menu["reservas"] = {"hoje": rv["diaria"][-1] if rv.get("diaria") else None,
+                            "mes": ult_mes, "vista_mes": at[ult_mes]["vista"] if ult_mes else None,
+                            "linhas_mes": at[ult_mes]["linhas"] if ult_mes else None,
+                            "vista_12m": round(sum(at[m]["vista"] for m in doze), 1) if doze else None}
     except Exception:
         pass
     try:
@@ -976,11 +1058,11 @@ def configurar_log():
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Coleta as outras classes de ativos do Radar B3")
-    p.add_argument("--so", help="partes separadas por vírgula: fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,divida,proventos")
+    p.add_argument("--so", help="partes separadas por vírgula: fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,divida,reservas,proventos")
     p.add_argument("--sem-logos", action="store_true")
     args = p.parse_args(argv)
     configurar_log()
-    partes = set((args.so or "fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,divida,proventos").split(","))
+    partes = set((args.so or "fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,divida,reservas,proventos").split(","))
     agora = datetime.now(FUSO_BR)
     hoje = agora.date()
     erros = 0
@@ -1012,6 +1094,8 @@ def main(argv=None) -> int:
         etapa("Renda fixa", lambda: salvar_json(PASTA_MERCADO / "rendafixa.json", coletar_renda_fixa(hoje)))
     if "tesouro" in partes:
         etapa("Tesouro", lambda: salvar_json(PASTA_MERCADO / "tesouro.json", coletar_tesouro(hoje)))
+    if "reservas" in partes:
+        etapa("Reservas internacionais", lambda: salvar_json(PASTA_MERCADO / "reservas.json", coletar_reservas(hoje, agora)))
     if "divida" in partes:
         etapa("Dívida pública", lambda: salvar_json(PASTA_MERCADO / "divida.json", coletar_divida(hoje, agora)))
 
