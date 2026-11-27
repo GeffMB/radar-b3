@@ -99,7 +99,8 @@
       return lin("Selic (meta)", rf.selic_meta) + lin("CDI", rf.cdi) + lin("IPCA 12 meses", rf.ipca12) + lin("Poupança", rf.poupanca);
     }
     if (cat === "agenda") {
-      const ev = dados.agenda || [];
+      const agora = new Date(), hoje = new Date(agora - agora.getTimezoneOffset() * 6e4).toISOString().slice(0, 10), hh = agora.toTimeString().slice(0, 5);
+      const ev = (dados.agenda || []).filter(e => e.d > hoje || (e.d === hoje && (e.h || "23:59") >= hh));
       if (!ev.length) return '<p class="mm-quando">A agenda chega na próxima atualização.</p>';
       return ev.map(e => `<div class="mm-rate"><span>${e.d.slice(8, 10)}/${e.d.slice(5, 7)}${e.h ? " " + e.h : ""} · ${e.pais}</span><b>${esc(e.n)}</b></div>`).join("");
     }
