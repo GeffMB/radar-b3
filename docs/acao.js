@@ -107,7 +107,7 @@ function render(a, det, pares, dados){
       <div>
         <h1>${esc(a.t)}</h1>
         <div class="sub"><b>${esc(a.n)}</b> · ${esc(a.setor)} · valor de mercado ${big(a.mc)}</div>
-        <a class="btn" id="cmp" href="comparar.html?t=${encodeURIComponent(a.t)}" style="margin-top:10px;font-size:13px;padding:6px 12px">Comparar com outras</a>
+        <div class="hero-btns"><a class="btn" id="cmp" href="comparar.html?t=${encodeURIComponent(a.t)}">Comparar com outras</a><button type="button" class="btn" id="btn-rel" title="Texto com preço, tendência, indicadores, Barsi, proventos e agenda para copiar">📋 Relatório</button></div>
       </div>
     </div>
     ${r52}
@@ -123,7 +123,7 @@ function render(a, det, pares, dados){
 
   if (!det) {
     html += `<div class="msg">O histórico de cotação e proventos de ${a.t} ainda não foi coletado. Ele aparece depois da próxima coleta diária.</div>`;
-    $("conteudo").innerHTML = html; if (window.Candles) Candles.topoAoVivo(document.querySelector(".hero .price"), a.t + ".SA", v => brl(v), at); desenharBarsi(a, null); configurarAssistente(a, null, pares, quando); return;
+    $("conteudo").innerHTML = html; if (window.Candles) Candles.topoAoVivo(document.querySelector(".hero .price"), a.t + ".SA", v => brl(v), at); desenharBarsi(a, null); configurarAssistente(a, null, pares, quando); ligarRelatorio(a, null, pares, quando); return;
   }
 
   // período da cotação
@@ -183,7 +183,7 @@ function render(a, det, pares, dados){
   if (window.Candles) Candles.topoAoVivo(document.querySelector(".hero .price"), a.t + ".SA", v => brl(v), at);
   desenharBarsi(a, det);
   document.addEventListener("radar:dy-alvo", () => desenharBarsi(a, det));
-  configurarAssistente(a, det, pares, quando);
+  configurarAssistente(a, det, pares, quando); ligarRelatorio(a, det, pares, quando);
 
   if (!window.Chart) { document.querySelectorAll(".chart").forEach(c=>c.innerHTML='<div class="empty">Os gráficos não carregaram. Verifique a conexão e recarregue a página.</div>'); return; }
   try { precoRange = localStorage.getItem("radar-range") || precoRange; } catch(e){}
@@ -262,6 +262,12 @@ function desenharBarsi(a, det){
     const v = parseFloat(String(e.target.value).replace(",", "."));
     if (v>=1 && v<=30) R.definirDyAlvo(v/100); else e.target.value = alvoTxt;
   };
+}
+
+function ligarRelatorio(a, det, pares, quando){
+  const b = $("btn-rel"); if (!b) return;
+  if (!window.Relatorio || !window.Candles) { b.hidden = true; return; }
+  b.onclick = () => Relatorio.abrir({ a, det, pares, prov: B3PROV, quando });
 }
 
 function configurarAssistente(a, det, pares, quando){
