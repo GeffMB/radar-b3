@@ -62,6 +62,7 @@
     tesouro: '<path d="M3 21h18M5 21V10M19 21V10M9 21V10M15 21V10M2 10l10-6 10 6z"/>',
     divida: '<path d="M3 20h18"/><path d="M5 20V9l7-5 7 5v11"/><path d="M12 10v6M9.5 12.2c0-1 1.1-1.7 2.5-1.7s2.5.7 2.5 1.6-1.1 1.4-2.5 1.4-2.5.6-2.5 1.5 1.1 1.6 2.5 1.6 2.5-.7 2.5-1.7"/>',
     reservas: '<rect x="3" y="4" width="18" height="15" rx="2"/><circle cx="12" cy="11.5" r="3.5"/><path d="M12 8v1.2M12 13.8V15M8.5 11.5h1.2M14.3 11.5h1.2M6 19v2M18 19v2"/>',
+    agenda: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M7.5 14h2M11 14h2M14.5 14h2M7.5 17.5h2M11 17.5h2"/>',
     comparar: '<rect x="3" y="4" width="7" height="16" rx="1.5"/><rect x="14" y="4" width="7" height="16" rx="1.5"/>',
     carteira: '<path d="M3 7h18v12H3z"/><path d="M3 7l2-3h14l2 3"/><path d="M16 13h2"/>',
     chev: '<path d="M6 9l6 6 6-6"/>',
@@ -81,6 +82,7 @@
     { id: "tesouro", l: "Tesouro Direto", d: "Títulos públicos à venda hoje", href: "tesouro.html" },
     { id: "divida", l: "Dívida Pública", d: "Bruta e líquida, em R$ e % do PIB", href: "divida.html" },
     { id: "reservas", l: "Reservas Internacionais", d: "Dólares do BC e se ele compra ou vende", href: "reservas.html" },
+    { id: "agenda", l: "Agenda Econômica", d: "Copom, IPCA, payroll, Fed e proventos", href: "agenda.html" },
   ];
   const linkAtivo = (classe, t) => classe === "acoes" ? `acao.html?t=${encodeURIComponent(t)}` : `ativo.html?c=${classe}&t=${encodeURIComponent(t)}`;
 
@@ -95,6 +97,11 @@
       const rf = dados.rendafixa || {};
       const lin = (n, v) => `<div class="mm-rate"><span>${n}</span><b>${v == null ? "–" : f2.format(v) + "% a.a."}</b></div>`;
       return lin("Selic (meta)", rf.selic_meta) + lin("CDI", rf.cdi) + lin("IPCA 12 meses", rf.ipca12) + lin("Poupança", rf.poupanca);
+    }
+    if (cat === "agenda") {
+      const ev = dados.agenda || [];
+      if (!ev.length) return '<p class="mm-quando">A agenda chega na próxima atualização.</p>';
+      return ev.map(e => `<div class="mm-rate"><span>${e.d.slice(8, 10)}/${e.d.slice(5, 7)}${e.h ? " " + e.h : ""} · ${e.pais}</span><b>${esc(e.n)}</b></div>`).join("");
     }
     if (cat === "reservas") {
       const rv = dados.reservas || {};
@@ -162,8 +169,8 @@
       catAtiva = cat;
       const c = CATS.find(x => x.id === cat);
       nav.querySelectorAll(".mm-cats a").forEach(a => a.classList.toggle("ativo", a.dataset.cat === cat));
-      tit.textContent = cat === "rendafixa" ? "Taxas de hoje" : cat === "divida" ? "Último mês divulgado" : cat === "reservas" ? "Banco Central" : cat === "tesouro" ? "Títulos à venda" : cat === "indices" || cat === "commodities" || cat === "moedas" ? "Principais" : "Mais negociados";
-      ver.href = c.href; ver.firstChild.textContent = cat === "rendafixa" ? "Abrir renda fixa " : cat === "divida" ? "Abrir dívida pública " : cat === "reservas" ? "Abrir reservas " : `Ver ${c.l.toLowerCase()} `;
+      tit.textContent = cat === "rendafixa" ? "Taxas de hoje" : cat === "divida" ? "Último mês divulgado" : cat === "reservas" ? "Banco Central" : cat === "agenda" ? "Próximos eventos importantes" : cat === "tesouro" ? "Títulos à venda" : cat === "indices" || cat === "commodities" || cat === "moedas" ? "Principais" : "Mais negociados";
+      ver.href = c.href; ver.firstChild.textContent = cat === "rendafixa" ? "Abrir renda fixa " : cat === "divida" ? "Abrir dívida pública " : cat === "reservas" ? "Abrir reservas " : cat === "agenda" ? "Abrir agenda " : `Ver ${c.l.toLowerCase()} `;
       lista.innerHTML = listaPopulares(cat, null);
       const d = await menuDados();
       if (catAtiva === cat) lista.innerHTML = listaPopulares(cat, d || {});

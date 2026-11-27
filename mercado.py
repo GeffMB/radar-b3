@@ -1107,6 +1107,12 @@ def gravar_menu(agora) -> None:
     except Exception:
         pass
     try:
+        ag = json.loads((PASTA_MERCADO / "agenda.json").read_text(encoding="utf-8"))
+        hoje_iso = date.today().isoformat()
+        menu["agenda"] = [{k: e[k] for k in ("d", "h", "n", "pais") if k in e} for e in ag.get("eventos", []) if e["d"] >= hoje_iso and e.get("imp", 1) >= 2][:7]
+    except Exception:
+        pass
+    try:
         rv = json.loads((PASTA_MERCADO / "reservas.json").read_text(encoding="utf-8"))
         at = rv.get("atuacoes") or {}
         ult_mes = max(at) if at else None
