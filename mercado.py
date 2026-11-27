@@ -8,6 +8,7 @@ Gera em docs/mercado/:
   tesouro.json              títulos do Tesouro Direto à venda e histórico das taxas
   divida.json               dívida bruta (governo geral) e líquida (setor público), em R$ e % do PIB
   reservas.json             reservas internacionais (diária e mensal) e atuações do BC no câmbio por mês
+  agenda.json               agenda econômica: Copom, Focus, IBGE (IPCA, PIB...) e EUA (Fed, payroll, CPI...)
   menu.json                 ativos populares de cada classe (menu do topo)
 
 Fontes: Yahoo Finance (yfinance), CVM (patrimônio dos FIIs), B3 (IFIX, SMLL, IDIV, CDI e Selic),
@@ -973,6 +974,102 @@ def coletar_reservas(hoje: date, agora) -> dict:
     return out
 
 
+# ---------------------------------------------------------------- agenda econômica (Brasil e EUA)
+# Copom: datas oficiais do Banco Central (decisão no 2º dia, a partir das 18h30; ata na terça seguinte, 8h).
+# Calendário de 2027 divulgado pelo BC em 23/06/2026; a 8ª reunião de 2027 entra quando o BC confirmar.
+COPOM = ["2026-12-09", "2027-01-27", "2027-03-17", "2027-04-28", "2027-06-16", "2027-08-04", "2027-09-22", "2027-10-27"]
+ATA_EXCECAO = {"2027-10-27": "2027-11-03"}          # terça seguinte é feriado (Finados): ata sai na quarta
+FERIADOS_BR = {"2026-12-25", "2027-01-01", "2027-02-08", "2027-02-09", "2027-03-26", "2027-04-21", "2027-05-27",
+               "2027-09-07", "2027-10-12", "2027-11-02", "2027-11-15", "2027-11-20", "2027-12-24", "2027-12-25", "2027-12-31"}
+# IBGE: produtos que mexem com juros e bolsa (nome no calendário -> nome curto, impacto 1 a 3)
+IBGE = [("Índice Nacional de Preços ao Consumidor Amplo 15", "IPCA-15 (prévia da inflação)", 2),
+        ("Índice Nacional de Preços ao Consumidor Amplo Especial", None, 0),
+        ("Índice Nacional de Preços ao Consumidor Amplo", "IPCA (inflação oficial)", 3),
+        ("Sistema de Contas Nacionais Trimestrais", "PIB trimestral", 3),
+        ("Pesquisa Nacional por Amostra de Domicílios Contínua Mensal", "Desemprego (PNAD Contínua)", 2),
+        ("Pesquisa Mensal de Comércio", "Vendas no varejo (PMC)", 2),
+        ("Pesquisa Mensal de Serviços", "Volume de serviços (PMS)", 2),
+        ("Pesquisa Industrial Mensal: Produção Física - Brasil", "Produção industrial (PIM)", 2)]
+URL_EVENTOS_EUA = "https://raw.githubusercontent.com/GeffMB/liqmap/main/eventos.json"   # o mesmo calendário usado no LiqMap
+
+
+def agenda_ibge(hoje: date) -> list:
+    fim = hoje + timedelta(days=150)
+    out, pagina = [], 1
+    while pagina <= 10:
+        d = baixar_json(f"https://servicodados.ibge.gov.br/api/v3/calendario/?qtd=200&page={pagina}"
+                        f"&de={hoje:%m-%d-%Y}&ate={fim:%m-%d-%Y}", timeout=60)
+        for x in d.get("items") or []:
+            titulo = (x.get("titulo") or "").strip()
+            for nome, curto, imp in IBGE:
+                if titulo.startswith(nome):
+                    if curto:
+                        dt = datetime.strptime(x["data_divulgacao"], "%d/%m/%Y %H:%M:%S") - timedelta(hours=3)   # vem em UTC
+                        out.append({"d": dt.strftime("%Y-%m-%d"), "h": dt.strftime("%H:%M"), "n": curto, "pais": "BR", "imp": imp, "fonte": "IBGE"})
+                    break
+        if not d.get("nextPage") or pagina >= (d.get("totalPages") or 1):
+            break
+        pagina += 1
+    return out
+
+
+def agenda_fixa(hoje: date) -> list:
+    out = []
+    for dia in COPOM:
+        out.append({"d": dia, "h": "18:30", "n": "Decisão do Copom (Selic)", "pais": "BR", "imp": 3, "fonte": "Banco Central"})
+        d = date.fromisoformat(dia)
+        ata = ATA_EXCECAO.get(dia) or (d + timedelta(days=(1 - d.weekday()) % 7 or 7)).isoformat()
+        out.append({"d": ata, "h": "08:00", "n": "Ata do Copom", "pais": "BR", "imp": 2, "fonte": "Banco Central"})
+    # Boletim Focus: toda segunda-feira útil, 8h25 (se for feriado, sai no dia útil seguinte)
+    d = hoje
+    while d <= hoje + timedelta(days=120):
+        if d.weekday() == 0:
+            f = d
+            while f.isoformat() in FERIADOS_BR or f.weekday() >= 5:
+                f += timedelta(days=1)
+            out.append({"d": f.isoformat(), "h": "08:25", "n": "Boletim Focus (expectativas do mercado)", "pais": "BR", "imp": 1, "fonte": "Banco Central"})
+        d += timedelta(days=1)
+    return out
+
+
+def agenda_eua() -> list:
+    d = baixar_json(URL_EVENTOS_EUA, timeout=60)
+    out = []
+    for e in d.get("eventos") or []:
+        dt = datetime.fromtimestamp(e["t"] / 1000, FUSO_BR)
+        out.append({"d": dt.strftime("%Y-%m-%d"), "h": dt.strftime("%H:%M"), "n": e.get("titulo") or e.get("orig") or "",
+                    "pais": "EUA", "imp": 3 if e.get("impacto") == "High" else 2, "fonte": e.get("fonte") or "",
+                    **({"prev": e["prev"]} if e.get("prev") else {}), **({"ant": e["ant"]} if e.get("ant") else {})})
+    return out
+
+
+def coletar_agenda(hoje: date, agora) -> dict:
+    arq = PASTA_MERCADO / "agenda.json"
+    antigo = json.loads(arq.read_text(encoding="utf-8")) if arq.exists() else {}
+    velhos = {}
+    for e in antigo.get("eventos") or []:
+        velhos.setdefault(e.get("fonte_grupo"), []).append(e)
+    eventos = []
+    for grupo, f in (("fixa", lambda: agenda_fixa(hoje)), ("ibge", lambda: agenda_ibge(hoje)), ("eua", agenda_eua)):
+        try:
+            lista = f()
+        except Exception as e:
+            log.warning("agenda (%s): %s", grupo, e)
+            lista = velhos.get(grupo, [])        # fonte fora do ar: mantém o que já tínhamos
+        for e in lista:
+            e["fonte_grupo"] = grupo
+        eventos += lista
+    ini = (hoje - timedelta(days=7)).isoformat()
+    vistos, final = set(), []
+    for e in sorted(eventos, key=lambda x: (x["d"], x.get("h") or "", -x.get("imp", 1))):
+        k = (e["d"], e["n"])
+        if e["d"] >= ini and k not in vistos:
+            vistos.add(k); final.append(e)
+    if not final and antigo:
+        raise RuntimeError("agenda vazia; agenda.json mantido")
+    return {"atualizado_em": agora.isoformat(timespec="minutes"), "eventos": final}
+
+
 def gravar_classe(classe: str, itens: list, detalhes: dict, agora) -> None:
     logos = PASTA_DOCS / "logos"
     for it in itens:
@@ -1058,11 +1155,11 @@ def configurar_log():
 
 def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Coleta as outras classes de ativos do Radar B3")
-    p.add_argument("--so", help="partes separadas por vírgula: fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,divida,reservas,proventos")
+    p.add_argument("--so", help="partes separadas por vírgula: fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,divida,reservas,agenda,proventos")
     p.add_argument("--sem-logos", action="store_true")
     args = p.parse_args(argv)
     configurar_log()
-    partes = set((args.so or "fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,divida,reservas,proventos").split(","))
+    partes = set((args.so or "fiis,etfs,exterior,indices,commodities,moedas,rendafixa,tesouro,divida,reservas,agenda,proventos").split(","))
     agora = datetime.now(FUSO_BR)
     hoje = agora.date()
     erros = 0
@@ -1094,6 +1191,8 @@ def main(argv=None) -> int:
         etapa("Renda fixa", lambda: salvar_json(PASTA_MERCADO / "rendafixa.json", coletar_renda_fixa(hoje)))
     if "tesouro" in partes:
         etapa("Tesouro", lambda: salvar_json(PASTA_MERCADO / "tesouro.json", coletar_tesouro(hoje)))
+    if "agenda" in partes:
+        etapa("Agenda econômica", lambda: salvar_json(PASTA_MERCADO / "agenda.json", coletar_agenda(hoje, agora)))
     if "reservas" in partes:
         etapa("Reservas internacionais", lambda: salvar_json(PASTA_MERCADO / "reservas.json", coletar_reservas(hoje, agora)))
     if "divida" in partes:

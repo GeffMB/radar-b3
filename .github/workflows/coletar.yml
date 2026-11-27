@@ -9,7 +9,7 @@ on:
       parte:
         description: "O que coletar"
         type: choice
-        options: [tudo, acoes, mercado, divida, reservas]
+        options: [tudo, acoes, mercado, divida, reservas, agenda]
         default: tudo
 
 # Permissão mínima: só gravar no próprio repositório. O token expira ao fim de cada execução.
@@ -41,12 +41,12 @@ jobs:
         run: python coletar.py
 
       - name: Coletar FIIs, ETFs, BDRs, stocks, índices, commodities, renda fixa e Tesouro
-        if: ${{ github.event_name == 'schedule' || (inputs.parte != 'acoes' && inputs.parte != 'divida' && inputs.parte != 'reservas') }}
+        if: ${{ github.event_name == 'schedule' || (inputs.parte != 'acoes' && inputs.parte != 'divida' && inputs.parte != 'reservas' && inputs.parte != 'agenda') }}
         continue-on-error: true      # uma fonte fora do ar não impede salvar as ações
         run: python mercado.py
 
-      - name: Coletar só uma parte (dívida ou reservas)
-        if: ${{ inputs.parte == 'divida' || inputs.parte == 'reservas' }}
+      - name: Coletar só uma parte (dívida, reservas ou agenda)
+        if: ${{ inputs.parte == 'divida' || inputs.parte == 'reservas' || inputs.parte == 'agenda' }}
         env: { PARTE: "${{ inputs.parte }}" }
         run: python mercado.py --so "$PARTE" --sem-logos
 
