@@ -51,6 +51,7 @@ async function main() {
   const sym = simboloYahoo();
   if (sym) {
     $("tipo").hidden = false;
+    if (window.Candles) { $("btn-ind").hidden = false; Candles.painelIndicadores($("btn-ind"), $("ind"), () => { if (GRAF) GRAF.indicadores(); else desenharPreco(); }); }
     try { tipo = localStorage.getItem("radar-tipo-grafico") || tipo; } catch (e) {}
     $("tipo").onclick = e => { const b = e.target.closest("button"); if (!b) return; tipo = b.dataset.t; try { localStorage.setItem("radar-tipo-grafico", tipo); } catch (e) {} desenharPreco(); };
   } else document.querySelectorAll("#ranges [data-vivo]").forEach(b => b.remove());
@@ -198,7 +199,8 @@ function desenharCandles() {
 function desenharPreco() {
   document.querySelectorAll("#ranges button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.r === faixa)));
   document.querySelectorAll("#tipo button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.t === tipo)));
-  if (simboloYahoo() && window.Candles && (tipo === "candle" || faixa === "1D" || faixa === "5D" || !DET?.precos?.d?.length)) {
+  const cfg = window.Candles ? Candles.config() : null, comInd = cfg && (cfg.mme.length || cfg.mms.length || cfg.macd) && modo === "preco";
+  if (simboloYahoo() && window.Candles && (tipo === "candle" || faixa === "1D" || faixa === "5D" || comInd || !DET?.precos?.d?.length)) {
     if (!DET?.precos?.d?.length && !["1D", "5D"].includes(faixa) && tipo !== "candle") tipo = "candle";
     return desenharCandles();
   }

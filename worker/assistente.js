@@ -284,7 +284,10 @@ async function cotacao(req, ctx, cors) {
   const cabec = (ttl) => ({ ...cors, "Content-Type": "application/json; charset=utf-8", "Cache-Control": `public, max-age=${ttl}`,
     "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer" });
   if (!/^[A-Z0-9^][A-Z0-9.=^-]{0,14}$/.test(s) || !f) return new Response(JSON.stringify({ erro: "Ativo ou período inválido." }), { status: 400, headers: cabec(60) });
-  const [intervalo, periodo, ttl] = f;
+  // aq=1: traz mais histórico antes da janela pedida, para médias móveis e MACD já começarem calculados
+  const AQUEC = { "1d": "5d", "5d": "1mo", "1mo": "3mo", "6mo": "2y", "1y": "2y", "2y": "10y", "5y": "10y" };
+  const [intervalo, periodoBase, ttl] = f;
+  const periodo = u.searchParams.get("aq") === "1" ? (AQUEC[periodoBase] || periodoBase) : periodoBase;
   const id = `${s}|${intervalo}|${periodo}`;
   // memória da instância (funciona no workers.dev) e cache da Cloudflare (quando houver domínio próprio)
   const mem = MEMO_COT.get(id);

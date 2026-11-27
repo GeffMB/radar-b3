@@ -135,7 +135,9 @@ function render(a, det, pares, dados){
       <span class="note" id="var-periodo"></span>
       <div class="ranges" id="tipo"><button type="button" data-t="linha">Linha</button><button type="button" data-t="candle">Candles</button></div>
       <div class="ranges" id="ranges">${["1D","5D","1M","6M","1A","2A","5A"].map(r=>`<button type="button" data-r="${r}">${r}</button>`).join("")}</div>
+      <button type="button" class="btn-ind" id="btn-ind" aria-expanded="false" aria-controls="ind">Indicadores</button>
     </div>
+    <div class="ind-caixa" id="ind" hidden></div>
     <div class="chart" id="cx-preco"><canvas id="c-preco" aria-label="Gráfico de cotação de ${a.t}"></canvas></div>
     <div class="chart lwc" id="lwc" hidden aria-label="Gráfico de candles de ${a.t}"></div>
   </section>`;
@@ -196,6 +198,7 @@ function render(a, det, pares, dados){
   $("modo").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoModo=b.dataset.m; try{localStorage.setItem("radar-modo",precoModo);}catch(e){} desenharPreco(det); };
   $("ranges").onclick = e => { const b=e.target.closest("button"); if(!b) return; precoRange=b.dataset.r; try{localStorage.setItem("radar-range",precoRange);}catch(e){} desenharPreco(det); };
   try { tipoGraf = localStorage.getItem("radar-tipo-grafico") || tipoGraf; } catch(e){}
+  if (window.Candles) Candles.painelIndicadores($("btn-ind"), $("ind"), () => { if (GRAF) GRAF.indicadores(); else desenharPreco(det); });
   $("tipo").onclick = e => { const b=e.target.closest("button"); if(!b) return; tipoGraf=b.dataset.t; try{localStorage.setItem("radar-tipo-grafico",tipoGraf);}catch(e){} desenharPreco(det); };
   document.addEventListener("radar:tema", ()=>{ GRAF?.parar(); GRAF=null; desenharTudo(det); });
 }
@@ -367,7 +370,10 @@ function desenharPreco(det){
   document.querySelectorAll("#ranges button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.r===precoRange)));
   document.querySelectorAll("#modo button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.m===precoModo)));
   document.querySelectorAll("#tipo button").forEach(b=>b.setAttribute("aria-pressed", String(b.dataset.t===tipoGraf)));
-  if (window.Candles && (tipoGraf==="candle" || precoRange==="1D" || precoRange==="5D")) return desenharCandles();
+  // médias e MACD só existem no gráfico interativo: com algum indicador ligado, a linha também usa esse gráfico
+  const cfg = window.Candles ? Candles.config() : null;
+  const comInd = cfg && (cfg.mme.length || cfg.mms.length || cfg.macd);
+  if (window.Candles && (tipoGraf==="candle" || precoRange==="1D" || precoRange==="5D" || (comInd && precoModo==="preco"))) return desenharCandles();
   GRAF?.parar(); GRAF = null;
   $("cx-preco").hidden = false; $("lwc").hidden = true; $("modo").hidden = false;
   const meses = {"1M":1,"6M":6,"1A":12,"2A":24,"5A":60}[precoRange];

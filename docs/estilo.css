@@ -200,6 +200,21 @@ footer.site p{margin:0;max-width:95ch}
 
 /* gráfico de candles (Lightweight Charts) e selo "ao vivo" */
 .lwc{position:relative;height:340px;min-width:0}
+.lwc.com-macd{height:460px}
+/* indicadores do gráfico (médias e MACD) */
+.btn-ind{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--soft);border:0;border-radius:10px;padding:9px 12px;cursor:pointer}
+.btn-ind[aria-expanded=true]{background:var(--surface);box-shadow:var(--shadow-sm)}
+.ind-caixa{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end;background:var(--soft);border-radius:12px;padding:12px 14px;margin:0 0 12px;font-size:13px}
+.ind-caixa[hidden]{display:none}
+.ind-caixa label{display:grid;gap:4px;color:var(--muted);font-weight:600}
+.ind-caixa input:not([type=checkbox]){font:inherit;width:130px;padding:7px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+.ind-caixa .ind-macd{display:flex;gap:10px}.ind-caixa .ind-macd[hidden]{display:none}
+.ind-caixa .ind-macd input{width:64px!important}
+.ind-caixa .ind-chk{display:flex;align-items:center;gap:6px;color:var(--ink);padding-bottom:8px}
+.ind-caixa .ind-acoes{display:flex;gap:8px}
+.ind-caixa .sec{font:inherit;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:7px 10px;cursor:pointer}
+.ind-caixa .ind-nota{flex-basis:100%;margin:0;color:var(--muted);font-size:12px}
+.lwc-leg span[style]{font-weight:600}
 .lwc-leg{position:absolute;top:6px;left:8px;z-index:3;display:flex;flex-wrap:wrap;gap:4px 12px;font-family:var(--font-num);font-size:12px;color:var(--muted);pointer-events:none;background:color-mix(in srgb,var(--surface) 80%,transparent);border-radius:8px;padding:2px 6px}
 .lwc-leg b{color:var(--ink);font-weight:700}
 .vivo{display:inline-flex;align-items:center;gap:6px;margin-right:10px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--bad);background:var(--bad-bg);border-radius:999px;padding:2px 9px 2px 7px}
