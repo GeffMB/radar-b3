@@ -78,6 +78,20 @@
 .s-tab small{font-size:12px;color:var(--muted)}
 .vazia{text-align:center;padding:30px 16px;display:grid;gap:10px;justify-items:center}
 .vazia p{margin:0;color:var(--muted);max-width:60ch}
+.avisos-cx{display:grid;gap:14px}
+.av-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--soft);border-radius:12px;padding:10px 12px;font-size:14px}
+.av-item b{font-family:var(--font-num)}
+.av-item span.n{display:block;color:var(--muted);font-size:12.5px}
+#av-lista{display:grid;gap:8px}
+.av-vazio{color:var(--muted);font-size:14px}
+.av-cel{background:var(--soft);border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.55}
+.av-cel h3{margin:0 0 6px;font-size:15px}
+.av-cel ol{margin:6px 0;padding-left:20px}
+.av-cel code{font-family:var(--font-num);background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:2px 6px;user-select:all;word-break:break-all}
+.av-cel .botoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.av-cel #av-st{font-weight:600;color:var(--good)}
+#av-hist{font-size:13px;color:var(--muted)}
+#av-hist ul{margin:4px 0 0;padding-left:18px}
 </style>
 </head>
 <body>
@@ -130,6 +144,13 @@
     </section>
     <section class="panel"><div class="ph"><h2>De onde vem a renda</h2></div><div id="setores"></div></section>
   </div>
+  <section class="panel avisos-cx" id="avisos" aria-labelledby="t-av">
+    <div class="ph"><h2 id="t-av">🔔 Avisos de preço</h2><span class="note">Crie avisos no botão "Avisar" da página de cada ativo.</span></div>
+    <div id="av-lista"></div>
+    <div class="av-acoes"><button type="button" class="sec" id="av-teto">Avisar quando as ações da carteira ficarem abaixo do preço-teto</button></div>
+    <div class="av-cel" id="av-cel"></div>
+    <div id="av-hist"></div>
+  </section>
   <section class="panel" aria-labelledby="t-sim">
     <div class="ph"><h2 id="t-sim">Simulador bola de neve</h2><span class="note">Aportes mensais + proventos reinvestidos. Valores em reais de hoje.</span></div>
     <form class="sim" id="sim" autocomplete="off">

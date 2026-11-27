@@ -283,4 +283,69 @@ function configurarAssistente() {
   });
 }
 
-main();
+main().then(ligarAvisos);
+
+// ---------------------------------------------------------------- avisos de preço (lista, preço-teto da carteira e celular)
+function desenharAvisos() {
+  if (!$("av-lista")) return;
+  const lista = R.avisosLista(), fmt = v => "R$ " + R.f2.format(v);
+  $("av-lista").innerHTML = lista.length ? lista.map(a => `<div class="av-item"><div><b>${R.esc(a.t)}</b> ${a.cond === ">=" ? "acima de" : "abaixo de"} <b>${a.classe === "acoes" || a.classe === "fiis" || !a.classe ? fmt(a.p) : R.f2.format(a.p)}</b>
+      <span class="n">${a.nota ? R.esc(a.nota) + " · " : ""}criado em ${new Date(a.criado).toLocaleDateString("pt-BR")}</span></div><button type="button" class="sec" data-del="${a.id}">Apagar</button></div>`).join("")
+    : '<p class="av-vazio">Nenhum aviso ativo. Abra uma ação (ex.: <a href="acao.html?t=BBAS3">BBAS3</a>) e toque em 🔔 Avisar.</p>';
+  const canal = R.canalNtfy();
+  $("av-cel").innerHTML = canal
+    ? `<h3>📱 Avisos no celular: ligados</h3>
+       <ol><li>Instale o app gratuito <b>ntfy</b> (Android ou iPhone).</li><li>No app, toque em <b>+</b> e inscreva-se no canal <code>${R.esc(canal)}</code></li></ol>
+       <p class="note">O servidor do site confere os preços a cada 5 minutos, de segunda a sexta, das 9h às 19h. Guardamos só o código do canal e os avisos (ativo e preço), sem nada que identifique você. Quem souber o código do canal consegue ler os avisos: não compartilhe.</p>
+       <div class="botoes"><button type="button" class="sec" id="av-testar">Enviar teste para o celular</button><button type="button" class="sec" id="av-sync">Reenviar avisos</button><button type="button" class="sec" id="av-desligar">Desligar no celular</button><span id="av-st" role="status"></span></div>`
+    : `<h3>📱 Receber no celular, mesmo com o site fechado</h3>
+       <p>Com o site aberto, os avisos aparecem na tela e como notificação do navegador. Para receber no celular a qualquer hora do pregão, use o app gratuito <b>ntfy</b>: o site cria um canal só seu, e o servidor do site avisa quando o preço chegar.</p>
+       <div class="botoes"><button type="button" class="btn" id="av-criar">Criar meu canal de avisos</button><span id="av-st" role="status"></span></div>`;
+  const hist = (() => { try { return JSON.parse(localStorage.getItem("radar-avisos-hist") || "[]"); } catch (e) { return []; } })();
+  $("av-hist").innerHTML = hist.length ? `<b>Disparados neste navegador</b><ul>${hist.slice(0, 8).map(h => `<li>${R.esc(h.t)} ${h.cond === ">=" ? "acima de" : "abaixo de"} ${R.f2.format(h.p)} — disparou em ${new Date(h.disparou).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} a ${R.f2.format(h.preco)}</li>`).join("")}</ul>` : "";
+}
+
+function ligarAvisos() {
+  if (!$("avisos")) return;
+  desenharAvisos();
+  document.addEventListener("radar:avisos", desenharAvisos);
+  const st = t => { const e = $("av-st"); if (e) e.textContent = t; };
+  $("avisos").addEventListener("click", async e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.del) { R.removerAviso(b.dataset.del); return; }
+    if (b.id === "av-teto") {
+      const existentes = new Set(R.avisosLista().filter(a => a.nota === "Abaixo do preço-teto (Barsi)").map(a => a.t));
+      let n = 0;
+      for (const p of POS) {
+        const a = ATIVOS[p.t]; if (!a || a.c !== "acoes") continue;
+        const teto = R.barsi(a, R.dyAlvo()).teto;
+        if (teto && a.preco > teto && !existentes.has(p.t)) { R.novoAviso({ t: p.t, classe: "acoes", cond: "<=", p: +teto.toFixed(2), nota: "Abaixo do preço-teto (Barsi)" }); n++; }
+      }
+      aviso(n ? `${n} ${n === 1 ? "aviso criado" : "avisos criados"}: você será avisado quando a cotação cair até o preço-teto.` : "Nenhuma ação da carteira está acima do teto agora (ou os avisos já existem).");
+      return;
+    }
+    if (b.id === "av-criar") {
+      const al = "abcdefghijklmnopqrstuvwxyz0123456789", r = crypto.getRandomValues(new Uint8Array(24));
+      const canal = "radarb3-" + [...r].map(x => al[x % al.length]).join("");
+      try { localStorage.setItem("radar-ntfy", canal); } catch (e2) { st("Não foi possível salvar neste navegador."); return; }
+      desenharAvisos(); st("Enviando os avisos…");
+      const res = await R.sincronizarAvisos(); st(res.ok ? "Canal criado. Siga os passos acima." : res.erro);
+      return;
+    }
+    if (b.id === "av-testar") {
+      st("Enviando…");
+      try {
+        const r = await fetch("https://radar-assistente.gefersonmarques.workers.dev/avisos/teste", { method: "POST", referrerPolicy: "no-referrer", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topico: R.canalNtfy() }) });
+        const j = await r.json().catch(() => ({}));
+        st(r.ok ? "Teste enviado. Chegou no celular?" : (j.erro || "Falhou."));
+      } catch (e2) { st("Sem conexão com o servidor do site."); }
+      return;
+    }
+    if (b.id === "av-sync") { st("Enviando…"); const res = await R.sincronizarAvisos(); st(res.ok ? "Avisos atualizados no servidor." : res.erro); return; }
+    if (b.id === "av-desligar") {
+      await R.sincronizarAvisos([], R.canalNtfy());
+      try { localStorage.removeItem("radar-ntfy"); } catch (e2) {}
+      desenharAvisos(); st("Desligado. Os avisos continuam valendo com o site aberto.");
+    }
+  });
+}

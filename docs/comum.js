@@ -293,6 +293,99 @@
     });
   }
 
+  // ---------------------------------------------------------------- avisos de preço
+  // Ficam neste navegador (localStorage). Com a página aberta, são conferidos a cada minuto e avisam por
+  // notificação do navegador. Com o celular ligado (app ntfy), uma cópia vai para o servidor do site,
+  // que confere a cada 5 minutos mesmo com o site fechado.
+  const URL_AVISOS = "https://radar-assistente.gefersonmarques.workers.dev/avisos";
+  const lerJSON = (k, d) => { try { return JSON.parse(localStorage.getItem(k) || "null") ?? d; } catch (e) { return d; } };
+  const gravarJSON = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } };
+  const avisosLista = () => lerJSON("radar-avisos", []);
+  const canalNtfy = () => { try { return localStorage.getItem("radar-ntfy") || ""; } catch (e) { return ""; } };
+  async function sincronizarAvisos(lista = avisosLista(), canal = canalNtfy()) {
+    if (!canal) return { ok: true, local: true };
+    try {
+      const r = await fetch(URL_AVISOS, { method: "POST", referrerPolicy: "no-referrer", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topico: canal, avisos: lista.map(({ id, t, sym, cond, p, nota }) => ({ id, t, sym, cond, p, nota })) }) });
+      const j = await r.json().catch(() => ({}));
+      return r.ok ? { ok: true } : { ok: false, erro: j.erro || "Falha ao sincronizar com o celular." };
+    } catch (e) { return { ok: false, erro: "Sem conexão com o servidor do site." }; }
+  }
+  function salvarAvisos(lista) { gravarJSON("radar-avisos", lista); sincronizarAvisos(lista); document.dispatchEvent(new CustomEvent("radar:avisos")); }
+  function novoAviso({ t, classe, sym: simb, cond, p, nota }) {
+    const sym = simb || simbolo(classe || "acoes", { t });
+    if (!sym || !(p > 0)) return null;
+    const a = { id: Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), t, classe: classe || "acoes", sym, cond: cond === "<=" ? "<=" : ">=", p: +p, nota: String(nota || "").slice(0, 80), criado: new Date().toISOString() };
+    salvarAvisos([...avisosLista(), a]);
+    if ("Notification" in window && Notification.permission === "default") Notification.requestPermission().catch(() => {});
+    return a;
+  }
+  function removerAviso(id) { salvarAvisos(avisosLista().filter(a => a.id !== id)); }
+  function toast(msg) {
+    let el = document.getElementById("toast-aviso");
+    if (!el) { el = document.createElement("div"); el.id = "toast-aviso"; el.className = "toast-aviso"; el.setAttribute("role", "alert"); document.body.append(el); }
+    el.innerHTML = msg + '<button type="button" aria-label="Fechar">✕</button>';
+    el.hidden = false; el.querySelector("button").onclick = () => { el.hidden = true; };
+  }
+  async function conferirAvisos() {
+    const lista = avisosLista();
+    if (!lista.length || document.hidden) return;
+    const q = await cotacoesAgora(lista.map(a => a.sym));
+    const bateram = lista.filter(a => { const p = q[a.sym]?.p; return p > 0 && (a.cond === ">=" ? p >= a.p : p <= a.p); });
+    if (!bateram.length) return;
+    const fmt = v => v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: v < 1 ? 4 : 2 });
+    for (const a of bateram) {
+      const p = q[a.sym].p, txt = `${a.t} está em ${fmt(p)} (aviso: ${a.cond === ">=" ? "acima de" : "abaixo de"} ${fmt(a.p)})${a.nota ? ". " + a.nota : ""}`;
+      try { if ("Notification" in window && Notification.permission === "granted") new Notification(`Radar B3: ${a.t}`, { body: txt, tag: "radar-" + a.id }); } catch (e) {}
+      toast(`<span>🔔 <b>${esc(a.t)}</b> ${esc(txt.slice(a.t.length + 1))}</span>`);
+    }
+    const ids = new Set(bateram.map(a => a.id));
+    const hist = lerJSON("radar-avisos-hist", []);
+    gravarJSON("radar-avisos-hist", [...bateram.map(a => ({ ...a, disparou: new Date().toISOString(), preco: q[a.sym].p })), ...hist].slice(0, 30));
+    salvarAvisos(lista.filter(a => !ids.has(a.id)));
+  }
+  setTimeout(conferirAvisos, 4000); setInterval(conferirAvisos, 60e3);
+
+  // janela "Avisar quando..." usada nas páginas de ativos
+  function janelaAviso({ t, classe, sym, preco, teto, formatar }) {
+    let dlg = document.getElementById("aviso-dlg");
+    if (!dlg) { dlg = document.createElement("dialog"); dlg.id = "aviso-dlg"; dlg.className = "rel-dlg aviso-dlg"; document.body.append(dlg); }
+    const fmt = formatar || (v => "R$ " + f2.format(v));
+    const num = v => String(+(+v).toFixed(v < 1 ? 4 : 2)).replace(".", ",");
+    const atalhos = [preco ? ["−5%", preco * 0.95, "<="] : null, preco ? ["−10%", preco * 0.9, "<="] : null, preco ? ["+5%", preco * 1.05, ">="] : null, preco ? ["+10%", preco * 1.1, ">="] : null,
+      teto ? [`Preço-teto ${fmt(teto)}`, teto, "<="] : null].filter(Boolean);
+    const meus = avisosLista().filter(a => a.t === t);
+    dlg.innerHTML = `<div class="rel-topo"><h2>🔔 Avisar sobre ${esc(t)}</h2><button type="button" class="rel-x" aria-label="Fechar">✕</button></div>
+      <p class="rel-nota">Cotação agora: <b>${preco ? fmt(preco) : "–"}</b>. O aviso dispara uma vez e depois some.</p>
+      <form class="aviso-form" id="aviso-form">
+        <label>Quando o preço ficar <select id="av-cond"><option value="<=">abaixo de ou igual a</option><option value=">=">acima de ou igual a</option></select></label>
+        <label>Preço <input id="av-p" inputmode="decimal" required value="${preco ? num(preco * 0.95) : ""}"></label>
+        <label class="largo">Anotação (opcional) <input id="av-nota" maxlength="80" placeholder="ex.: comprar mais 100"></label>
+        <div class="aviso-atalhos">${atalhos.map(([r, v, c]) => `<button type="button" class="sec" data-v="${v}" data-c="${c}">${esc(r)}</button>`).join("")}</div>
+        <div class="rel-acoes"><span id="av-status" role="status"></span><button type="submit" class="btn">Criar aviso</button></div>
+      </form>
+      ${meus.length ? `<div class="aviso-lista"><b>Avisos ativos de ${esc(t)}</b>${meus.map(a => `<div><span>${a.cond === ">=" ? "Acima de" : "Abaixo de"} ${fmt(a.p)}${a.nota ? " · " + esc(a.nota) : ""}</span><button type="button" class="sec" data-del="${a.id}">Apagar</button></div>`).join("")}</div>` : ""}
+      <p class="rel-nota">${canalNtfy() ? "📱 Também chega no celular (app ntfy), mesmo com o site fechado." : 'Com o site aberto, o aviso aparece aqui e como notificação do navegador. Para receber no celular com o site fechado, ligue em <a href="carteira.html#avisos">Minha carteira → Avisos</a>.'}</p>`;
+    dlg.querySelector(".rel-x").onclick = () => dlg.close();
+    dlg.onclick = e => {
+      if (e.target === dlg) dlg.close();
+      const b = e.target.closest("button[data-v]"); if (b) { dlg.querySelector("#av-p").value = num(+b.dataset.v); dlg.querySelector("#av-cond").value = b.dataset.c; }
+      const d = e.target.closest("button[data-del]"); if (d) { removerAviso(d.dataset.del); janelaAviso({ t, classe, sym, preco, teto, formatar }); }
+    };
+    dlg.querySelector("#aviso-form").onsubmit = e => {
+      e.preventDefault();
+      const bruto = String(dlg.querySelector("#av-p").value).trim().replace(/^R\$\s*/, "");
+      const p = parseFloat(bruto.includes(",") ? bruto.replace(/\./g, "").replace(",", ".") : bruto);
+      if (!(p > 0)) { dlg.querySelector("#av-status").textContent = "Digite um preço válido."; return; }
+      const cond = dlg.querySelector("#av-cond").value;
+      if (preco && ((cond === ">=" && preco >= p) || (cond === "<=" && preco <= p))) { dlg.querySelector("#av-status").textContent = "O preço já está nesse nível agora."; return; }
+      novoAviso({ t, classe, sym, cond, p, nota: dlg.querySelector("#av-nota").value });
+      janelaAviso({ t, classe, sym, preco, teto, formatar });
+      dlg.querySelector("#av-status").textContent = "Aviso criado!";
+    };
+    if (!dlg.open) dlg.showModal();
+  }
+
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", montarMenu); else montarMenu();
   document.addEventListener("DOMContentLoaded", () => { if (!document.getElementById("jump")?.dataset.ligado) ligarBusca([]); });
 
@@ -379,5 +472,5 @@
     return { teto, desconto, dy5: o.pm5 && o.preco ? o.pm5 / o.preco : null, crit, ok, limiteDiv: limiteDivida(o) };
   }
 
-  window.R = { sugerir, procurar, sem, buscaDados, simbolo, cotacoesAgora, aplicarCotacao, aoVivo, rotuloVivo, dyAlvo, definirDyAlvo, barsi, nf, f0, f1, f2, esc, pct, sinal, brl, big, numero, logo, spark, ligarBusca, tickerOk, idOk, icone, CATS, linkAtivo, carregar };
+  window.R = { avisosLista, novoAviso, removerAviso, sincronizarAvisos, janelaAviso, canalNtfy, conferirAvisos, sugerir, procurar, sem, buscaDados, simbolo, cotacoesAgora, aplicarCotacao, aoVivo, rotuloVivo, dyAlvo, definirDyAlvo, barsi, nf, f0, f1, f2, esc, pct, sinal, brl, big, numero, logo, spark, ligarBusca, tickerOk, idOk, icone, CATS, linkAtivo, carregar };
 })();

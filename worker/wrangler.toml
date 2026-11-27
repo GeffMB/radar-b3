@@ -12,5 +12,9 @@ keep_vars = true          # não apaga variáveis criadas no painel (ex.: MODELO
 binding = "LIMITES"
 id = "2ca6bccaedc84e02bc504899a1f2de87"
 
+# Avisos de preço: confere a cada 5 minutos, de segunda a sexta, das 9h às 19h de Brasília (12h–22h UTC)
+[triggers]
+crons = ["*/5 12-22 * * 1-5"]
+
 [observability]
 enabled = true            # mantém os registros (logs) no painel

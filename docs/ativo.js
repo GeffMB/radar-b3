@@ -83,13 +83,17 @@ function desenharHero() {
     <div class="hero-id">${semLogo ? `<span class="logo mono hero-ic" style="--ls:64px;--h:170">${R.icone(CLASSE, "")}</span>` : logo(A, 64)}
       <div><h1>${titulo}</h1>
         <div class="sub">${sub} · <a href="mercado.html?c=${CLASSE}">${NOMES[CLASSE]}</a>${grupo ? ` · <span class="badge">${esc(grupo)}</span>` : ""}</div>
-        ${links()}</div></div>
+        ${links()}${simboloYahoo() ? '<div class="hero-btns"><button type="button" class="btn" id="btn-aviso">🔔 Avisar</button></div>' : ""}</div></div>
     ${pos != null ? `<div class="range52"><span class="label">Faixa de 52 semanas</span><div class="bar"><span class="dot" style="left:${Math.max(0, Math.min(100, pos))}%"></span></div>
       <div class="ends"><span>${moeda(A.min52)}</span><span>${moeda(A.max52)}</span></div></div>` : ""}
     <div class="price"><span class="v">${moeda(A.preco)}</span>${A.brl ? `<span class="note">≈ ${brl(A.brl)}${A.un_brl ? " " + esc(A.un_brl.replace("R$", "")) : ""}</span>` : ""}<span class="d ${cls(A.var)}">${sinal(A.var, 2)} no dia</span>
       <span class="note quando">Fechamento de ${dataBR(A.data)}</span></div>`;
   const sym = simboloYahoo();
   if (sym && window.Candles) Candles.topoAoVivo($("hero").querySelector(".price"), sym, v => moeda(v), new Date(A.data + "T23:59:00"));
+  if ($("btn-aviso")) $("btn-aviso").onclick = async () => {
+    const q = (await R.cotacoesAgora([sym]))[sym];       // preço de agora, direto do servidor do site
+    R.janelaAviso({ t: A.t, classe: CLASSE, sym, preco: q?.p > 0 ? q.p : A.preco, formatar: v => moeda(v) });
+  };
 }
 
 function links() {

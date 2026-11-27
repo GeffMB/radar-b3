@@ -107,7 +107,7 @@ function render(a, det, pares, dados){
       <div>
         <h1>${esc(a.t)}</h1>
         <div class="sub"><b>${esc(a.n)}</b> · ${esc(a.setor)} · valor de mercado ${big(a.mc)}</div>
-        <div class="hero-btns"><a class="btn" id="cmp" href="comparar.html?t=${encodeURIComponent(a.t)}">Comparar com outras</a><button type="button" class="btn" id="btn-rel" title="Texto com preço, tendência, indicadores, Barsi, proventos e agenda para copiar">📋 Relatório</button></div>
+        <div class="hero-btns"><a class="btn" id="cmp" href="comparar.html?t=${encodeURIComponent(a.t)}">Comparar com outras</a><button type="button" class="btn" id="btn-rel" title="Texto com preço, tendência, indicadores, Barsi, proventos e agenda para copiar">📋 Relatório</button><button type="button" class="btn" id="btn-aviso" title="Avisar quando o preço chegar a um nível">🔔 Avisar</button></div>
       </div>
     </div>
     ${r52}
@@ -268,6 +268,11 @@ function ligarRelatorio(a, det, pares, quando){
   const b = $("btn-rel"); if (!b) return;
   if (!window.Relatorio || !window.Candles) { b.hidden = true; return; }
   b.onclick = () => Relatorio.abrir({ a, det, pares, prov: B3PROV, quando });
+  const av = $("btn-aviso");
+  if (av) av.onclick = async () => {
+    const q = (await R.cotacoesAgora([a.t + ".SA"]))[a.t + ".SA"];   // preço de agora
+    R.janelaAviso({ t: a.t, classe: "acoes", preco: q?.p > 0 ? q.p : a.preco, teto: R.barsi(a, R.dyAlvo()).teto });
+  };
 }
 
 function configurarAssistente(a, det, pares, quando){
