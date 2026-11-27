@@ -6,3 +6,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: python3 ferramentas/sondar.py
+        env: { CF: "${{ secrets.CLOUDFLARE_API_TOKEN }}" }
