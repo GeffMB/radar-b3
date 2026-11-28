@@ -48,8 +48,10 @@ async function achar(texto) {
   const q = sem(texto).trim(), qt = q.replace(/[^A-Z0-9^=.-]/g, "");
   if (!q) return null;
   const busca = await site("mercado/busca.json");
+  const palavras = q.split(/\s+/).filter(w => w.length >= 3);
   let it = busca.find(x => sem(x[0]) === qt) || busca.find(x => sem(x[0]).startsWith(qt) && qt.length >= 4)
-    || busca.find(x => sem(x[1]).startsWith(q)) || busca.find(x => (" " + sem(x[1])).includes(" " + q));
+    || busca.find(x => sem(x[1]).startsWith(q)) || busca.find(x => (" " + sem(x[1])).includes(" " + q))
+    || (palavras.length ? busca.find(x => { const n = " " + sem(x[1]) + " "; return palavras.every(w => n.includes(" " + w)); }) : null);
   if (!it) return null;
   const [t, , classe] = it;
   if (classe === "acoes") { const d = await site("dados.json"); const a = d.acoes.find(x => x.t === t); return a ? { classe, a, sym: t + ".SA" } : null; }
@@ -97,7 +99,7 @@ export function criarBot(env, ctx, buscarLote) {
   const estado = async () => ({ chat: null, alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [], variacao: 5, noticias: true, convidados: [], convites: [], ...((await KV.get("tg:estado", "json")) || {}) });
   // cada pessoa tem seus próprios alertas, ações seguidas e ajustes: o dono em "tg:estado", convidados em "tg:u:<chat>"
   const salvar = e => KV.put(e._k || "tg:estado", JSON.stringify(e));
-  const PADRAO_U = { alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [], variacao: 5, noticias: true };
+  const PADRAO_U = { alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [], variacao: 5, noticias: true, simples: true };
   const perfil = async chat => ({ ...PADRAO_U, ...((await KV.get("tg:u:" + chat, "json")) || {}), _k: "tg:u:" + chat, chat });
   const precos = async syms => { const out = {}; const l = [...new Set(syms.filter(Boolean))]; for (let i = 0; i < l.length; i += 20) Object.assign(out, await buscarLote(l.slice(i, i + 20).sort())); return out; };
 
@@ -210,6 +212,9 @@ Material de estudo, não é recomendação de investimento.`;
     const lista = d.acoes.filter(a => a.best && a.pm5 > 0).map(a => { const p = q[a.t + ".SA"]?.p > 0 ? q[a.t + ".SA"].p : a.preco; return { a, p, b: barsi({ ...a, preco: p }, est.alvo) }; })
       .filter(x => x.b.ok).sort((x, y) => y.b.desconto - x.b.desconto);
     if (!lista.length) return `Nenhuma ação passa em todos os critérios com DY desejado de ${pct(est.alvo, 1)}. Experimente /dy 5`;
+    if (est.simples) return [`💰 Boas pagadoras pelo método Barsi`, `(${lista.length} ações passam em todos os critérios hoje)`, "",
+      ...lista.slice(0, 12).map((x, i) => `${i + 1}. ${nomeCurto(x.a.n) || x.a.n} (${x.a.t}) — R$ ${nf(x.p)}\n    dividendos: em média ${nf(x.a.pm5 / x.p * 100, 1)}% ao ano (média de 5 anos)`),
+      "", "Escreva o nome de uma delas para ver mais detalhes.", "Material de estudo, não é recomendação de compra."].join("\n");
     return [`✅ ${lista.length} ações passam no método Barsi (DY ${pct(est.alvo, 1)})`, "",
       ...lista.slice(0, 15).map((x, i) => `${i + 1}. ${x.a.t} ${R$(x.p)} · teto ${R$(x.b.teto)} (${pct(x.b.desconto, 0)} abaixo) · DY 5a ${pct(x.a.pm5 / x.p)}`),
       lista.length > 15 ? `\n…e mais ${lista.length - 15}. Lista completa: ${SITE}` : ""].join("\n");
@@ -274,6 +279,7 @@ Material de estudo, não é recomendação de investimento.`;
     est.alertas = (est.alertas || []).slice(-39);
     est.alertas.push({ id: Date.now().toString(36), t: x.a.t, sym: x.sym, cond, p: +alvo.toFixed(alvo < 1 ? 4 : 2), nota: nota.trim().slice(0, 80) });
     await salvar(est);
+    if (est.simples) return `🔔 Combinado! Aviso quando ${x.a.t} ${cond === ">=" ? "subir para" : "cair para"} R$ ${nf(alvo, alvo < 1 ? 4 : 2)} (agora está R$ ${nf(agora, agora < 1 ? 4 : 2)}).\nConfiro a cada 5 minutos nos dias de pregão. Para ver ou apagar, toque em 🔔 Meus alertas.`;
     return `🔔 Alerta criado: ${x.a.t} ${cond === ">=" ? "subir a" : "cair a"} ${nf(alvo, alvo < 1 ? 4 : 2)} (agora ${nf(agora, agora < 1 ? 4 : 2)}).\nConfiro a cada 5 minutos, de segunda a sexta, das 9h às 19h.`;
   }
 
@@ -290,12 +296,26 @@ Material de estudo, não é recomendação de investimento.`;
     const ok = [], nao = [];
     for (const p of pedidos) { const x = await achar(p); if (x) { if (!est.seguindo.includes(x.a.t)) est.seguindo.push(x.a.t); ok.push(x.a.t); } else nao.push(p); }
     est.seguindo = est.seguindo.slice(-40); await salvar(est);
+    if (u.simples) return (ok.length ? `⭐ Pronto! Agora acompanho ${ok.join(", ")} para você.\n\nVou avisar sozinho:\n• quando for pagar dividendo (na véspera e no dia)\n• se subir ou cair ${u.variacao || 5}% ou mais no dia\n• quando sair notícia\n\nPara ver suas ações, toque em ⭐ Minhas ações.` : "") + (nao.length ? `\nNão encontrei: ${nao.join(", ")}` : "");
     return (ok.length ? `⭐ Seguindo: ${ok.join(", ")}.\nAvisos: véspera e dia da data com, dia do pagamento, entrada ou saída do Barsi, variação de ±${u.variacao || 5}% no dia e notícias novas.` : "") + (nao.length ? `\nNão achei: ${nao.join(", ")}` : "");
   }
   async function cmdSeguindo(u) {
     if (!u.seguindo.length) return "Você não segue nenhuma ação ainda. Exemplo: /seguir BBAS3 TAEE11";
     const xs = (await Promise.all([...new Set(u.seguindo)].map(t => achar(t)))).filter(Boolean);
     const q = await precos(xs.map(x => x.sym));
+    if (u.simples) {
+      const S = ["⭐ Suas ações"];
+      for (const { classe, a, sym } of xs) {
+        const z = q[sym], p = z?.p > 0 ? z.p : a.preco, vd = z?.pc > 0 ? z.p / z.pc - 1 : a.var;
+        const hoje = vd == null ? "" : vd > 0.0005 ? ` · hoje subiu ${nf(vd * 100, 1)}% 🟢` : vd < -0.0005 ? ` · hoje caiu ${nf(-vd * 100, 1)}% 🔴` : " · hoje estável";
+        let extra = "";
+        if (classe === "acoes") { const b = barsi({ ...a, preco: p }, u.alvo); if (b.teto) extra = `\n   Barsi: ${b.ok ? "✅ passa" : "❌ não passa"} · ${b.desconto >= 0 ? nf(b.desconto * 100, 0) + "% abaixo" : nf(-b.desconto * 100, 0) + "% acima"} do teto`; }
+        else if (classe === "fiis" && a.ult_prov) extra = `\n   Último rendimento: R$ ${nf(a.ult_prov.v, 2)} por cota`;
+        S.push("", `${nomeCurto(a.n) || a.n} (${a.t})\n   R$ ${nf(p, p < 1 ? 4 : 2)}${hoje}${extra}`);
+      }
+      S.push("", "Para ver os detalhes de uma ação, escreva o nome dela. Para parar de acompanhar, escreva: parar de seguir BBAS3");
+      return S.join("\n");
+    }
     const L = [`⭐ Você segue ${xs.length} (DY desejado ${pct(u.alvo, 0)})`];
     for (const { classe, a, sym } of xs) {
       const z = q[sym], p = z?.p > 0 ? z.p : a.preco, vd = z?.pc > 0 ? z.p / z.pc - 1 : a.var;
@@ -360,6 +380,78 @@ Material de estudo, não é recomendação de investimento.`;
     return L;
   }
 
+  // ---------------------------------------------------------------- modo simples (linguagem do dia a dia, botões com palavras)
+  const BOTOES = { "📊 Mercado hoje": "mercado", "💰 Boas pagadoras": "barsi", "⭐ Minhas ações": "seguindo", "🗓️ Agenda da semana": "agenda", "🔔 Meus alertas": "alertas", "❓ Como usar": "ajuda" };
+  const TECLADO_SIMPLES = { reply_markup: { keyboard: [["📊 Mercado hoje", "💰 Boas pagadoras"], ["⭐ Minhas ações", "🗓️ Agenda da semana"], ["🔔 Meus alertas", "❓ Como usar"]], resize_keyboard: true, is_persistent: true } };
+  const AJUDA_SIMPLES = `👋 Olá! Eu sou o robô do Radar B3.
+
+É só escrever o nome ou o código de uma empresa que eu mostro o preço e se ela paga bons dividendos. Por exemplo:
+• Petrobras
+• Banco do Brasil
+• BBAS3
+
+Ou toque nos botões aqui embaixo 👇
+📊 Mercado hoje — como estão a Bolsa e o dólar
+💰 Boas pagadoras — ações que passam no método Barsi
+⭐ Minhas ações — as que você acompanha
+🗓️ Agenda da semana — datas importantes da economia
+🔔 Meus alertas — avisos de preço que você criou
+
+Para acompanhar uma ação, toque em "⭐ Seguir" embaixo do preço dela. Eu aviso sozinho quando ela for pagar dividendo, quando subir ou cair muito e quando sair notícia.
+
+Todo dia útil, às 8h30, mando um resumo do mercado.
+
+Isto é material de estudo, não é recomendação de compra ou venda.`;
+  const teclado = u => u.simples ? TECLADO_SIMPLES : u === est0 ? TECLADO : TECLADO_CONVIDADO;
+  let est0 = null;
+  const botoesAtivo = (t, u) => ({ reply_markup: { inline_keyboard: [
+    [(u.seguindo || []).includes(t) ? { text: "✖️ Parar de seguir", callback_data: "dx:" + t } : { text: "⭐ Seguir", callback_data: "seg:" + t }, { text: "📰 Notícias", callback_data: "not:" + t }],
+    [{ text: "💰 Dividendos", callback_data: "prov:" + t }, { text: "🔔 Avisar preço", callback_data: "av:" + t }]] } });
+
+  async function precoSimples(x, u) {
+    const { classe, a, sym } = x;
+    const q = sym ? (await precos([sym]))[sym] : null;
+    const p = q?.p > 0 ? q.p : a.preco, vd = q?.pc > 0 ? q.p / q.pc - 1 : a.var;
+    const un = ["acoes", "fiis", "etfs", "bdrs", "moedas"].includes(classe) ? "R$ " : classe === "stocks" ? "US$ " : "";
+    const val = v => un + nf(v, v < 1 ? 4 : 2) + (classe === "indices" ? " pontos" : "");
+    const mov = (v, d = 1) => v == null ? "—" : v > 0.0005 ? `subiu ${nf(v * 100, d)}% 🟢` : v < -0.0005 ? `caiu ${nf(-v * 100, d)}% 🔴` : "ficou estável";
+    const L = [`${classe === "fiis" ? "🏢" : classe === "acoes" ? "🏦" : "📈"} ${nomeCurto(a.n) || a.n} (${a.t})`, "", `Preço agora: ${val(p)}`, `Hoje: ${mov(vd, 2)}`];
+    const r12 = a.r12 ?? a.var12;
+    if (r12 != null) L.push(`Em 12 meses: ${mov(r12)}${a.rt12 != null ? ` (somando os dividendos: ${mov(a.rt12).replace(/ 🟢| 🔴/, "")})` : ""}`);
+    if (classe === "acoes") {
+      const b = barsi({ ...a, preco: p }, u.alvo), f = a.preco ? p / a.preco : 1;
+      if (a.prov12 > 0) L.push("", `💰 Dividendos: pagou R$ ${nf(a.prov12, 2)} por ação nos últimos 12 meses (cerca de ${nf(a.prov12 / p * 100, 1)}% do preço de hoje).`);
+      else L.push("", "💰 Não pagou dividendos nos últimos 12 meses.");
+      if (b.teto) {
+        L.push("", "📏 Método Barsi", `Preço-teto: ${R$(b.teto)}. É o preço máximo para receber ${nf(u.alvo * 100, 0)}% ao ano em dividendos, pela média dos últimos 5 anos.`);
+        L.push(b.desconto >= 0 ? `O preço está ${nf(b.desconto * 100, 0)}% abaixo do teto.` : `O preço está ${nf(-b.desconto * 100, 0)}% acima do teto (cara pelo método).`);
+        L.push(b.ok ? "✅ Passa em todos os critérios do Barsi." : "❌ Não passa em todos os critérios do Barsi.");
+      }
+      void f;
+    } else if (classe === "fiis") {
+      if (a.ult_prov) L.push("", `💰 Último rendimento: R$ ${nf(a.ult_prov.v, 2)} por cota em ${dataBR(a.ult_prov.d)}.`);
+      if (a.dy) L.push(`Em 12 meses rendeu cerca de ${nf(a.dy * 100, 1)}% do preço em rendimentos.`);
+    }
+    L.push("", "Toque nos botões abaixo 👇");
+    return L.join("\n");
+  }
+
+  // entende frases simples: "petrobras", "quanto está o banco do brasil?", "seguir taesa", "notícias da vale"
+  const PALAVRAS_VAZIAS = /\b(QUANTO|ESTA|TA|EST[AÁ]|PRECO|COTACAO|VALOR|ACAO|ACOES|DA|DO|DE|DAS|DOS|A|O|AS|OS|HOJE|AGORA|ME|MOSTRA|MOSTRE|QUERO|VER|SABER|POR|FAVOR|COMO)\b/g;
+  function intencao(txt) {
+    const t = sem(txt).replace(/[?!.,]/g, " ").replace(/\s+/g, " ").trim();
+    let m;
+    if ((m = /^(?:PARAR DE SEGUIR|DEIXAR DE SEGUIR|NAO SEGUIR) (.+)$/.exec(t))) return ["deixar", m[1]];
+    if ((m = /^(?:SEGUIR|ACOMPANHAR) (.+)$/.exec(t))) return ["seguir", m[1]];
+    if ((m = /^NOTICIAS? (?:D[AEO]S? )?(.+)$/.exec(t))) return ["noticias", m[1]];
+    if ((m = /^(?:DIVIDENDOS?|PROVENTOS?|RENDIMENTOS?) (?:D[AEO]S? )?(.+)$/.exec(t))) return ["proventos", m[1]];
+    if ((m = /^(?:AVISAR?|ALERTA|ME AVISE) (?:QUANDO )?(.+)$/.exec(t))) return ["alerta", m[1].replace(/\b(CHEGAR|CHEGAR A|EM|FOR|PARA)\b/g, " ").replace(/\s+/g, " ").trim()];
+    if (/^(OI|OLA|BOM DIA|BOA TARDE|BOA NOITE|AJUDA|MENU|INICIO|COMECAR)$/.test(t)) return ["ajuda", ""];
+    if (/^(MERCADO|BOLSA|COMO ESTA A BOLSA|COMO ESTA O MERCADO)$/.test(t)) return ["mercado", ""];
+    if (/^(OBRIGAD[OA]|VALEU|BRIGADO|OK|BELEZA|TA BOM|ENTENDI)$/.test(t)) return ["obrigado", ""];
+    return ["preco", t.replace(PALAVRAS_VAZIAS, " ").replace(/\s+/g, " ").trim() || t];
+  }
+
   // ---------------------------------------------------------------- convidados
   function cmdConvidar(est) {
     const al = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(8));
@@ -382,7 +474,7 @@ Material de estudo, não é recomendação de investimento.`;
     est.convites = est.convites.filter(x => x !== c);
     est.convidados = (est.convidados || []).filter(x => String(x.chat) !== String(chat)).concat([{ chat, nome, desde: new Date().toISOString().slice(0, 10) }]).slice(-10);
     await salvar(est);
-    await enviar(chat, "✅ Bem-vindo! Você agora pode usar o bot do Radar B3.\n\n" + AJUDA_CONVIDADO.replace("%DY%", "6%"), TECLADO_CONVIDADO);
+    await enviar(chat, "✅ Bem-vindo! Você já pode usar o robô do Radar B3.\n\n" + AJUDA_SIMPLES, TECLADO_SIMPLES);
     await enviar(est.chat, `👥 ${nome || "Alguém"} entrou com o seu convite. /convidados para ver ou remover.`);
   }
 
@@ -406,8 +498,20 @@ Material de estudo, não é recomendação de investimento.`;
       return;
     }
     const u = dono ? est : await perfil(chat);
+    est0 = est;
     if (cq) {
       await api("answerCallbackQuery", { callback_query_id: cq.id });
+      const [acao, tk] = String(cq.data || "").split(":");
+      try {
+        if (acao === "seg") return enviar(chat, await cmdSeguir(tk, u));
+        if (acao === "dx") { u.seguindo = u.seguindo.filter(x => x !== tk); await salvar(u); return enviar(chat, `Você não segue mais ${tk}.`); }
+        if (acao === "not") return enviar(chat, await cmdNoticias(tk, u));
+        if (acao === "prov") return enviar(chat, await cmdProventos(tk));
+        if (acao === "av") {
+          u.pendente = { acao: "alerta", t: tk, ate: Date.now() + 15 * 60e3 }; await salvar(u);
+          return enviar(chat, `🔔 Qual preço de ${tk} você quer que eu avise?\nEscreva só o número, por exemplo: 15,50\n(Eu aviso quando o preço chegar lá, subindo ou caindo.)`);
+        }
+      } catch (e) { return enviar(chat, "⚠️ Não consegui agora. Tente de novo em 1 minuto."); }
       if (cq.data?.startsWith("del:")) { u.alertas = (u.alertas || []).filter(a => a.id !== cq.data.slice(4)); await salvar(u); const r = listaAlertas(u); return enviar(chat, "Apagado. " + r.texto, r.extra || {}); }
       if (!dono) return;
       const alvoC = cq.data?.slice(4);
@@ -415,20 +519,38 @@ Material de estudo, não é recomendação de investimento.`;
       if (cq.data?.startsWith("del:")) { est.alertas = (est.alertas || []).filter(a => a.id !== cq.data.slice(4)); await salvar(est); const r = listaAlertas(est); await enviar(chat, "Apagado. " + r.texto, r.extra || {}); }
       return;
     }
-    const txt = (msg.text || "").trim();
+    let txt = (msg.text || "").trim();
     if (!txt) return;
-    let [, cmd, arg] = /^\/?([^\s@]+)(?:@\S+)?\s*(.*)$/s.exec(txt) || [];
-    cmd = sem(cmd).toLowerCase();
+    // resposta a "Qual preço você quer que eu avise?"
+    if (u.pendente && u.pendente.ate > Date.now() && /^R?\$?\s*\d[\d.,]*$/.test(txt)) {
+      const t = u.pendente.t; u.pendente = null;
+      const r = await cmdAlerta(`${t} ${txt.replace(/^R?\$?\s*/, "")}`, u);
+      return enviar(chat, r, u.simples ? TECLADO_SIMPLES : {});
+    }
+    if (BOTOES[txt]) txt = "/" + BOTOES[txt];
+    let cmd, arg;
+    if (txt.startsWith("/")) { [, cmd, arg] = /^\/([^\s@]+)(?:@\S+)?\s*(.*)$/s.exec(txt) || []; cmd = sem(cmd).toLowerCase(); }
+    else [cmd, arg] = intencao(txt);
     let resp;
     try {
       const soDono = ["ligar", "convidar", "convidados", "remover"];
+      if ((cmd === "start" || cmd === "ajuda" || cmd === "help") && u.simples) return enviar(chat, AJUDA_SIMPLES + "\n\n" + (convidado ? "Comandos para quem gosta: /comandos" : "Comandos completos: /comandos · /simples desliga este modo"), TECLADO_SIMPLES);
+      if (cmd === "comandos") return enviar(chat, (convidado ? AJUDA_CONVIDADO : AJUDA).replace("%DY%", pct(u.alvo, 0)), teclado(u));
+      if (cmd === "simples") { u.simples = !u.simples; await salvar(u); return enviar(chat, u.simples ? "Modo simples ligado: respostas em linguagem do dia a dia e botões com palavras." : "Modo simples desligado: respostas completas com indicadores.", teclado(u)); }
       if (convidado && (cmd === "start" || cmd === "ajuda" || cmd === "help")) return enviar(chat, AJUDA_CONVIDADO.replace("%DY%", pct(u.alvo, 0)), TECLADO_CONVIDADO);
       if (convidado && soDono.includes(cmd)) return enviar(chat, "Esse comando é só do dono do bot. Envie /ajuda para ver o que você pode usar.");
       if (cmd === "start" || cmd === "ajuda" || cmd === "help") return enviar(chat, AJUDA.replace("%DY%", pct(est.alvo, 0)), TECLADO);
       else if (cmd === "convidar") { resp = cmdConvidar(est); await salvar(est); }
       else if (cmd === "convidados" || cmd === "remover") { const r = listaConvidados(est); return enviar(chat, r.texto, r.extra || {}); }
       else if (cmd === "entrar") resp = "Você já tem acesso ao bot.";
-      else if (cmd === "preco" || cmd === "cotacao") resp = await cmdPreco(arg, u);
+      else if (cmd === "preco" || cmd === "cotacao") {
+        if (!arg) resp = u.simples ? "Escreva o nome ou o código da empresa, por exemplo: Petrobras" : "Mande o código, por exemplo: /preco BBAS3";
+        else {
+          const x = await achar(arg);
+          if (!x) resp = u.simples ? `Não encontrei "${arg}" 🤔\nTente o nome da empresa (por exemplo: Itaú, Vale, Petrobras) ou o código (ITUB4, VALE3, PETR4).` : `Não achei "${arg}" no Radar B3.`;
+          else return enviar(chat, u.simples ? await precoSimples(x, u) : await cmdPreco(x.a.t, u), botoesAtivo(x.a.t, u));
+        }
+      }
       else if (cmd === "teto") resp = await cmdTeto(arg, u);
       else if (cmd === "barsi") resp = await cmdBarsi(u);
       else if (cmd === "proventos" || cmd === "dividendos") resp = await cmdProventos(arg);
@@ -441,12 +563,12 @@ Material de estudo, não é recomendação de investimento.`;
       else if (cmd === "seguindo") resp = await cmdSeguindo(u);
       else if (cmd === "noticias" || cmd === "noticia") resp = await cmdNoticias(arg, u);
       else if (cmd === "variacao") { const v = parseFloat(String(arg).replace(",", ".").replace("%", "")); if (!(v >= 0 && v <= 50)) resp = `Aviso de variação forte: ${u.variacao ? "±" + u.variacao + "%" : "desligado"}. Para mudar: /variacao 5 (ou /variacao 0 para desligar)`; else { u.variacao = v; await salvar(u); resp = v ? `📈 Aviso quando uma ação seguida subir ou cair ${nf(v, v % 1 ? 1 : 0)}% ou mais no dia (e de novo no dobro disso).` : "Aviso de variação desligado."; } }
-      else if (cmd === "deixar") { const t = sem(arg).replace(/[^A-Z0-9]/g, ""); const antes = u.seguindo.length; u.seguindo = u.seguindo.filter(x => x !== t); await salvar(u); resp = u.seguindo.length < antes ? `Deixou de seguir ${t}.` : `Você não seguia "${arg}". /seguindo mostra a lista.`; }
+      else if (cmd === "deixar") { const xa = await achar(arg).catch(() => null), t = xa ? xa.a.t : sem(arg).replace(/[^A-Z0-9]/g, ""); const antes = u.seguindo.length; u.seguindo = u.seguindo.filter(x => x !== t); await salvar(u); resp = u.seguindo.length < antes ? `Deixou de seguir ${t}.` : `Você não seguia "${arg}". /seguindo mostra a lista.`; }
       else if (cmd === "ligar") resp = await cmdLigar(est);
       else if (cmd === "lembretes") { u.lembretes = !u.lembretes; await salvar(u); resp = u.lembretes ? "⏰ Lembretes 30 min antes de eventos de alto impacto: ligados." : "Lembretes de eventos desligados."; }
       else if (cmd === "resumo") { u.resumo = !u.resumo; await salvar(u); resp = u.resumo ? "☀️ Resumo das 8h30 ligado (dias úteis)." : "Resumo das 8h30 desligado."; }
-      else if (!txt.startsWith("/") && /^[A-Za-z0-9]{4,7}$/.test(txt)) resp = await cmdPreco(txt, u);   // só o código: mostra a cotação
-      else resp = "Não entendi. Envie /ajuda para ver os comandos.";
+      else if (cmd === "obrigado") resp = "De nada! 😊 Qualquer coisa é só escrever o nome de uma empresa.";
+      else resp = u.simples ? "Não entendi 🙂 Escreva o nome de uma empresa (por exemplo: Petrobras) ou toque em ❓ Como usar." : "Não entendi. Envie /ajuda para ver os comandos.";
     } catch (e) { resp = "⚠️ Não consegui responder agora (" + e.message + "). Tente de novo em 1 minuto."; }
     await enviar(chat, resp);
   }
