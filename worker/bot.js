@@ -70,19 +70,36 @@ export async function buscarNoticias(t, nome, classe, dias = 3) {
   const chave = t + "|" + dias, m = MEMO_NOT.get(chave);
   if (m && m.ate > Date.now()) return m.itens;
   const n = classe === "acoes" ? nomeCurto(nome) : "";
-  const q = `"${t}"` + (n && n.length >= 4 ? ` OR "${n}"` : "") + ` when:${dias}d`;
-  const r = await fetch(`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`,
-    { headers: { "User-Agent": "Mozilla/5.0 (radar-b3 bot pessoal)" }, signal: AbortSignal.timeout(12000) });
-  if (!r.ok) throw new Error("notícias " + r.status);
-  const xml = await r.text();
-  const itens = [];
-  for (const bloco of xml.split("<item>").slice(1)) {
-    const tag = k => desescapar((new RegExp(`<${k}[^>]*>([\\s\\S]*?)</${k}>`).exec(bloco) || [])[1]);
-    const fonte = tag("source"), titulo = tag("title").replace(new RegExp("\\s+-\\s+" + fonte.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$"), "");
-    const quando = Date.parse(tag("pubDate"));
-    if (titulo && tag("link")) itens.push({ id: tag("guid").slice(-16) || tag("link").slice(-16), titulo, fonte, link: tag("link"), quando });
+  const UA = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36", "Accept-Language": "pt-BR,pt;q=0.9" };
+  const ler = (xml, fonteTag) => {
+    const itens = [];
+    for (const bloco of xml.split("<item>").slice(1)) {
+      const tag = k => desescapar((new RegExp(`<${k}[^>]*>([\\s\\S]*?)</${k}>`).exec(bloco) || [])[1]);
+      let link = tag("link"), fonte = tag(fonteTag), titulo = tag("title");
+      const real = /[?&]url=([^&]+)/.exec(link);                 // o Bing embrulha o link: usa o endereço original
+      if (real) { try { link = decodeURIComponent(real[1]); } catch (e) {} }
+      if (fonte) titulo = titulo.replace(new RegExp("\\s+-\\s+" + fonte.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$"), "");
+      const quando = Date.parse(tag("pubDate"));
+      if (titulo && link) itens.push({ id: (tag("guid") || link).slice(-24), titulo, fonte, link, quando });
+    }
+    return itens;
+  };
+  let itens = [];
+  // 1º Bing Notícias (responde ao servidor do site); 2º Google Notícias (às vezes bloqueia servidores em nuvem)
+  try {
+    const q = `"${t}"` + (n && n.length >= 4 ? ` OR "${n}"` : "");
+    const r = await fetch(`https://www.bing.com/news/search?q=${encodeURIComponent(q)}&format=rss&setlang=pt-br&cc=BR&qft=${encodeURIComponent('sortbydate="1"')}`, { headers: UA, signal: AbortSignal.timeout(12000) });
+    if (r.ok) itens = ler(await r.text(), "News:Source");
+  } catch (e) {}
+  if (!itens.length) {
+    try {
+      const q = `"${t}"` + (n && n.length >= 4 ? ` OR "${n}"` : "") + ` when:${dias}d`;
+      const r = await fetch(`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`, { headers: UA, signal: AbortSignal.timeout(12000) });
+      if (r.ok) itens = ler(await r.text(), "source");
+    } catch (e) {}
   }
-  itens.sort((a, b) => b.quando - a.quando);
+  const limite = Date.now() - dias * 864e5;
+  itens = itens.filter(x => !x.quando || x.quando >= limite).sort((a, b) => (b.quando || 0) - (a.quando || 0));
   MEMO_NOT.set(chave, { itens, ate: Date.now() + 10 * 60e3 });
   return itens;
 }
@@ -340,7 +357,7 @@ Material de estudo, não é recomendação de investimento.`;
     if (!x) return `Não achei "${arg}" no Radar B3.`;
     const itens = (await buscarNoticias(x.a.t, x.a.n, x.classe, 7)).slice(0, 8);
     if (!itens.length) return `Nenhuma notícia sobre ${x.a.t} nos últimos 7 dias.`;
-    return [`📰 ${x.a.t} — últimas notícias`, ...itens.map(n => `\n• ${n.titulo}\n  ${n.fonte}${n.quando ? " · " + quandoBR(n.quando) : ""}\n  ${n.link}`), "\nFonte: Google Notícias. Confira sempre a notícia original."].join("\n");
+    return [`📰 ${x.a.t} — últimas notícias`, ...itens.map(n => `\n• ${n.titulo}\n  ${n.fonte}${n.quando ? " · " + quandoBR(n.quando) : ""}\n  ${n.link}`), "\nFontes: Bing e Google Notícias. Confira sempre a notícia original."].join("\n");
   }
   async function cmdLigar(est) {
     if (!est.canalSite) {
