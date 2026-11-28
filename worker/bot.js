@@ -69,7 +69,10 @@ export function criarBot(env, ctx, buscarLote) {
     return r.json();
   };
   const estado = async () => ({ chat: null, alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [], convidados: [], convites: [], ...((await KV.get("tg:estado", "json")) || {}) });
-  const salvar = e => KV.put("tg:estado", JSON.stringify(e));
+  // cada pessoa tem seus próprios alertas, ações seguidas e ajustes: o dono em "tg:estado", convidados em "tg:u:<chat>"
+  const salvar = e => KV.put(e._k || "tg:estado", JSON.stringify(e));
+  const PADRAO_U = { alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [] };
+  const perfil = async chat => ({ ...PADRAO_U, ...((await KV.get("tg:u:" + chat, "json")) || {}), _k: "tg:u:" + chat, chat });
   const precos = async syms => { const out = {}; const l = [...new Set(syms.filter(Boolean))]; for (let i = 0; i < l.length; i += 20) Object.assign(out, await buscarLote(l.slice(i, i + 20).sort())); return out; };
 
   async function enviar(chat, texto, extra = {}) {
@@ -80,18 +83,29 @@ export function criarBot(env, ctx, buscarLote) {
     for (let i = 0; i < partes.length; i++) await api("sendMessage", { chat_id: chat, text: partes[i], disable_web_page_preview: true, ...(i === partes.length - 1 ? extra : {}) });
   }
 
-  const AJUDA_CONVIDADO = `📈 Radar B3 no Telegram (convidado)
+  const AJUDA_CONVIDADO = `📈 Radar B3 no Telegram
 
 /preco BBAS3 — cotação ao vivo e indicadores (ação, FII, ETF, BDR, stock, índice, moeda ou commodity)
 /barsi — ações que passam no método Barsi agora
 /teto BBAS3 — preço-teto e critérios do Barsi
+/dy 7 — muda o DY desejado do preço-teto (agora em %DY%)
 /proventos BBAS3 — próximos pagamentos e últimos 12 meses
 /agenda — eventos importantes dos próximos 7 dias
 /mercado — Ibovespa, dólar, S&P 500, petróleo, ouro e juros
 
+🔔 Alertas de preço (conferidos a cada 5 min no pregão)
+/alerta BBAS3 15,50 · /alerta BBAS3 -5% · /alerta BBAS3 teto
+/alertas — lista e apaga
+
+⭐ /seguir BBAS3 TAEE11 — lembretes de proventos e do Barsi · /seguindo · /deixar BBAS3
+
+☀️ /resumo — liga ou desliga o resumo das 8h30
+⏰ /lembretes — liga ou desliga o aviso 30 min antes de Copom, IPCA, payroll e Fed
+
+Seus alertas e ações seguidas são só seus.
 Dica: dá para mandar só o código, por exemplo "PETR4".
 Material de estudo, não é recomendação de investimento.`;
-  const TECLADO_CONVIDADO = { reply_markup: { keyboard: [["/mercado", "/barsi"], ["/agenda", "/ajuda"]], resize_keyboard: true, is_persistent: true } };
+  const TECLADO_CONVIDADO = { reply_markup: { keyboard: [["/mercado", "/barsi"], ["/agenda", "/alertas"], ["/seguindo", "/ajuda"]], resize_keyboard: true, is_persistent: true } };
   const TECLADO = { reply_markup: { keyboard: [["/mercado", "/barsi"], ["/agenda", "/alertas"], ["/seguindo", "/ajuda"]], resize_keyboard: true, is_persistent: true } };
   const AJUDA = `📈 Radar B3 no Telegram
 
@@ -295,13 +309,13 @@ Material de estudo, não é recomendação de investimento.`;
     const codigo = [...r].map(x => al[x % al.length]).join("");
     est.convites = (est.convites || []).filter(c => c.ate > Date.now()).slice(-9);
     est.convites.push({ codigo, ate: Date.now() + 24 * 36e5 });
-    return `👥 Convite criado (vale 24 horas e uma única pessoa). Mande este link para a pessoa:\n\nhttps://t.me/GeffMB_bot?start=${codigo}\n\nEla abre o link e toca em Iniciar. (Ou, dentro do bot, envia /entrar ${codigo})\n\nEla poderá consultar cotações, Barsi, proventos, agenda e mercado. Seus alertas, ações seguidas e códigos continuam só seus.`;
+    return `👥 Convite criado (vale 24 horas e uma única pessoa). Mande este link para a pessoa:\n\nhttps://t.me/GeffMB_bot?start=${codigo}\n\nEla abre o link e toca em Iniciar. (Ou, dentro do bot, envia /entrar ${codigo})\n\nEla poderá usar todos os comandos e terá os próprios alertas, ações seguidas, resumo e lembretes. Os seus continuam só seus.`;
   }
   function listaConvidados(est) {
     const l = est.convidados || [];
     if (!l.length) return { texto: "Nenhum convidado. Crie um convite com /convidar" };
-    return { texto: "👥 Convidados:\n\n" + l.map((c, i) => `${i + 1}. ${c.nome || "sem nome"} — desde ${dataBR(c.desde)} · resumo e lembretes ${c.avisos ? "ligados" : "desligados"}`).join("\n"),
-      extra: { reply_markup: { inline_keyboard: l.map((c, i) => [{ text: `${c.avisos ? "🔕 Desligar" : "🔔 Ligar"} avisos ${i + 1}`, callback_data: "cav:" + c.chat }, { text: `🗑 Remover ${i + 1}`, callback_data: "crm:" + c.chat }]) } } };
+    return { texto: "👥 Convidados:\n\n" + l.map((c, i) => `${i + 1}. ${c.nome || "sem nome"} — desde ${dataBR(c.desde)}`).join("\n"),
+      extra: { reply_markup: { inline_keyboard: l.map((c, i) => [{ text: `🗑 Remover ${i + 1}. ${c.nome || ""}`.trim(), callback_data: "crm:" + c.chat }]) } } };
   }
   async function entrar(chat, de, arg, est) {
     const cod = String(arg || "").trim().toUpperCase();
@@ -309,10 +323,10 @@ Material de estudo, não é recomendação de investimento.`;
     if (!c) return enviar(chat, "Este bot é privado. Se você recebeu um convite, envie /entrar seguido do código (ele vale 24 horas).");
     const nome = [de?.first_name, de?.last_name].filter(Boolean).join(" ") || (de?.username ? "@" + de.username : "");
     est.convites = est.convites.filter(x => x !== c);
-    est.convidados = (est.convidados || []).filter(x => String(x.chat) !== String(chat)).concat([{ chat, nome, desde: new Date().toISOString().slice(0, 10), avisos: false }]).slice(-10);
+    est.convidados = (est.convidados || []).filter(x => String(x.chat) !== String(chat)).concat([{ chat, nome, desde: new Date().toISOString().slice(0, 10) }]).slice(-10);
     await salvar(est);
-    await enviar(chat, "✅ Bem-vindo! Você agora pode usar o bot do Radar B3.\n\n" + AJUDA_CONVIDADO, TECLADO_CONVIDADO);
-    await enviar(est.chat, `👥 ${nome || "Alguém"} entrou com o seu convite. /convidados para ligar o resumo das 8h30 e os lembretes para essa pessoa, ou para remover.`);
+    await enviar(chat, "✅ Bem-vindo! Você agora pode usar o bot do Radar B3.\n\n" + AJUDA_CONVIDADO.replace("%DY%", "6%"), TECLADO_CONVIDADO);
+    await enviar(est.chat, `👥 ${nome || "Alguém"} entrou com o seu convite. /convidados para ver ou remover.`);
   }
 
   // ---------------------------------------------------------------- entrada
@@ -334,12 +348,13 @@ Material de estudo, não é recomendação de investimento.`;
       if (m) return enviar(chat, "Este bot é privado. Se você recebeu um convite, envie /entrar seguido do código.");
       return;
     }
+    const u = dono ? est : await perfil(chat);
     if (cq) {
       await api("answerCallbackQuery", { callback_query_id: cq.id });
+      if (cq.data?.startsWith("del:")) { u.alertas = (u.alertas || []).filter(a => a.id !== cq.data.slice(4)); await salvar(u); const r = listaAlertas(u); return enviar(chat, "Apagado. " + r.texto, r.extra || {}); }
       if (!dono) return;
       const alvoC = cq.data?.slice(4);
-      if (cq.data?.startsWith("cav:")) { const c = est.convidados.find(x => String(x.chat) === alvoC); if (c) { c.avisos = !c.avisos; await salvar(est); await enviar(c.chat, c.avisos ? "☀️ O dono do bot ligou para você o resumo das 8h30 e os lembretes de eventos." : "O resumo das 8h30 e os lembretes foram desligados para você."); } const r = listaConvidados(est); return enviar(chat, r.texto, r.extra || {}); }
-      if (cq.data?.startsWith("crm:")) { const c = est.convidados.find(x => String(x.chat) === alvoC); est.convidados = est.convidados.filter(x => String(x.chat) !== alvoC); await salvar(est); if (c) await enviar(c.chat, "Seu acesso ao bot do Radar B3 foi encerrado pelo dono.").catch(() => {}); const r = listaConvidados(est); return enviar(chat, "Removido. " + r.texto, r.extra || {}); }
+      if (cq.data?.startsWith("crm:")) { const c = est.convidados.find(x => String(x.chat) === alvoC); est.convidados = est.convidados.filter(x => String(x.chat) !== alvoC); await salvar(est); await KV.delete("tg:u:" + alvoC).catch(() => {}); if (c) await enviar(c.chat, "Seu acesso ao bot do Radar B3 foi encerrado pelo dono.").catch(() => {}); const r = listaConvidados(est); return enviar(chat, "Removido. " + r.texto, r.extra || {}); }
       if (cq.data?.startsWith("del:")) { est.alertas = (est.alertas || []).filter(a => a.id !== cq.data.slice(4)); await salvar(est); const r = listaAlertas(est); await enviar(chat, "Apagado. " + r.texto, r.extra || {}); }
       return;
     }
@@ -349,85 +364,89 @@ Material de estudo, não é recomendação de investimento.`;
     cmd = sem(cmd).toLowerCase();
     let resp;
     try {
-      const soDono = ["alerta", "alertas", "dy", "seguir", "seguindo", "deixar", "ligar", "lembretes", "resumo", "convidar", "convidados"];
-      if (convidado && (cmd === "start" || cmd === "ajuda" || cmd === "help")) return enviar(chat, AJUDA_CONVIDADO, TECLADO_CONVIDADO);
+      const soDono = ["ligar", "convidar", "convidados", "remover"];
+      if (convidado && (cmd === "start" || cmd === "ajuda" || cmd === "help")) return enviar(chat, AJUDA_CONVIDADO.replace("%DY%", pct(u.alvo, 0)), TECLADO_CONVIDADO);
       if (convidado && soDono.includes(cmd)) return enviar(chat, "Esse comando é só do dono do bot. Envie /ajuda para ver o que você pode usar.");
       if (cmd === "start" || cmd === "ajuda" || cmd === "help") return enviar(chat, AJUDA.replace("%DY%", pct(est.alvo, 0)), TECLADO);
       else if (cmd === "convidar") { resp = cmdConvidar(est); await salvar(est); }
       else if (cmd === "convidados" || cmd === "remover") { const r = listaConvidados(est); return enviar(chat, r.texto, r.extra || {}); }
       else if (cmd === "entrar") resp = "Você já tem acesso ao bot.";
-      else if (cmd === "preco" || cmd === "cotacao") resp = await cmdPreco(arg, est);
-      else if (cmd === "teto") resp = await cmdTeto(arg, est);
-      else if (cmd === "barsi") resp = await cmdBarsi(est);
+      else if (cmd === "preco" || cmd === "cotacao") resp = await cmdPreco(arg, u);
+      else if (cmd === "teto") resp = await cmdTeto(arg, u);
+      else if (cmd === "barsi") resp = await cmdBarsi(u);
       else if (cmd === "proventos" || cmd === "dividendos") resp = await cmdProventos(arg);
       else if (cmd === "agenda") resp = await cmdAgenda(7, 2);
       else if (cmd === "mercado") resp = await cmdMercado();
-      else if (cmd === "alerta") resp = await cmdAlerta(arg, est);
-      else if (cmd === "alertas") { const r = listaAlertas(est); return enviar(chat, r.texto, r.extra || {}); }
-      else if (cmd === "dy") { const v = parseFloat(String(arg).replace(",", ".")); if (!(v >= 1 && v <= 30)) resp = `DY desejado agora: ${pct(est.alvo, 1)}. Para mudar: /dy 7`; else { est.alvo = v / 100; await salvar(est); resp = `DY desejado: ${pct(est.alvo, 1)}. O preço-teto agora usa esse valor.`; } }
-      else if (cmd === "seguir") resp = await cmdSeguir(arg, est);
-      else if (cmd === "seguindo") resp = cmdSeguindo(est);
-      else if (cmd === "deixar") { const t = sem(arg).replace(/[^A-Z0-9]/g, ""); const antes = est.seguindo.length; est.seguindo = est.seguindo.filter(x => x !== t); await salvar(est); resp = est.seguindo.length < antes ? `Deixou de seguir ${t}.` : `Você não seguia "${arg}". /seguindo mostra a lista.`; }
+      else if (cmd === "alerta") resp = await cmdAlerta(arg, u);
+      else if (cmd === "alertas") { const r = listaAlertas(u); return enviar(chat, r.texto, r.extra || {}); }
+      else if (cmd === "dy") { const v = parseFloat(String(arg).replace(",", ".")); if (!(v >= 1 && v <= 30)) resp = `DY desejado agora: ${pct(u.alvo, 1)}. Para mudar: /dy 7`; else { u.alvo = v / 100; await salvar(u); resp = `DY desejado: ${pct(u.alvo, 1)}. O preço-teto agora usa esse valor.`; } }
+      else if (cmd === "seguir") resp = await cmdSeguir(arg, u);
+      else if (cmd === "seguindo") resp = cmdSeguindo(u);
+      else if (cmd === "deixar") { const t = sem(arg).replace(/[^A-Z0-9]/g, ""); const antes = u.seguindo.length; u.seguindo = u.seguindo.filter(x => x !== t); await salvar(u); resp = u.seguindo.length < antes ? `Deixou de seguir ${t}.` : `Você não seguia "${arg}". /seguindo mostra a lista.`; }
       else if (cmd === "ligar") resp = await cmdLigar(est);
-      else if (cmd === "lembretes") { est.lembretes = !est.lembretes; await salvar(est); resp = est.lembretes ? "⏰ Lembretes 30 min antes de eventos de alto impacto: ligados." : "Lembretes de eventos desligados."; }
-      else if (cmd === "resumo") { est.resumo = !est.resumo; await salvar(est); resp = est.resumo ? "☀️ Resumo das 8h30 ligado (dias úteis)." : "Resumo das 8h30 desligado."; }
-      else if (!txt.startsWith("/") && /^[A-Za-z0-9]{4,7}$/.test(txt)) resp = await cmdPreco(txt, est);   // só o código: mostra a cotação
+      else if (cmd === "lembretes") { u.lembretes = !u.lembretes; await salvar(u); resp = u.lembretes ? "⏰ Lembretes 30 min antes de eventos de alto impacto: ligados." : "Lembretes de eventos desligados."; }
+      else if (cmd === "resumo") { u.resumo = !u.resumo; await salvar(u); resp = u.resumo ? "☀️ Resumo das 8h30 ligado (dias úteis)." : "Resumo das 8h30 desligado."; }
+      else if (!txt.startsWith("/") && /^[A-Za-z0-9]{4,7}$/.test(txt)) resp = await cmdPreco(txt, u);   // só o código: mostra a cotação
       else resp = "Não entendi. Envie /ajuda para ver os comandos.";
     } catch (e) { resp = "⚠️ Não consegui responder agora (" + e.message + "). Tente de novo em 1 minuto."; }
     await enviar(chat, resp);
   }
 
-  // a cada 5 minutos (cron): alertas; às 8h30 dos dias úteis: resumo
+  // a cada 5 minutos (cron): alertas e lembretes; às 8h30 dos dias úteis: resumo — para o dono e cada convidado
   async function automaticos(quando) {
     const est = await estado();
     if (!est.chat) return;
-    const l = est.alertas || [];
-    if (l.length) {
-      const q = await precos(l.map(a => a.sym));
-      const ficam = [];
-      for (const a of l) {
-        const p = q[a.sym]?.p;
-        if (p > 0 && (a.cond === ">=" ? p >= a.p : p <= a.p)) await enviar(est.chat, `🔔 ${a.t} ${a.cond === ">=" ? "subiu a" : "caiu a"} ${nf(p, p < 1 ? 4 : 2)} (alerta: ${a.cond === ">=" ? "acima de" : "abaixo de"} ${nf(a.p, a.p < 1 ? 4 : 2)})${a.nota ? "\n" + a.nota : ""}`);
-        else ficam.push(a);
-      }
-      if (ficam.length !== l.length) { est.alertas = ficam; await salvar(est); }
-    }
+    const pessoas = [est];
+    for (const c of est.convidados || []) pessoas.push(await perfil(c.chat));
     const br = new Date(quando - 3 * 36e5), hm = br.getUTCHours() * 60 + br.getUTCMinutes(), hoje = br.toISOString().slice(0, 10);
-    // lembrete 30 minutos antes dos eventos de alto impacto
-    if (est.lembretes) {
-      try {
-        const ag = await site("mercado/agenda.json");
-        const vistos = new Set((est.lembrados || []).filter(k => k.startsWith(hoje)));
-        for (const e of (ag.eventos || []).filter(e => e.d === hoje && (e.imp || 1) >= 3 && e.h)) {
-          const [hh, mm] = e.h.split(":").map(Number), falta = hh * 60 + mm - hm, k = `${hoje} ${e.h} ${e.n}`;
-          if (falta > 0 && falta <= 35 && !vistos.has(k)) {
-            vistos.add(k);
-            const txtLem = `⏰ Em ${falta} min (${e.h}): ${e.pais === "EUA" ? "🇺🇸" : "🇧🇷"} ${e.n}${e.prev ? `\nPrevisão: ${e.prev}${e.ant ? " · anterior: " + e.ant : ""}` : ""}`;
-            await enviar(est.chat, txtLem);
-            for (const c of (est.convidados || []).filter(c => c.avisos)) await enviar(c.chat, txtLem).catch(() => {});
-          }
+    // alertas de preço: uma consulta só para todo mundo
+    const todos = pessoas.flatMap(u => u.alertas || []);
+    const q = todos.length ? await precos(todos.map(a => a.sym)) : {};
+    let ag = null, mercado = null, agendaHoje = null;
+    for (const u of pessoas) {
+      let mudou = false;
+      const l = u.alertas || [];
+      if (l.length) {
+        const ficam = [];
+        for (const a of l) {
+          const p = q[a.sym]?.p;
+          if (p > 0 && (a.cond === ">=" ? p >= a.p : p <= a.p)) await enviar(u.chat, `🔔 ${a.t} ${a.cond === ">=" ? "subiu a" : "caiu a"} ${nf(p, p < 1 ? 4 : 2)} (alerta: ${a.cond === ">=" ? "acima de" : "abaixo de"} ${nf(a.p, a.p < 1 ? 4 : 2)})${a.nota ? "\n" + a.nota : ""}`).catch(() => ficam.push(a));
+          else ficam.push(a);
         }
-        if (vistos.size !== (est.lembrados || []).filter(k => k.startsWith(hoje)).length) { est.lembrados = [...vistos]; await salvar(est); }
-      } catch (e) { console.log("lembretes:", e.message); }
-    }
-    if (hm >= 510 && hm < 520 && est.ultimoResumo !== hoje) {     // 8h30–8h39
-      est.ultimoResumo = hoje;
-      let barsiTxt = [], provTxt = [];
-      try { barsiTxt = await mudancasBarsi(est); } catch (e) {}
-      try { provTxt = await lembretesProventos(est, hoje); } catch (e) {}
-      await salvar(est);
-      if (est.resumo) {
-        const partes = [`☀️ Bom dia! Resumo de ${dataBR(hoje)}`];
-        try { partes.push(await cmdMercado()); } catch (e) {}
-        try { partes.push(await cmdAgenda(1, 2, "🗓️ Agenda de hoje (horário de Brasília)")); } catch (e) {}
-        if (provTxt.length) partes.push(provTxt.join("\n"));
-        if (barsiTxt.length) partes.push(barsiTxt.join("\n") + "\n/barsi para a lista completa");
-        // convidados com avisos ligados recebem a parte geral (sem alertas nem ações seguidas do dono)
-        const geral = partes.filter(x => !provTxt.length || x !== provTxt.join("\n")).map(x => x.replace(/⭐/g, ""));
-        for (const c of (est.convidados || []).filter(c => c.avisos)) await enviar(c.chat, geral.join("\n\n")).catch(() => {});
-        if (est.alertas.length) partes.push(`🔔 ${est.alertas.length} alerta(s) ligado(s). /alertas`);
-        await enviar(est.chat, partes.join("\n\n"));
-      } else if (provTxt.length || barsiTxt.length) await enviar(est.chat, [...provTxt, ...barsiTxt].join("\n\n"));
+        if (ficam.length !== l.length) { u.alertas = ficam; mudou = true; }
+      }
+      // lembrete 30 minutos antes dos eventos de alto impacto
+      if (u.lembretes) {
+        try {
+          ag = ag || await site("mercado/agenda.json");
+          const antes = (u.lembrados || []).filter(k => k.startsWith(hoje)), vistos = new Set(antes);
+          for (const e of (ag.eventos || []).filter(e => e.d === hoje && (e.imp || 1) >= 3 && e.h)) {
+            const [hh, mm] = e.h.split(":").map(Number), falta = hh * 60 + mm - hm, k = `${hoje} ${e.h} ${e.n}`;
+            if (falta > 0 && falta <= 35 && !vistos.has(k)) {
+              vistos.add(k);
+              await enviar(u.chat, `⏰ Em ${falta} min (${e.h}): ${e.pais === "EUA" ? "🇺🇸" : "🇧🇷"} ${e.n}${e.prev ? `\nPrevisão: ${e.prev}${e.ant ? " · anterior: " + e.ant : ""}` : ""}`).catch(() => {});
+            }
+          }
+          if (vistos.size !== antes.length) { u.lembrados = [...vistos]; mudou = true; }
+        } catch (e) { console.log("lembretes:", e.message); }
+      }
+      // resumo das 8h30–8h39
+      if (hm >= 510 && hm < 520 && u.ultimoResumo !== hoje) {
+        u.ultimoResumo = hoje; mudou = true;
+        let barsiTxt = [], provTxt = [];
+        try { barsiTxt = await mudancasBarsi(u); } catch (e) {}
+        try { provTxt = await lembretesProventos(u, hoje); } catch (e) {}
+        if (u.resumo) {
+          if (mercado === null) { try { mercado = await cmdMercado(); } catch (e) { mercado = ""; } }
+          if (agendaHoje === null) { try { agendaHoje = await cmdAgenda(1, 2, "🗓️ Agenda de hoje (horário de Brasília)"); } catch (e) { agendaHoje = ""; } }
+          const partes = [`☀️ Bom dia! Resumo de ${dataBR(hoje)}`, mercado, agendaHoje];
+          if (provTxt.length) partes.push(provTxt.join("\n"));
+          if (barsiTxt.length) partes.push(barsiTxt.join("\n") + "\n/barsi para a lista completa");
+          if ((u.alertas || []).length) partes.push(`🔔 ${u.alertas.length} alerta(s) ligado(s). /alertas`);
+          await enviar(u.chat, partes.filter(Boolean).join("\n\n")).catch(() => {});
+        } else if (provTxt.length || barsiTxt.length) await enviar(u.chat, [...provTxt, ...barsiTxt].join("\n\n")).catch(() => {});
+      }
+      if (mudou) await salvar(u);
     }
   }
 

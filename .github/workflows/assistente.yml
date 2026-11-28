@@ -68,7 +68,7 @@ jobs:
             {"command":"seguindo","description":"Ações que você segue"},
             {"command":"ligar","description":"Código para os avisos do site virem aqui"},
             {"command":"convidar","description":"Convidar outra pessoa para usar o bot"},
-            {"command":"convidados","description":"Convidados: avisos e remover"},
+            {"command":"convidados","description":"Convidados: ver e remover"},
             {"command":"resumo","description":"Liga/desliga o resumo das 8h30"},
             {"command":"lembretes","description":"Liga/desliga lembretes de eventos"},
             {"command":"ajuda","description":"Todos os comandos"}]}'
