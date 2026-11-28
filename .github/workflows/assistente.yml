@@ -64,7 +64,11 @@ jobs:
             {"command":"mercado","description":"Ibovespa, dólar, juros e bolsas lá fora"},
             {"command":"alerta","description":"Alerta de preço (ex.: /alerta BBAS3 15,50)"},
             {"command":"alertas","description":"Lista e apaga alertas"},
+            {"command":"seguir","description":"Seguir ações (proventos e Barsi)"},
+            {"command":"seguindo","description":"Ações que você segue"},
+            {"command":"ligar","description":"Código para os avisos do site virem aqui"},
             {"command":"resumo","description":"Liga/desliga o resumo das 8h30"},
+            {"command":"lembretes","description":"Liga/desliga lembretes de eventos"},
             {"command":"ajuda","description":"Todos os comandos"}]}'
           info=$(curl -sS "https://api.telegram.org/bot$TG/getWebhookInfo" | head -c 400)
           echo "::notice::Telegram -> $info"
