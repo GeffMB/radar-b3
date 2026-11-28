@@ -4,7 +4,7 @@ name: Publicar Assistente (Cloudflare)
 on:
   push:
     branches: [main]
-    paths: ["worker/assistente.js", "worker/wrangler.toml"]
+    paths: ["worker/assistente.js", "worker/bot.js", "worker/wrangler.toml"]
   workflow_dispatch:
 
 permissions:
@@ -41,6 +41,34 @@ jobs:
             grep -E "ERROR|✘|Authentication|permission|code: [0-9]+|requires|Node" saida.txt | head -8 | while IFS= read -r l; do echo "::error::$l"; done
             exit "$rc"
           fi
+      - name: Bot do Telegram (token e endereço)
+        # Só roda se o segredo RADAR_TELEGRAM_TOKEN existir (Settings → Secrets and variables → Actions).
+        working-directory: worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TG: ${{ secrets.RADAR_TELEGRAM_TOKEN }}
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          if [ -z "$TG" ]; then echo "Bot do Telegram desligado (sem o segredo RADAR_TELEGRAM_TOKEN)."; exit 0; fi
+          printf '%s' "$TG" | npx --yes wrangler@4.145.0 secret put TELEGRAM_TOKEN > /dev/null
+          seg=$(printf 'radar-b3-tg|%s' "$TG" | sha256sum | cut -c1-48)
+          r=$(curl -sS -X POST "https://api.telegram.org/bot$TG/setWebhook" -H "Content-Type: application/json" \
+            -d "{\"url\":\"https://radar-assistente.gefersonmarques.workers.dev/tg\",\"secret_token\":\"$seg\",\"allowed_updates\":[\"message\",\"callback_query\"]}")
+          echo "::notice::Telegram webhook -> $r"
+          curl -sS -o /dev/null -X POST "https://api.telegram.org/bot$TG/setMyCommands" -H "Content-Type: application/json" -d '{"commands":[
+            {"command":"preco","description":"Cotação e indicadores (ex.: /preco BBAS3)"},
+            {"command":"barsi","description":"Ações que passam no método Barsi"},
+            {"command":"teto","description":"Preço-teto e critérios (ex.: /teto TAEE11)"},
+            {"command":"proventos","description":"Próximos pagamentos (ex.: /proventos ITSA4)"},
+            {"command":"agenda","description":"Eventos importantes dos próximos 7 dias"},
+            {"command":"mercado","description":"Ibovespa, dólar, juros e bolsas lá fora"},
+            {"command":"alerta","description":"Alerta de preço (ex.: /alerta BBAS3 15,50)"},
+            {"command":"alertas","description":"Lista e apaga alertas"},
+            {"command":"resumo","description":"Liga/desliga o resumo das 8h30"},
+            {"command":"ajuda","description":"Todos os comandos"}]}'
+          info=$(curl -sS "https://api.telegram.org/bot$TG/getWebhookInfo" | head -c 400)
+          echo "::notice::Telegram -> $info"
+
       - name: Conferir se respondeu
         run: |
           sleep 5
