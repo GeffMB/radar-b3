@@ -419,7 +419,12 @@ async function avisos(req, env, caminho, json) {
   const topico = String(d.topico || "");
   if (!CANAL_OK.test(topico)) return json({ erro: "Canal inválido." }, 400);
   if (caminho === "/avisos/teste") {
-    try { await enviarNtfy(topico, "Radar B3", "Teste: os avisos de preço vão chegar assim no seu celular.", "default"); return json({ ok: true }); }
+    try {
+      let tg = false;
+      if (env.TELEGRAM_TOKEN) tg = await criarBot(env, null, buscarLote).avisoDoSite(topico, "Teste: os avisos de preço do site vão chegar assim aqui no Telegram.").catch(() => false);
+      await enviarNtfy(topico, "Radar B3", "Teste: os avisos de preço vão chegar assim no seu celular.", "default");
+      return json({ ok: true, telegram: tg });
+    }
     catch (e) { return json({ erro: "Não foi possível enviar o teste agora." }, 502); }
   }
   const lista = (Array.isArray(d.avisos) ? d.avisos : []).slice(0, MAX_AVISOS).map(a => ({
@@ -433,6 +438,7 @@ async function avisos(req, env, caminho, json) {
 }
 async function vigiarAvisos(env) {
   if (!env.LIMITES) return;
+  const bot = env.TELEGRAM_TOKEN ? criarBot(env, null, buscarLote) : null;
   const grupos = [];
   let cursor;
   do {
@@ -451,10 +457,13 @@ async function vigiarAvisos(env) {
       const q = precos[a.sym];
       const bateu = q?.p > 0 && (a.cond === ">=" ? q.p >= a.p : q.p <= a.p);
       if (!bateu) { ficam.push(a); continue; }
-      try {
-        await enviarNtfy(v.topico, `Radar B3: ${a.t} ${a.cond === ">=" ? "subiu a" : "caiu a"} ${fmt(q.p)}`,
-          `${a.t} está em ${fmt(q.p)} (aviso: ${a.cond === ">=" ? "acima de" : "abaixo de"} ${fmt(a.p)}).${a.nota ? " " + a.nota : ""}`);
-      } catch (e) { ficam.push(a); console.log("aviso: falha no ntfy", String(e)); }
+      const titulo = `Radar B3: ${a.t} ${a.cond === ">=" ? "subiu a" : "caiu a"} ${fmt(q.p)}`;
+      const corpo = `${a.t} está em ${fmt(q.p)} (aviso: ${a.cond === ">=" ? "acima de" : "abaixo de"} ${fmt(a.p)}).${a.nota ? " " + a.nota : ""}`;
+      let foi = false;
+      if (bot) { try { foi = await bot.avisoDoSite(v.topico, corpo); } catch (e) { console.log("aviso: falha no Telegram", String(e)); } }
+      try { await enviarNtfy(v.topico, titulo, corpo); foi = true; }
+      catch (e) { console.log("aviso: falha no ntfy", String(e)); }
+      if (!foi) ficam.push(a);
     }
     if (ficam.length !== v.avisos.length) {
       if (ficam.length) await env.LIMITES.put(chave, JSON.stringify({ ...v, avisos: ficam }), { expirationTtl: 60 * 86400 });

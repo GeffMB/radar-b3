@@ -68,7 +68,7 @@ export function criarBot(env, ctx, buscarLote) {
     const r = await fetch(`https://api.telegram.org/bot${token}/${metodo}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo), signal: AbortSignal.timeout(15000) });
     return r.json();
   };
-  const estado = async () => (await KV.get("tg:estado", "json")) || { chat: null, alvo: 0.06, resumo: true, alertas: [] };
+  const estado = async () => ({ chat: null, alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [], ...((await KV.get("tg:estado", "json")) || {}) });
   const salvar = e => KV.put("tg:estado", JSON.stringify(e));
   const precos = async syms => { const out = {}; const l = [...new Set(syms.filter(Boolean))]; for (let i = 0; i < l.length; i += 20) Object.assign(out, await buscarLote(l.slice(i, i + 20).sort())); return out; };
 
@@ -80,7 +80,7 @@ export function criarBot(env, ctx, buscarLote) {
     for (let i = 0; i < partes.length; i++) await api("sendMessage", { chat_id: chat, text: partes[i], disable_web_page_preview: true, ...(i === partes.length - 1 ? extra : {}) });
   }
 
-  const TECLADO = { reply_markup: { keyboard: [["/mercado", "/barsi"], ["/agenda", "/alertas"], ["/ajuda"]], resize_keyboard: true, is_persistent: true } };
+  const TECLADO = { reply_markup: { keyboard: [["/mercado", "/barsi"], ["/agenda", "/alertas"], ["/seguindo", "/ajuda"]], resize_keyboard: true, is_persistent: true } };
   const AJUDA = `📈 Radar B3 no Telegram
 
 /preco BBAS3 — cotação ao vivo e indicadores (ação, FII, ETF, BDR, stock, índice, moeda ou commodity)
@@ -97,7 +97,14 @@ export function criarBot(env, ctx, buscarLote) {
 /alerta BBAS3 teto — quando cair até o preço-teto
 /alertas — lista e apaga
 
-☀️ /resumo — liga ou desliga o resumo das 8h30 (agenda do dia e mercado)
+⭐ Ações seguidas (lembretes de proventos e do Barsi)
+/seguir BBAS3 TAEE11 — passa a seguir
+/seguindo — lista · /deixar BBAS3 — para de seguir
+
+🔗 /ligar — código para os avisos do site (botão 🔔 Avisar) chegarem aqui
+
+☀️ /resumo — liga ou desliga o resumo das 8h30 (mercado, agenda, proventos e mudanças no Barsi)
+⏰ /lembretes — liga ou desliga o aviso 30 min antes de Copom, IPCA, payroll e Fed
 
 Dica: dá para mandar só o código, por exemplo "PETR4".
 Material de estudo, não é recomendação de investimento.`;
@@ -220,6 +227,55 @@ Material de estudo, não é recomendação de investimento.`;
       extra: { reply_markup: { inline_keyboard: l.map((a, i) => [{ text: `🗑 ${i + 1}. ${a.t} ${nf(a.p, a.p < 1 ? 4 : 2)}`, callback_data: "del:" + a.id }]) } } };
   }
 
+  async function cmdSeguir(arg, est) {
+    const pedidos = String(arg || "").split(/[\s,;]+/).filter(Boolean).slice(0, 15);
+    if (!pedidos.length) return "Mande os códigos, por exemplo: /seguir BBAS3 TAEE11 ITSA4";
+    const ok = [], nao = [];
+    for (const p of pedidos) { const x = await achar(p); if (x) { if (!est.seguindo.includes(x.a.t)) est.seguindo.push(x.a.t); ok.push(x.a.t); } else nao.push(p); }
+    est.seguindo = est.seguindo.slice(-40); await salvar(est);
+    return (ok.length ? `⭐ Seguindo: ${ok.join(", ")}.\nAviso na véspera e no dia da data com, no dia do pagamento e quando entrarem ou saírem do Barsi.` : "") + (nao.length ? `\nNão achei: ${nao.join(", ")}` : "");
+  }
+  function cmdSeguindo(est) {
+    return est.seguindo.length ? `⭐ Você segue ${est.seguindo.length}: ${est.seguindo.join(", ")}\n\n/seguir BBAS3 para incluir · /deixar BBAS3 para tirar` : "Você não segue nenhuma ação ainda. Exemplo: /seguir BBAS3 TAEE11";
+  }
+  async function cmdLigar(est) {
+    if (!est.canalSite) {
+      const al = "abcdefghijklmnopqrstuvwxyz0123456789", r = crypto.getRandomValues(new Uint8Array(24));
+      est.canalSite = "radarb3-" + [...r].map(x => al[x % al.length]).join(""); await salvar(est);
+      await KV.put("tg:canal", est.canalSite);
+    }
+    return `🔗 Para os avisos do site chegarem aqui:\n\n1. Abra o Radar B3 → Carteira → 🔔 Avisos de preço\n2. Toque em "Já tenho um código" e cole:\n\n${est.canalSite}\n\nDá para usar o mesmo código no computador e no celular. Não compartilhe com ninguém.`;
+  }
+
+  // proventos das ações seguidas: véspera e dia da data com, dia do pagamento (dias úteis)
+  async function lembretesProventos(est, hoje) {
+    if (!est.seguindo.length) return [];
+    const pv = (await site("mercado/proventos.json")).itens || {};
+    const util = d => { const x = new Date(d + "T12:00:00Z"); do x.setUTCDate(x.getUTCDate() + 1); while ([0, 6].includes(x.getUTCDay())); return x.toISOString().slice(0, 10); };
+    const amanha = util(hoje), L = [];
+    for (const t of new Set(est.seguindo)) for (const [dc, pg, v, tipo] of pv[t] || []) {
+      const val = `${tipo || "provento"} de R$ ${nf(v, 4)}`;
+      if (dc === hoje) L.push(`📌 ${t}: HOJE é a data com (${val}). Quem tiver a ação no fechamento de hoje recebe${pg ? " em " + dataBR(pg) : ""}.`);
+      else if (dc === amanha) L.push(`📌 ${t}: amanhã (${dataBR(dc)}) é a data com (${val}).`);
+      if (pg === hoje) L.push(`💰 ${t}: pagamento hoje (${val} por ação).`);
+    }
+    return L;
+  }
+  // entrou ou saiu do Barsi (pelo fechamento do dia anterior, para não oscilar durante o pregão)
+  async function mudancasBarsi(est) {
+    const d = await site("dados.json");
+    const agora = d.acoes.filter(a => barsi(a, est.alvo).ok).map(a => a.t).sort();
+    const antes = est.barsiOk;
+    est.barsiOk = agora;
+    if (!antes) return [];
+    const entrou = agora.filter(t => !antes.includes(t)), saiu = antes.filter(t => !agora.includes(t));
+    const marca = t => est.seguindo.includes(t) ? "⭐" : "";
+    const L = [];
+    if (entrou.length) L.push(`✅ Entraram no Barsi: ${entrou.map(t => marca(t) + t).join(", ")}`);
+    if (saiu.length) L.push(`❌ Saíram do Barsi: ${saiu.map(t => marca(t) + t).join(", ")}`);
+    return L;
+  }
+
   // ---------------------------------------------------------------- entrada
   async function atender(upd) {
     let est = await estado();
@@ -252,6 +308,11 @@ Material de estudo, não é recomendação de investimento.`;
       else if (cmd === "alerta") resp = await cmdAlerta(arg, est);
       else if (cmd === "alertas") { const r = listaAlertas(est); return enviar(chat, r.texto, r.extra || {}); }
       else if (cmd === "dy") { const v = parseFloat(String(arg).replace(",", ".")); if (!(v >= 1 && v <= 30)) resp = `DY desejado agora: ${pct(est.alvo, 1)}. Para mudar: /dy 7`; else { est.alvo = v / 100; await salvar(est); resp = `DY desejado: ${pct(est.alvo, 1)}. O preço-teto agora usa esse valor.`; } }
+      else if (cmd === "seguir") resp = await cmdSeguir(arg, est);
+      else if (cmd === "seguindo") resp = cmdSeguindo(est);
+      else if (cmd === "deixar") { const t = sem(arg).replace(/[^A-Z0-9]/g, ""); const antes = est.seguindo.length; est.seguindo = est.seguindo.filter(x => x !== t); await salvar(est); resp = est.seguindo.length < antes ? `Deixou de seguir ${t}.` : `Você não seguia "${arg}". /seguindo mostra a lista.`; }
+      else if (cmd === "ligar") resp = await cmdLigar(est);
+      else if (cmd === "lembretes") { est.lembretes = !est.lembretes; await salvar(est); resp = est.lembretes ? "⏰ Lembretes 30 min antes de eventos de alto impacto: ligados." : "Lembretes de eventos desligados."; }
       else if (cmd === "resumo") { est.resumo = !est.resumo; await salvar(est); resp = est.resumo ? "☀️ Resumo das 8h30 ligado (dias úteis)." : "Resumo das 8h30 desligado."; }
       else if (!txt.startsWith("/") && /^[A-Za-z0-9]{4,7}$/.test(txt)) resp = await cmdPreco(txt, est);   // só o código: mostra a cotação
       else resp = "Não entendi. Envie /ajuda para ver os comandos.";
@@ -275,15 +336,46 @@ Material de estudo, não é recomendação de investimento.`;
       if (ficam.length !== l.length) { est.alertas = ficam; await salvar(est); }
     }
     const br = new Date(quando - 3 * 36e5), hm = br.getUTCHours() * 60 + br.getUTCMinutes(), hoje = br.toISOString().slice(0, 10);
-    if (est.resumo && hm >= 510 && hm < 520 && est.ultimoResumo !== hoje) {     // 8h30–8h39
-      est.ultimoResumo = hoje; await salvar(est);
-      const partes = [`☀️ Bom dia! Resumo de ${dataBR(hoje)}`];
-      try { partes.push(await cmdMercado()); } catch (e) {}
-      try { partes.push(await cmdAgenda(1, 2, "🗓️ Agenda de hoje (horário de Brasília)")); } catch (e) {}
-      if (l.length) partes.push(`🔔 ${est.alertas.length} alerta(s) ligado(s). /alertas`);
-      await enviar(est.chat, partes.join("\n\n"));
+    // lembrete 30 minutos antes dos eventos de alto impacto
+    if (est.lembretes) {
+      try {
+        const ag = await site("mercado/agenda.json");
+        const vistos = new Set((est.lembrados || []).filter(k => k.startsWith(hoje)));
+        for (const e of (ag.eventos || []).filter(e => e.d === hoje && (e.imp || 1) >= 3 && e.h)) {
+          const [hh, mm] = e.h.split(":").map(Number), falta = hh * 60 + mm - hm, k = `${hoje} ${e.h} ${e.n}`;
+          if (falta > 0 && falta <= 35 && !vistos.has(k)) {
+            vistos.add(k);
+            await enviar(est.chat, `⏰ Em ${falta} min (${e.h}): ${e.pais === "EUA" ? "🇺🇸" : "🇧🇷"} ${e.n}${e.prev ? `\nPrevisão: ${e.prev}${e.ant ? " · anterior: " + e.ant : ""}` : ""}`);
+          }
+        }
+        if (vistos.size !== (est.lembrados || []).filter(k => k.startsWith(hoje)).length) { est.lembrados = [...vistos]; await salvar(est); }
+      } catch (e) { console.log("lembretes:", e.message); }
+    }
+    if (hm >= 510 && hm < 520 && est.ultimoResumo !== hoje) {     // 8h30–8h39
+      est.ultimoResumo = hoje;
+      let barsiTxt = [], provTxt = [];
+      try { barsiTxt = await mudancasBarsi(est); } catch (e) {}
+      try { provTxt = await lembretesProventos(est, hoje); } catch (e) {}
+      await salvar(est);
+      if (est.resumo) {
+        const partes = [`☀️ Bom dia! Resumo de ${dataBR(hoje)}`];
+        try { partes.push(await cmdMercado()); } catch (e) {}
+        try { partes.push(await cmdAgenda(1, 2, "🗓️ Agenda de hoje (horário de Brasília)")); } catch (e) {}
+        if (provTxt.length) partes.push(provTxt.join("\n"));
+        if (barsiTxt.length) partes.push(barsiTxt.join("\n") + "\n/barsi para a lista completa");
+        if (est.alertas.length) partes.push(`🔔 ${est.alertas.length} alerta(s) ligado(s). /alertas`);
+        await enviar(est.chat, partes.join("\n\n"));
+      } else if (provTxt.length || barsiTxt.length) await enviar(est.chat, [...provTxt, ...barsiTxt].join("\n\n"));
     }
   }
 
-  return { atender, automaticos };
+  // avisos do site cujo código foi ligado a este bot (/ligar) também chegam aqui
+  async function avisoDoSite(topico, texto) {
+    const est = await estado();
+    if (!est.chat || !est.canalSite || topico !== est.canalSite) return false;
+    await enviar(est.chat, "🔔 " + texto);
+    return true;
+  }
+
+  return { atender, automaticos, avisoDoSite };
 }

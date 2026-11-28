@@ -296,11 +296,14 @@ function desenharAvisos() {
   $("av-cel").innerHTML = canal
     ? `<h3>📱 Avisos no celular: ligados</h3>
        <ol><li>Instale o app gratuito <b>ntfy</b> (Android ou iPhone).</li><li>No app, toque em <b>+</b> e inscreva-se no canal <code>${R.esc(canal)}</code></li></ol>
+       <p class="note">Se este código veio do bot do Telegram (/ligar), os avisos chegam também no Telegram. Para usar em outro aparelho, abra a carteira nele e cole o mesmo código em "Já tenho um código".</p>
        <p class="note">O servidor do site confere os preços a cada 5 minutos, de segunda a sexta, das 9h às 19h. Guardamos só o código do canal e os avisos (ativo e preço), sem nada que identifique você. Quem souber o código do canal consegue ler os avisos: não compartilhe.</p>
        <div class="botoes"><button type="button" class="sec" id="av-testar">Enviar teste para o celular</button><button type="button" class="sec" id="av-sync">Reenviar avisos</button><button type="button" class="sec" id="av-desligar">Desligar no celular</button><span id="av-st" role="status"></span></div>`
     : `<h3>📱 Receber no celular, mesmo com o site fechado</h3>
        <p>Com o site aberto, os avisos aparecem na tela e como notificação do navegador. Para receber no celular a qualquer hora do pregão, use o app gratuito <b>ntfy</b>: o site cria um canal só seu, e o servidor do site avisa quando o preço chegar.</p>
-       <div class="botoes"><button type="button" class="btn" id="av-criar">Criar meu canal de avisos</button><span id="av-st" role="status"></span></div>`;
+       <div class="botoes"><button type="button" class="btn" id="av-criar">Criar meu canal de avisos</button><span id="av-st" role="status"></span></div>
+       <form class="botoes" id="av-usar" autocomplete="off"><input id="av-cod" placeholder="Já tenho um código: radarb3-…" aria-label="Código de avisos" spellcheck="false" autocapitalize="off"><button type="submit" class="sec">Usar este código</button></form>
+       <p class="note">Para receber no <b>Telegram</b>: mande <b>/ligar</b> para o bot do Radar B3 e cole aqui o código que ele responder. O mesmo código serve no computador e no celular.</p>`;
   const hist = (() => { try { return JSON.parse(localStorage.getItem("radar-avisos-hist") || "[]"); } catch (e) { return []; } })();
   $("av-hist").innerHTML = hist.length ? `<b>Disparados neste navegador</b><ul>${hist.slice(0, 8).map(h => `<li>${R.esc(h.t)} ${h.cond === ">=" ? "acima de" : "abaixo de"} ${R.f2.format(h.p)} — disparou em ${new Date(h.disparou).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} a ${R.f2.format(h.preco)}</li>`).join("")}</ul>` : "";
 }
@@ -308,6 +311,16 @@ function desenharAvisos() {
 function ligarAvisos() {
   if (!$("avisos")) return;
   desenharAvisos();
+  $("avisos").addEventListener("submit", async e => {
+    if (e.target.id !== "av-usar") return;
+    e.preventDefault();
+    const cod = $("av-cod").value.trim().toLowerCase();
+    const st = t => { const el = $("av-st"); if (el) el.textContent = t; };
+    if (!/^radarb3-[a-z0-9]{20,40}$/.test(cod)) { st("Código inválido: ele começa com radarb3- e tem letras e números."); return; }
+    try { localStorage.setItem("radar-ntfy", cod); } catch (e2) { st("Não foi possível salvar neste navegador."); return; }
+    desenharAvisos(); st("Enviando os avisos…");
+    const res = await R.sincronizarAvisos(); st(res.ok ? "Código ligado. Use Enviar teste para conferir." : res.erro);
+  });
   document.addEventListener("radar:avisos", desenharAvisos);
   const st = t => { const e = $("av-st"); if (e) e.textContent = t; };
   $("avisos").addEventListener("click", async e => {
@@ -337,7 +350,7 @@ function ligarAvisos() {
       try {
         const r = await fetch("https://radar-assistente.gefersonmarques.workers.dev/avisos/teste", { method: "POST", referrerPolicy: "no-referrer", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ topico: R.canalNtfy() }) });
         const j = await r.json().catch(() => ({}));
-        st(r.ok ? "Teste enviado. Chegou no celular?" : (j.erro || "Falhou."));
+        st(r.ok ? (j.telegram ? "Teste enviado ao Telegram e ao ntfy." : "Teste enviado. Chegou no celular?") : (j.erro || "Falhou."));
       } catch (e2) { st("Sem conexão com o servidor do site."); }
       return;
     }
