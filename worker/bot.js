@@ -68,7 +68,7 @@ export function criarBot(env, ctx, buscarLote) {
     const r = await fetch(`https://api.telegram.org/bot${token}/${metodo}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo), signal: AbortSignal.timeout(15000) });
     return r.json();
   };
-  const estado = async () => ({ chat: null, alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [], ...((await KV.get("tg:estado", "json")) || {}) });
+  const estado = async () => ({ chat: null, alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [], convidados: [], convites: [], ...((await KV.get("tg:estado", "json")) || {}) });
   const salvar = e => KV.put("tg:estado", JSON.stringify(e));
   const precos = async syms => { const out = {}; const l = [...new Set(syms.filter(Boolean))]; for (let i = 0; i < l.length; i += 20) Object.assign(out, await buscarLote(l.slice(i, i + 20).sort())); return out; };
 
@@ -80,6 +80,18 @@ export function criarBot(env, ctx, buscarLote) {
     for (let i = 0; i < partes.length; i++) await api("sendMessage", { chat_id: chat, text: partes[i], disable_web_page_preview: true, ...(i === partes.length - 1 ? extra : {}) });
   }
 
+  const AJUDA_CONVIDADO = `📈 Radar B3 no Telegram (convidado)
+
+/preco BBAS3 — cotação ao vivo e indicadores (ação, FII, ETF, BDR, stock, índice, moeda ou commodity)
+/barsi — ações que passam no método Barsi agora
+/teto BBAS3 — preço-teto e critérios do Barsi
+/proventos BBAS3 — próximos pagamentos e últimos 12 meses
+/agenda — eventos importantes dos próximos 7 dias
+/mercado — Ibovespa, dólar, S&P 500, petróleo, ouro e juros
+
+Dica: dá para mandar só o código, por exemplo "PETR4".
+Material de estudo, não é recomendação de investimento.`;
+  const TECLADO_CONVIDADO = { reply_markup: { keyboard: [["/mercado", "/barsi"], ["/agenda", "/ajuda"]], resize_keyboard: true, is_persistent: true } };
   const TECLADO = { reply_markup: { keyboard: [["/mercado", "/barsi"], ["/agenda", "/alertas"], ["/seguindo", "/ajuda"]], resize_keyboard: true, is_persistent: true } };
   const AJUDA = `📈 Radar B3 no Telegram
 
@@ -102,6 +114,7 @@ export function criarBot(env, ctx, buscarLote) {
 /seguindo — lista · /deixar BBAS3 — para de seguir
 
 🔗 /ligar — código para os avisos do site (botão 🔔 Avisar) chegarem aqui
+👥 /convidar — código para outra pessoa usar o bot · /convidados — lista, avisos e remover
 
 ☀️ /resumo — liga ou desliga o resumo das 8h30 (mercado, agenda, proventos e mudanças no Barsi)
 ⏰ /lembretes — liga ou desliga o aviso 30 min antes de Copom, IPCA, payroll e Fed
@@ -276,6 +289,32 @@ Material de estudo, não é recomendação de investimento.`;
     return L;
   }
 
+  // ---------------------------------------------------------------- convidados
+  function cmdConvidar(est) {
+    const al = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(8));
+    const codigo = [...r].map(x => al[x % al.length]).join("");
+    est.convites = (est.convites || []).filter(c => c.ate > Date.now()).slice(-9);
+    est.convites.push({ codigo, ate: Date.now() + 24 * 36e5 });
+    return `👥 Convite criado (vale 24 horas e uma única pessoa). Mande este link para a pessoa:\n\nhttps://t.me/GeffMB_bot?start=${codigo}\n\nEla abre o link e toca em Iniciar. (Ou, dentro do bot, envia /entrar ${codigo})\n\nEla poderá consultar cotações, Barsi, proventos, agenda e mercado. Seus alertas, ações seguidas e códigos continuam só seus.`;
+  }
+  function listaConvidados(est) {
+    const l = est.convidados || [];
+    if (!l.length) return { texto: "Nenhum convidado. Crie um convite com /convidar" };
+    return { texto: "👥 Convidados:\n\n" + l.map((c, i) => `${i + 1}. ${c.nome || "sem nome"} — desde ${dataBR(c.desde)} · resumo e lembretes ${c.avisos ? "ligados" : "desligados"}`).join("\n"),
+      extra: { reply_markup: { inline_keyboard: l.map((c, i) => [{ text: `${c.avisos ? "🔕 Desligar" : "🔔 Ligar"} avisos ${i + 1}`, callback_data: "cav:" + c.chat }, { text: `🗑 Remover ${i + 1}`, callback_data: "crm:" + c.chat }]) } } };
+  }
+  async function entrar(chat, de, arg, est) {
+    const cod = String(arg || "").trim().toUpperCase();
+    const c = (est.convites || []).find(x => x.codigo === cod && x.ate > Date.now());
+    if (!c) return enviar(chat, "Este bot é privado. Se você recebeu um convite, envie /entrar seguido do código (ele vale 24 horas).");
+    const nome = [de?.first_name, de?.last_name].filter(Boolean).join(" ") || (de?.username ? "@" + de.username : "");
+    est.convites = est.convites.filter(x => x !== c);
+    est.convidados = (est.convidados || []).filter(x => String(x.chat) !== String(chat)).concat([{ chat, nome, desde: new Date().toISOString().slice(0, 10), avisos: false }]).slice(-10);
+    await salvar(est);
+    await enviar(chat, "✅ Bem-vindo! Você agora pode usar o bot do Radar B3.\n\n" + AJUDA_CONVIDADO, TECLADO_CONVIDADO);
+    await enviar(est.chat, `👥 ${nome || "Alguém"} entrou com o seu convite. /convidados para ligar o resumo das 8h30 e os lembretes para essa pessoa, ou para remover.`);
+  }
+
   // ---------------------------------------------------------------- entrada
   async function atender(upd) {
     let est = await estado();
@@ -286,9 +325,21 @@ Material de estudo, não é recomendação de investimento.`;
       await enviar(chat, "✅ Pronto! Este bot agora responde só para você.\n\n" + AJUDA.replace("%DY%", pct(est.alvo, 0)), TECLADO);
       return;
     }
-    if (String(chat) !== String(est.chat)) return;
+    const dono = String(chat) === String(est.chat);
+    const convidado = !dono && (est.convidados || []).some(c => String(c.chat) === String(chat));
+    if (!dono && !convidado) {
+      // desconhecido: só aceita /entrar CÓDIGO (e responde a /start explicando)
+      const t = (msg.text || "").trim(), m = /^\/(entrar|start)(?:@\S+)?\s*(.*)$/i.exec(t);
+      if (m && (m[1].toLowerCase() === "entrar" || m[2])) return entrar(chat, msg.from, m[2], est);   // /start CÓDIGO vem do link de convite
+      if (m) return enviar(chat, "Este bot é privado. Se você recebeu um convite, envie /entrar seguido do código.");
+      return;
+    }
     if (cq) {
       await api("answerCallbackQuery", { callback_query_id: cq.id });
+      if (!dono) return;
+      const alvoC = cq.data?.slice(4);
+      if (cq.data?.startsWith("cav:")) { const c = est.convidados.find(x => String(x.chat) === alvoC); if (c) { c.avisos = !c.avisos; await salvar(est); await enviar(c.chat, c.avisos ? "☀️ O dono do bot ligou para você o resumo das 8h30 e os lembretes de eventos." : "O resumo das 8h30 e os lembretes foram desligados para você."); } const r = listaConvidados(est); return enviar(chat, r.texto, r.extra || {}); }
+      if (cq.data?.startsWith("crm:")) { const c = est.convidados.find(x => String(x.chat) === alvoC); est.convidados = est.convidados.filter(x => String(x.chat) !== alvoC); await salvar(est); if (c) await enviar(c.chat, "Seu acesso ao bot do Radar B3 foi encerrado pelo dono.").catch(() => {}); const r = listaConvidados(est); return enviar(chat, "Removido. " + r.texto, r.extra || {}); }
       if (cq.data?.startsWith("del:")) { est.alertas = (est.alertas || []).filter(a => a.id !== cq.data.slice(4)); await salvar(est); const r = listaAlertas(est); await enviar(chat, "Apagado. " + r.texto, r.extra || {}); }
       return;
     }
@@ -298,7 +349,13 @@ Material de estudo, não é recomendação de investimento.`;
     cmd = sem(cmd).toLowerCase();
     let resp;
     try {
+      const soDono = ["alerta", "alertas", "dy", "seguir", "seguindo", "deixar", "ligar", "lembretes", "resumo", "convidar", "convidados"];
+      if (convidado && (cmd === "start" || cmd === "ajuda" || cmd === "help")) return enviar(chat, AJUDA_CONVIDADO, TECLADO_CONVIDADO);
+      if (convidado && soDono.includes(cmd)) return enviar(chat, "Esse comando é só do dono do bot. Envie /ajuda para ver o que você pode usar.");
       if (cmd === "start" || cmd === "ajuda" || cmd === "help") return enviar(chat, AJUDA.replace("%DY%", pct(est.alvo, 0)), TECLADO);
+      else if (cmd === "convidar") { resp = cmdConvidar(est); await salvar(est); }
+      else if (cmd === "convidados" || cmd === "remover") { const r = listaConvidados(est); return enviar(chat, r.texto, r.extra || {}); }
+      else if (cmd === "entrar") resp = "Você já tem acesso ao bot.";
       else if (cmd === "preco" || cmd === "cotacao") resp = await cmdPreco(arg, est);
       else if (cmd === "teto") resp = await cmdTeto(arg, est);
       else if (cmd === "barsi") resp = await cmdBarsi(est);
@@ -345,7 +402,9 @@ Material de estudo, não é recomendação de investimento.`;
           const [hh, mm] = e.h.split(":").map(Number), falta = hh * 60 + mm - hm, k = `${hoje} ${e.h} ${e.n}`;
           if (falta > 0 && falta <= 35 && !vistos.has(k)) {
             vistos.add(k);
-            await enviar(est.chat, `⏰ Em ${falta} min (${e.h}): ${e.pais === "EUA" ? "🇺🇸" : "🇧🇷"} ${e.n}${e.prev ? `\nPrevisão: ${e.prev}${e.ant ? " · anterior: " + e.ant : ""}` : ""}`);
+            const txtLem = `⏰ Em ${falta} min (${e.h}): ${e.pais === "EUA" ? "🇺🇸" : "🇧🇷"} ${e.n}${e.prev ? `\nPrevisão: ${e.prev}${e.ant ? " · anterior: " + e.ant : ""}` : ""}`;
+            await enviar(est.chat, txtLem);
+            for (const c of (est.convidados || []).filter(c => c.avisos)) await enviar(c.chat, txtLem).catch(() => {});
           }
         }
         if (vistos.size !== (est.lembrados || []).filter(k => k.startsWith(hoje)).length) { est.lembrados = [...vistos]; await salvar(est); }
@@ -363,6 +422,9 @@ Material de estudo, não é recomendação de investimento.`;
         try { partes.push(await cmdAgenda(1, 2, "🗓️ Agenda de hoje (horário de Brasília)")); } catch (e) {}
         if (provTxt.length) partes.push(provTxt.join("\n"));
         if (barsiTxt.length) partes.push(barsiTxt.join("\n") + "\n/barsi para a lista completa");
+        // convidados com avisos ligados recebem a parte geral (sem alertas nem ações seguidas do dono)
+        const geral = partes.filter(x => !provTxt.length || x !== provTxt.join("\n")).map(x => x.replace(/⭐/g, ""));
+        for (const c of (est.convidados || []).filter(c => c.avisos)) await enviar(c.chat, geral.join("\n\n")).catch(() => {});
         if (est.alertas.length) partes.push(`🔔 ${est.alertas.length} alerta(s) ligado(s). /alertas`);
         await enviar(est.chat, partes.join("\n\n"));
       } else if (provTxt.length || barsiTxt.length) await enviar(est.chat, [...provTxt, ...barsiTxt].join("\n\n"));
