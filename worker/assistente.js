@@ -83,7 +83,7 @@ export default {
       };
       const out = {};
       for (const [k, u] of Object.entries(fontes)) {
-        try { const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(10000) }); const t = await r.text(); out[k] = [r.status, t.length, (t.match(/<item>/g) || []).length, t.slice(0, 160)]; }
+        try { const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(10000) }); const t = await r.text(); out[k] = [r.status, t.length, (t.match(/<item>/g) || []).length, k === "bing" ? t.slice(t.indexOf("<item>"), t.indexOf("<item>") + 1500) : t.slice(0, 160)]; }
         catch (e) { out[k] = ["erro", String(e)]; }
       }
       return new Response(JSON.stringify(out, null, 1), { headers: { "Content-Type": "application/json" } });
