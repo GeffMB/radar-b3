@@ -60,6 +60,32 @@ async function achar(texto) {
   return { classe, a, sym };
 }
 
+// ---------------------------------------------------------------- notícias (Google Notícias, só manchete, fonte e link)
+const desescapar = t => String(t || "").replace(/<!\[CDATA\[|\]\]>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCharCode(+n)).trim();
+const nomeCurto = n => String(n || "").replace(/\s+(ON|PN|PNA|PNB|PNC|PND|UNT|UNIT|Unit|ON NM|PN N1|PN N2|NM|N1|N2|ED|EJ|ATZ|DR\d)\b.*$/i, "").trim();
+const MEMO_NOT = new Map();
+export async function buscarNoticias(t, nome, classe, dias = 3) {
+  const chave = t + "|" + dias, m = MEMO_NOT.get(chave);
+  if (m && m.ate > Date.now()) return m.itens;
+  const n = classe === "acoes" ? nomeCurto(nome) : "";
+  const q = `"${t}"` + (n && n.length >= 4 ? ` OR "${n}"` : "") + ` when:${dias}d`;
+  const r = await fetch(`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=pt-BR&gl=BR&ceid=BR:pt-419`,
+    { headers: { "User-Agent": "Mozilla/5.0 (radar-b3 bot pessoal)" }, signal: AbortSignal.timeout(12000) });
+  if (!r.ok) throw new Error("notícias " + r.status);
+  const xml = await r.text();
+  const itens = [];
+  for (const bloco of xml.split("<item>").slice(1)) {
+    const tag = k => desescapar((new RegExp(`<${k}[^>]*>([\\s\\S]*?)</${k}>`).exec(bloco) || [])[1]);
+    const fonte = tag("source"), titulo = tag("title").replace(new RegExp("\\s+-\\s+" + fonte.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "$"), "");
+    const quando = Date.parse(tag("pubDate"));
+    if (titulo && tag("link")) itens.push({ id: tag("guid").slice(-16) || tag("link").slice(-16), titulo, fonte, link: tag("link"), quando });
+  }
+  itens.sort((a, b) => b.quando - a.quando);
+  MEMO_NOT.set(chave, { itens, ate: Date.now() + 10 * 60e3 });
+  return itens;
+}
+const quandoBR = ms => { const d = new Date(ms - 3 * 36e5); return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")} ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`; };
+
 // ---------------------------------------------------------------- conversa com o Telegram
 export function criarBot(env, ctx, buscarLote) {
   const token = env.TELEGRAM_TOKEN;
@@ -68,10 +94,10 @@ export function criarBot(env, ctx, buscarLote) {
     const r = await fetch(`https://api.telegram.org/bot${token}/${metodo}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(corpo), signal: AbortSignal.timeout(15000) });
     return r.json();
   };
-  const estado = async () => ({ chat: null, alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [], convidados: [], convites: [], ...((await KV.get("tg:estado", "json")) || {}) });
+  const estado = async () => ({ chat: null, alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [], variacao: 5, noticias: true, convidados: [], convites: [], ...((await KV.get("tg:estado", "json")) || {}) });
   // cada pessoa tem seus próprios alertas, ações seguidas e ajustes: o dono em "tg:estado", convidados em "tg:u:<chat>"
   const salvar = e => KV.put(e._k || "tg:estado", JSON.stringify(e));
-  const PADRAO_U = { alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [] };
+  const PADRAO_U = { alvo: 0.06, resumo: true, lembretes: true, alertas: [], seguindo: [], variacao: 5, noticias: true };
   const perfil = async chat => ({ ...PADRAO_U, ...((await KV.get("tg:u:" + chat, "json")) || {}), _k: "tg:u:" + chat, chat });
   const precos = async syms => { const out = {}; const l = [...new Set(syms.filter(Boolean))]; for (let i = 0; i < l.length; i += 20) Object.assign(out, await buscarLote(l.slice(i, i + 20).sort())); return out; };
 
@@ -97,7 +123,9 @@ export function criarBot(env, ctx, buscarLote) {
 /alerta BBAS3 15,50 · /alerta BBAS3 -5% · /alerta BBAS3 teto
 /alertas — lista e apaga
 
-⭐ /seguir BBAS3 TAEE11 — lembretes de proventos e do Barsi · /seguindo · /deixar BBAS3
+⭐ /seguir BBAS3 TAEE11 — lembretes de proventos, Barsi, variação forte e notícias
+/seguindo — painel · /deixar BBAS3 · /variacao 5
+📰 /noticias BBAS3 — últimas notícias
 
 ☀️ /resumo — liga ou desliga o resumo das 8h30
 ⏰ /lembretes — liga ou desliga o aviso 30 min antes de Copom, IPCA, payroll e Fed
@@ -125,7 +153,9 @@ Material de estudo, não é recomendação de investimento.`;
 
 ⭐ Ações seguidas (lembretes de proventos e do Barsi)
 /seguir BBAS3 TAEE11 — passa a seguir
-/seguindo — lista · /deixar BBAS3 — para de seguir
+/seguindo — painel com preço, DY, teto e Barsi · /deixar BBAS3 — para de seguir
+/variacao 5 — aviso quando uma seguida subir ou cair 5% no dia
+📰 /noticias BBAS3 — últimas notícias (as das seguidas chegam sozinhas)
 
 🔗 /ligar — código para os avisos do site (botão 🔔 Avisar) chegarem aqui
 👥 /convidar — código para outra pessoa usar o bot · /convidados — lista, avisos e remover
@@ -254,16 +284,43 @@ Material de estudo, não é recomendação de investimento.`;
       extra: { reply_markup: { inline_keyboard: l.map((a, i) => [{ text: `🗑 ${i + 1}. ${a.t} ${nf(a.p, a.p < 1 ? 4 : 2)}`, callback_data: "del:" + a.id }]) } } };
   }
 
-  async function cmdSeguir(arg, est) {
+  async function cmdSeguir(arg, u) { const est = u;
     const pedidos = String(arg || "").split(/[\s,;]+/).filter(Boolean).slice(0, 15);
     if (!pedidos.length) return "Mande os códigos, por exemplo: /seguir BBAS3 TAEE11 ITSA4";
     const ok = [], nao = [];
     for (const p of pedidos) { const x = await achar(p); if (x) { if (!est.seguindo.includes(x.a.t)) est.seguindo.push(x.a.t); ok.push(x.a.t); } else nao.push(p); }
     est.seguindo = est.seguindo.slice(-40); await salvar(est);
-    return (ok.length ? `⭐ Seguindo: ${ok.join(", ")}.\nAviso na véspera e no dia da data com, no dia do pagamento e quando entrarem ou saírem do Barsi.` : "") + (nao.length ? `\nNão achei: ${nao.join(", ")}` : "");
+    return (ok.length ? `⭐ Seguindo: ${ok.join(", ")}.\nAvisos: véspera e dia da data com, dia do pagamento, entrada ou saída do Barsi, variação de ±${u.variacao || 5}% no dia e notícias novas.` : "") + (nao.length ? `\nNão achei: ${nao.join(", ")}` : "");
   }
-  function cmdSeguindo(est) {
-    return est.seguindo.length ? `⭐ Você segue ${est.seguindo.length}: ${est.seguindo.join(", ")}\n\n/seguir BBAS3 para incluir · /deixar BBAS3 para tirar` : "Você não segue nenhuma ação ainda. Exemplo: /seguir BBAS3 TAEE11";
+  async function cmdSeguindo(u) {
+    if (!u.seguindo.length) return "Você não segue nenhuma ação ainda. Exemplo: /seguir BBAS3 TAEE11";
+    const xs = (await Promise.all([...new Set(u.seguindo)].map(t => achar(t)))).filter(Boolean);
+    const q = await precos(xs.map(x => x.sym));
+    const L = [`⭐ Você segue ${xs.length} (DY desejado ${pct(u.alvo, 0)})`];
+    for (const { classe, a, sym } of xs) {
+      const z = q[sym], p = z?.p > 0 ? z.p : a.preco, vd = z?.pc > 0 ? z.p / z.pc - 1 : a.var;
+      const cor = vd == null ? "•" : vd >= 0 ? "🟢" : "🔴", un = ["acoes", "fiis", "etfs", "bdrs", "moedas"].includes(classe) ? "R$ " : classe === "stocks" ? "US$ " : "";
+      let linha = `${cor} ${a.t} ${un}${nf(p, p < 1 ? 4 : 2)} (${sinal(vd)})`;
+      if (classe === "acoes") {
+        const b = barsi({ ...a, preco: p }, u.alvo), f = a.preco ? p / a.preco : 1;
+        linha += `\n    DY 12m ${pct(a.dy != null ? a.dy / f : null)} · teto ${R$(b.teto)}${b.desconto != null ? ` (${pct(Math.abs(b.desconto), 0)} ${b.desconto >= 0 ? "abaixo" : "acima"})` : ""} · Barsi ${b.ok ? "✅" : "❌"}`;
+      } else if (classe === "fiis") linha += `\n    DY 12m ${pct(a.dy)} · P/VP ${nf(a.pvp, 2)}`;
+      L.push("", linha);
+    }
+    L.push("", `Avisos: variação de ${u.variacao ? "±" + u.variacao + "% no dia" : "dia desligada"} · notícias ${u.noticias ? "ligadas" : "desligadas"}`,
+      "/seguir · /deixar · /variacao 5 · /noticias BBAS3");
+    return L.join("\n");
+  }
+  async function cmdNoticias(arg, u) {
+    const a0 = sem(arg).trim();
+    if (a0 === "LIGA" || a0 === "LIGAR" || a0 === "ON") { u.noticias = true; await salvar(u); return "📰 Notícias das ações seguidas: ligadas (confiro a cada 30 min no horário do pregão)."; }
+    if (a0 === "DESLIGA" || a0 === "DESLIGAR" || a0 === "OFF") { u.noticias = false; await salvar(u); return "Notícias automáticas desligadas. /noticias BBAS3 continua funcionando."; }
+    if (!a0) return `📰 Notícias automáticas das ações seguidas: ${u.noticias ? "ligadas" : "desligadas"}.\n/noticias BBAS3 — últimas notícias de um ativo\n/noticias liga · /noticias desliga`;
+    const x = await achar(arg);
+    if (!x) return `Não achei "${arg}" no Radar B3.`;
+    const itens = (await buscarNoticias(x.a.t, x.a.n, x.classe, 7)).slice(0, 8);
+    if (!itens.length) return `Nenhuma notícia sobre ${x.a.t} nos últimos 7 dias.`;
+    return [`📰 ${x.a.t} — últimas notícias`, ...itens.map(n => `\n• ${n.titulo}\n  ${n.fonte}${n.quando ? " · " + quandoBR(n.quando) : ""}\n  ${n.link}`), "\nFonte: Google Notícias. Confira sempre a notícia original."].join("\n");
   }
   async function cmdLigar(est) {
     if (!est.canalSite) {
@@ -381,7 +438,9 @@ Material de estudo, não é recomendação de investimento.`;
       else if (cmd === "alertas") { const r = listaAlertas(u); return enviar(chat, r.texto, r.extra || {}); }
       else if (cmd === "dy") { const v = parseFloat(String(arg).replace(",", ".")); if (!(v >= 1 && v <= 30)) resp = `DY desejado agora: ${pct(u.alvo, 1)}. Para mudar: /dy 7`; else { u.alvo = v / 100; await salvar(u); resp = `DY desejado: ${pct(u.alvo, 1)}. O preço-teto agora usa esse valor.`; } }
       else if (cmd === "seguir") resp = await cmdSeguir(arg, u);
-      else if (cmd === "seguindo") resp = cmdSeguindo(u);
+      else if (cmd === "seguindo") resp = await cmdSeguindo(u);
+      else if (cmd === "noticias" || cmd === "noticia") resp = await cmdNoticias(arg, u);
+      else if (cmd === "variacao") { const v = parseFloat(String(arg).replace(",", ".").replace("%", "")); if (!(v >= 0 && v <= 50)) resp = `Aviso de variação forte: ${u.variacao ? "±" + u.variacao + "%" : "desligado"}. Para mudar: /variacao 5 (ou /variacao 0 para desligar)`; else { u.variacao = v; await salvar(u); resp = v ? `📈 Aviso quando uma ação seguida subir ou cair ${nf(v, v % 1 ? 1 : 0)}% ou mais no dia (e de novo no dobro disso).` : "Aviso de variação desligado."; } }
       else if (cmd === "deixar") { const t = sem(arg).replace(/[^A-Z0-9]/g, ""); const antes = u.seguindo.length; u.seguindo = u.seguindo.filter(x => x !== t); await salvar(u); resp = u.seguindo.length < antes ? `Deixou de seguir ${t}.` : `Você não seguia "${arg}". /seguindo mostra a lista.`; }
       else if (cmd === "ligar") resp = await cmdLigar(est);
       else if (cmd === "lembretes") { u.lembretes = !u.lembretes; await salvar(u); resp = u.lembretes ? "⏰ Lembretes 30 min antes de eventos de alto impacto: ligados." : "Lembretes de eventos desligados."; }
@@ -403,6 +462,16 @@ Material de estudo, não é recomendação de investimento.`;
     const todos = pessoas.flatMap(u => u.alertas || []);
     const q = todos.length ? await precos(todos.map(a => a.sym)) : {};
     let ag = null, mercado = null, agendaHoje = null;
+    const seguidos = [...new Set(pessoas.flatMap(u => u.seguindo || []))], infos = {}, noticiasDe = {};
+    let qs = {};
+    if (seguidos.length && hm >= 600 && hm <= 1110) {
+      for (const t of seguidos) { try { const x = await achar(t); if (x) infos[t] = x; } catch (e) {} }
+      qs = await precos(Object.values(infos).map(x => x.sym)).catch(() => ({}));
+      // notícias: cada ativo é consultado a cada 30 minutos (escalonado para não pedir tudo de uma vez)
+      const fatia = Math.floor(hm / 5) % 6, hashT = t => [...t].reduce((h, c) => h * 31 + c.charCodeAt(0) >>> 0, 7) % 6;
+      const querem = new Set(pessoas.filter(u => u.noticias).flatMap(u => u.seguindo || []));
+      for (const t of seguidos) if (infos[t] && querem.has(t) && hashT(t) === fatia) { try { noticiasDe[t] = await buscarNoticias(t, infos[t].a.n, infos[t].classe, 1); } catch (e) { console.log("notícias", t, e.message); } }
+    }
     for (const u of pessoas) {
       let mudou = false;
       const l = u.alertas || [];
@@ -414,6 +483,34 @@ Material de estudo, não é recomendação de investimento.`;
           else ficam.push(a);
         }
         if (ficam.length !== l.length) { u.alertas = ficam; mudou = true; }
+      }
+      // ações seguidas: variação forte no dia e notícias novas
+      if (u.seguindo?.length && hm >= 600 && hm <= 1110) {     // 10h–18h30, horário do pregão
+        const dia = hoje;
+        if (u.marcas?.dia !== dia) u.marcas = { dia, var: {}, not: {} };
+        for (const t of new Set(u.seguindo)) {
+          const x = infos[t]; if (!x) continue;
+          if (u.variacao > 0) {
+            const z = qs[x.sym];
+            if (z?.p > 0 && z?.pc > 0) {
+              const v = z.p / z.pc - 1, nivel = Math.floor(Math.abs(v * 100) / u.variacao), lado = v >= 0 ? "+" : "-";
+              const k = t + lado, ja = u.marcas.var[k] || 0;
+              if (nivel >= 1 && (nivel >= 2 * Math.max(ja, 1) || ja === 0)) {
+                u.marcas.var[k] = nivel; mudou = true;
+                await enviar(u.chat, `${v >= 0 ? "🚀" : "⚠️"} ${t} ${v >= 0 ? "sobe" : "cai"} ${nf(Math.abs(v * 100), 1)}% hoje: ${nf(z.p, z.p < 1 ? 4 : 2)} (fechou ontem a ${nf(z.pc, z.pc < 1 ? 4 : 2)})\n/noticias ${t} para ver o que saiu`).catch(() => {});
+              }
+            }
+          }
+          if (u.noticias && noticiasDe[t]) {
+            const vistas = new Set(u.notVistas || []), enviadas = u.marcas.not[t] || 0;
+            const novas = noticiasDe[t].filter(n => !vistas.has(n.id) && n.quando > quando - 4 * 36e5).slice(0, Math.max(0, 4 - enviadas));
+            if (novas.length) {
+              novas.forEach(n => vistas.add(n.id));
+              u.notVistas = [...vistas].slice(-300); u.marcas.not[t] = enviadas + novas.length; mudou = true;
+              await enviar(u.chat, `📰 ${t}\n` + novas.map(n => `\n• ${n.titulo}\n  ${n.fonte} · ${quandoBR(n.quando)}\n  ${n.link}`).join("\n")).catch(() => {});
+            }
+          }
+        }
       }
       // lembrete 30 minutos antes dos eventos de alto impacto
       if (u.lembretes) {
