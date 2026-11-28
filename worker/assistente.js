@@ -71,6 +71,23 @@ export default {
       return json({ ok: !lista.erro, chave_configurada: true, limites_kv: !!env.LIMITES, ...lista, ordem_de_uso: lista.erro ? [] : await escolherModelos(env, cfg.MODELO),
         evitando_agora: [...BLOQUEADOS].filter(([, ate]) => ate > Date.now()).map(([m]) => m) });
     }
+    if (req.method === "GET" && caminho === "/tg/teste-fontes") {     // TEMPORÁRIO: qual fonte de notícias responde daqui
+      const UA = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36", "Accept-Language": "pt-BR,pt;q=0.9" };
+      const fontes = {
+        google: "https://news.google.com/rss/search?q=%22BBAS3%22+when:3d&hl=pt-BR&gl=BR&ceid=BR:pt-419",
+        bing: "https://www.bing.com/news/search?q=BBAS3&format=rss&setlang=pt-br",
+        yahoo: "https://query1.finance.yahoo.com/v1/finance/search?q=BBAS3.SA&newsCount=10&quotesCount=0",
+        ddg: "https://duckduckgo.com/news.js?q=BBAS3&l=br-pt&o=json",
+        infomoney: "https://www.infomoney.com.br/feed/",
+        moneytimes: "https://www.moneytimes.com.br/feed/",
+      };
+      const out = {};
+      for (const [k, u] of Object.entries(fontes)) {
+        try { const r = await fetch(u, { headers: UA, signal: AbortSignal.timeout(10000) }); const t = await r.text(); out[k] = [r.status, t.length, (t.match(/<item>/g) || []).length, t.slice(0, 160)]; }
+        catch (e) { out[k] = ["erro", String(e)]; }
+      }
+      return new Response(JSON.stringify(out, null, 1), { headers: { "Content-Type": "application/json" } });
+    }
     if (req.method === "POST" && caminho === "/tg") {
       // mensagens do bot do Telegram: confere o segredo, responde 200 na hora e trabalha em segundo plano
       if (!env.TELEGRAM_TOKEN || !env.LIMITES) return new Response("off", { status: 404 });
